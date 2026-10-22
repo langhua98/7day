@@ -98,33 +98,100 @@ static func impact(parent: Node, pos: Vector3, normal: Vector3) -> void:
 		Vector2(0.25, 0.4), -0.2, Color(0.6, 0.58, 0.55, 0.5))
 
 
-## 枪口火光：挂在 parent（武器挂点）下的 local 位置，闪一下就没
-static func muzzle(parent: Node3D, local: Vector3) -> void:
-	var s := Sprite3D.new()
-	if ResourceLoader.exists(DIR + "muzzleflash_point.png"):
-		s.texture = load(DIR + "muzzleflash_point.png")
-	s.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	s.shaded = false
-	s.no_depth_test = true
-	s.pixel_size = 0.0007 * randf_range(0.8, 1.2)
-	s.rotation.z = randf() * TAU
-	s.modulate = Color(1.0, 0.85, 0.6)
-	s.render_priority = 10
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	mat.no_depth_test = true
-	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	mat.albedo_texture = s.texture
-	mat.albedo_color = Color(1.0, 0.85, 0.6)
-	s.material_override = mat
-	s.position = local
-	parent.add_child(s)
+## 枪口火光：挂在 parent（第一人称手臂）下的 local 位置，持续约 4 帧。
+## 由几部分组成：火舌（贴图 muzzleflash_point 上下两张随机取一张，正对镜头）、
+## 枪口一团橙色光、中间白热的芯；再加一盏一闪的点光源把周围照亮。
+## parent 有 muzzle_direction() 时火舌沿枪管方向，没有就朝镜头前方。
+static func muzzle(parent: Node3D, local: Vector3, size := 1.0) -> void:
+	var dir := Vector3.FORWARD
+	if parent.has_method("muzzle_direction"):
+		dir = parent.muzzle_direction()
+	size *= randf_range(0.85, 1.15)
+	var root := Node3D.new()
+	root.position = local
+	parent.add_child(root)
+	# 火舌：一条沿枪管往前喷（看过去是斜着往准星方向的一道），再加三条在屏幕平面里散开成星形，根部都在枪口
+	var to_cam := (-local).normalized()   # 镜头在 parent 原点
+	var u := dir - to_cam * dir.dot(to_cam)
+	if u.length() < 0.01:
+		u = Vector3.UP - to_cam * to_cam.y
+	u = u.normalized()
+	var v := to_cam.cross(u)
+	var tongues: Array[MeshInstance3D] = []
+	var spin := randf() * TAU
+	for i in 4:
+		var length := (0.30 if i == 0 else randf_range(0.10, 0.15)) * size
+		var along := u if i == 0 else (u * cos(spin + i * TAU / 3.0) + v * sin(spin + i * TAU / 3.0))
+		var t := MeshInstance3D.new()
+		var q := QuadMesh.new()
+		q.size = Vector2(length, length * (0.45 if i == 0 else 0.55))
+		q.center_offset = Vector3(length * 0.45, 0, 0)
+		t.mesh = q
+		t.material_override = _flash_mat("tongue%d" % (randi() % 2), Color(1.0, 0.8, 0.55))
+		t.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		t.basis = Basis(along, to_cam.cross(along), to_cam)
+		root.add_child(t)
+		tongues.append(t)
+	# 正面的光团和白芯
+	var glow := _flash_quad(0.22 * size, Color(1.0, 0.55, 0.2))
+	var core := _flash_quad(0.08 * size, Color(1.0, 0.95, 0.8))
+	root.add_child(glow)
+	root.add_child(core)
 	var light := OmniLight3D.new()
-	light.light_color = Color(1.0, 0.75, 0.4)
-	light.light_energy = 2.5
-	light.omni_range = 6.0
-	light.position = local
-	parent.add_child(light)
-	parent.get_tree().create_timer(0.05).timeout.connect(s.queue_free)
-	parent.get_tree().create_timer(0.06).timeout.connect(light.queue_free)
+	light.light_color = Color(1.0, 0.72, 0.38)
+	light.light_energy = 4.0
+	light.omni_range = 8.0
+	root.add_child(light)
+	var tw := root.create_tween()
+	tw.set_parallel(true)
+	for t in tongues:
+		tw.tween_property(t, "scale", Vector3(1.2, 0.4, 1.0), 0.07).set_delay(0.02)
+	tw.tween_property(glow, "scale", Vector3.ONE * 0.4, 0.07).set_delay(0.02)
+	tw.tween_property(core, "scale", Vector3.ONE * 0.3, 0.06).set_delay(0.02)
+	tw.tween_property(light, "light_energy", 0.0, 0.08)
+	parent.get_tree().create_timer(0.09).timeout.connect(root.queue_free)
+
+
+## 叠加发光的材质。kind: tongue0 / tongue1 是火舌贴图的上半张 / 下半张，glow 是程序生成的圆形光斑
+static func _flash_mat(kind: String, color: Color) -> StandardMaterial3D:
+	var key := "flash_%s_%s" % [kind, color]
+	if _mats.has(key):
+		return _mats[key]
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	m.no_depth_test = true
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.render_priority = 10
+	m.albedo_color = color
+	if kind.begins_with("tongue") and ResourceLoader.exists(DIR + "muzzleflash_point.png"):
+		m.albedo_texture = load(DIR + "muzzleflash_point.png")
+		m.uv1_scale = Vector3(1, 0.5, 1)
+		m.uv1_offset = Vector3(0, 0.5 if kind == "tongue1" else 0.0, 0)
+	else:
+		var g := GradientTexture2D.new()
+		g.width = 64
+		g.height = 64
+		g.fill = GradientTexture2D.FILL_RADIAL
+		g.fill_from = Vector2(0.5, 0.5)
+		g.fill_to = Vector2(0.5, 0.0)
+		var grad := Gradient.new()
+		grad.set_color(0, Color.WHITE)
+		grad.set_color(1, Color.BLACK)
+		grad.add_point(0.35, Color(0.7, 0.7, 0.7))
+		g.gradient = grad
+		m.albedo_texture = g
+	if kind == "glow":
+		m.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	_mats[key] = m
+	return m
+
+
+static func _flash_quad(size: float, color: Color) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var q := QuadMesh.new()
+	q.size = Vector2(size, size)
+	mi.mesh = q
+	mi.material_override = _flash_mat("glow", color)
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return mi
