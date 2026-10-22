@@ -1,0 +1,22 @@
+# Never commit 7 Days to Die game files (copyrighted). Only index/metadata belongs here.
+*.png
+*.jpg
+*.jpeg
+*.tga
+*.dds
+*.glb
+*.gltf
+*.fbx
+*.obj
+*.wav
+*.ogg
+*.mp3
+*.mp4
+*.webm
+*.bundle
+*.assets
+*.zip
+*.tar.gz
+*.unity3d
+research/7dtd-index/**/*.xml
+__pycache__/

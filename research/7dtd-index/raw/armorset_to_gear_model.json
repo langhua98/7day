@@ -1,0 +1,139 @@
+{
+ "Assassin": {
+  "male": "gear_Assassin_male"
+ },
+ "Athletic": {
+  "male": "gear_Athletic_male"
+ },
+ "Beach": {
+  "dlc": "gear_Beach_dlc"
+ },
+ "Biker": {
+  "male": "gear_Biker_male"
+ },
+ "Butcher": {
+  "dlc": "gear_Butcher_dlc"
+ },
+ "Casual": {
+  "dlc": "gear_Casual_dlc"
+ },
+ "ClassicSurvivor": {
+  "dlc": "gear_ClassicSurvivor_dlc"
+ },
+ "Commando": {
+  "male": "gear_Commando_male"
+ },
+ "CrackABook": {
+  "twhat": "gear_CrackABook_twhat",
+  "twout": "gear_CrackABook_twout"
+ },
+ "CrimsonWarlord": {
+  "dlc": "gear_CrimsonWarlord_dlc"
+ },
+ "Desert": {
+  "dlc": "gear_Desert_dlc"
+ },
+ "Enforcer": {
+  "male": "gear_Enforcer_male"
+ },
+ "Farmer": {
+  "male": "gear_Farmer_male"
+ },
+ "Hellreaver": {
+  "dlc": "gear_Hellreaver_dlc"
+ },
+ "Hoarder": {
+  "dlc": "gear_Hoarder_dlc"
+ },
+ "KegBreaker": {
+  "dlc": "gear_KegBreaker_dlc"
+ },
+ "Lumberjack": {
+  "male": "gear_Lumberjack_male"
+ },
+ "Marauder": {
+  "dlc": "gear_Marauder_dlc"
+ },
+ "Miner": {
+  "male": "gear_Miner_male"
+ },
+ "MoPower": {
+  "twhat": "gear_MoPower_twhat",
+  "twout": "gear_MoPower_twout"
+ },
+ "MonsterMask": {
+  "dlc2": "gear_MonsterMask_dlc2"
+ },
+ "Nerd": {
+  "male": "gear_Nerd_male"
+ },
+ "Nomad": {
+  "male": "gear_Nomad_male"
+ },
+ "PassNGas": {
+  "twhat": "gear_PassNGas_twhat",
+  "twout": "gear_PassNGas_twout"
+ },
+ "PimpHatBlue": {
+  "tw": "gear_PimpHatBlue_tw"
+ },
+ "PimpHatPurple": {
+  "tw": "gear_PimpHatPurple_tw"
+ },
+ "Pirate": {
+  "dlc": "gear_Pirate_dlc"
+ },
+ "PopNPills": {
+  "twhat": "gear_PopNPills_twhat",
+  "twout": "gear_PopNPills_twout"
+ },
+ "Preacher": {
+  "male": "gear_Preacher_male"
+ },
+ "Primitive": {
+  "male": "gear_Primitive_male"
+ },
+ "Raider": {
+  "male": "gear_Raider_male"
+ },
+ "Ranger": {
+  "male": "gear_Ranger_male"
+ },
+ "Rogue": {
+  "male": "gear_Rogue_male"
+ },
+ "Samurai": {
+  "dlc": "gear_Samurai_dlc"
+ },
+ "SantaHat": {
+  "male": "gear_SantaHat_male"
+ },
+ "SavageCountry": {
+  "twhat": "gear_SavageCountry_twhat",
+  "twout": "gear_SavageCountry_twout"
+ },
+ "Scavenger": {
+  "male": "gear_Scavenger_male"
+ },
+ "Shamway": {
+  "twhat": "gear_Shamway_twhat",
+  "twout": "gear_Shamway_twout"
+ },
+ "ShotgunMessiah": {
+  "twhat": "gear_ShotgunMessiah_twhat",
+  "twout": "gear_ShotgunMessiah_twout"
+ },
+ "Watcher": {
+  "tw": "gear_Watcher_tw"
+ },
+ "Winter": {
+  "dlc": "gear_Winter_dlc"
+ },
+ "WorkingStiff": {
+  "dlc": "gear_WorkingStiff_dlc"
+ },
+ "WorkingStiffs": {
+  "twhat": "gear_WorkingStiffs_twhat",
+  "twout": "gear_WorkingStiffs_twout"
+ }
+}
