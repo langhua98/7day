@@ -9,6 +9,8 @@ signal item_used(id: String)
 signal action_pressed
 signal reload_pressed
 signal settings_changed
+signal retry_pressed
+signal skip_pressed
 
 var move := Vector2.ZERO          # 摇杆输出，x 右 y 前
 var look_delta := Vector2.ZERO    # 本帧视角拖动量（像素）
@@ -41,6 +43,10 @@ var _start_info := Label.new()
 var _end_panel := PanelContainer.new()
 var _end_label := Label.new()
 var _pause_panel := PanelContainer.new()
+var _load_panel := PanelContainer.new()
+var _load_label := Label.new()
+var _load_bar := ProgressBar.new()
+var _load_buttons := HBoxContainer.new()
 var _joy_base := Panel.new()
 var _joy_knob := Panel.new()
 var _joy_label := Label.new()
@@ -239,6 +245,7 @@ func _ready() -> void:
 	_build_pause_panel()
 	_build_start_panel()
 	_build_end_panel()
+	_build_load_panel()
 	get_viewport().size_changed.connect(_apply_safe_area)
 	_apply_safe_area()
 
@@ -437,6 +444,81 @@ func _build_end_panel() -> void:
 	_root.add_child(_end_panel)
 
 
+## 开局前的加载界面：从云盘下载素材包的进度
+func _build_load_panel() -> void:
+	_load_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_load_panel.visible = false
+	var v := VBoxContainer.new()
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_theme_constant_override("separation", 26)
+	_load_panel.add_child(v)
+	var title := Label.new()
+	title.text = "七日杀 · 口袋版"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 64)
+	title.add_theme_color_override("font_color", Color(0.85, 0.2, 0.15))
+	v.add_child(title)
+	_load_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_load_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_load_label.text = "正在准备游戏素材…"
+	v.add_child(_load_label)
+	_load_bar.custom_minimum_size = Vector2(640, 26)
+	_load_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_load_bar.show_percentage = false
+	_load_bar.max_value = 1.0
+	_load_bar.step = 0.0
+	var pf := StyleBoxFlat.new()
+	pf.bg_color = Color(0.75, 0.2, 0.15)
+	pf.set_corner_radius_all(6)
+	var pb := StyleBoxFlat.new()
+	pb.bg_color = Color(0, 0, 0, 0.6)
+	pb.set_corner_radius_all(6)
+	_load_bar.add_theme_stylebox_override("fill", pf)
+	_load_bar.add_theme_stylebox_override("background", pb)
+	v.add_child(_load_bar)
+	var hint := Label.new()
+	hint.text = "第一次打开要下载素材，建议连 Wi-Fi；下载过一次以后就不用再下了"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.modulate = Color(1, 1, 1, 0.55)
+	hint.add_theme_font_size_override("font_size", 20)
+	v.add_child(hint)
+	_load_buttons.alignment = BoxContainer.ALIGNMENT_CENTER
+	_load_buttons.add_theme_constant_override("separation", 30)
+	_load_buttons.visible = false
+	for spec in [["重试", retry_pressed], ["先不下载，直接玩", skip_pressed]]:
+		var b := Button.new()
+		b.text = spec[0]
+		b.custom_minimum_size = Vector2(260, 80)
+		var sig: Signal = spec[1]
+		b.pressed.connect(func():
+			_load_buttons.visible = false
+			_load_label.text = "正在准备游戏素材…"
+			sig.emit())
+		_load_buttons.add_child(b)
+	v.add_child(_load_buttons)
+	_root.add_child(_load_panel)
+
+
+func show_loading() -> void:
+	_start_panel.visible = false
+	_load_panel.visible = true
+
+
+func set_loading(text: String, value: float) -> void:
+	_load_label.text = text
+	_load_bar.value = value
+
+
+func loading_failed(message: String) -> void:
+	_load_label.text = message + "\n可以重试；也可以直接玩，但街上没有楼、车，也没有音乐"
+	_load_buttons.visible = true
+
+
+func show_start() -> void:
+	_load_panel.visible = false
+	_start_panel.visible = true
+
+
 func _load_settings() -> void:
 	var cf := ConfigFile.new()
 	if cf.load(SETTINGS_PATH) == OK:
@@ -466,7 +548,7 @@ func show_end(text: String) -> void:
 ## 切到后台（来电话、回桌面）自动暂停
 func _notification(what: int) -> void:
 	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT]:
-		if is_inside_tree() and not (_start_panel.visible or _end_panel.visible or _pause_panel.visible):
+		if is_inside_tree() and not (_start_panel.visible or _end_panel.visible or _pause_panel.visible or _load_panel.visible):
 			set_paused(true)
 
 
@@ -635,7 +717,7 @@ func consume_look() -> Vector2:
 
 
 func _panel_open() -> bool:
-	return _bag_panel.visible or _start_panel.visible or _end_panel.visible or _pause_panel.visible
+	return _bag_panel.visible or _start_panel.visible or _end_panel.visible or _pause_panel.visible or _load_panel.visible
 
 
 func _press_attack(pressed: bool) -> void:

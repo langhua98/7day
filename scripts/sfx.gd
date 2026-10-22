@@ -90,11 +90,8 @@ func _pick(name: String) -> AudioStream:
 
 ## assets/sounds/<名字>.wav 或 <名字>_2.ogg 这样的文件，按名字前缀归类
 func _load_files() -> void:
-	if not DirAccess.dir_exists_absolute(DIR):
-		return
 	var re := RegEx.create_from_string("^([a-z_]+?)(_\\d+)?\\.(wav|ogg|mp3)$")
-	for f in DirAccess.get_files_at(DIR):
-		var name := f.trim_suffix(".remap").trim_suffix(".import")
+	for name in Assets.list_files(DIR, ["wav", "ogg", "mp3"]):
 		var m := re.search(name.to_lower())
 		if m == null:
 			continue

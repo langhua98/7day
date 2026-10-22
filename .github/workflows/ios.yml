@@ -89,6 +89,18 @@ jobs:
           "$GODOT" --headless -s tools/build_poi.gd
           "$GODOT" --headless --import
 
+      - name: 大素材打包传云盘（游戏开局时下载）
+        env:
+          XIAOJU_TOKEN: ${{ secrets.XIAOJU_TOKEN }}
+        run: |
+          GODOT="$HOME/godot/Godot.app/Contents/MacOS/Godot"
+          mkdir -p build
+          # 楼、车和杂物、音乐、音效、5 种僵尸打成素材包；上传失败会自动放回安装包
+          python3 tools/cloud_pack.py prepare
+          "$GODOT" --headless --export-pack "Pack" build/assets.pck 2>&1 | grep -v "Storing File" | tail -20 || true
+          ls -la build/assets.pck || true
+          python3 tools/cloud_pack.py upload build/assets.pck
+
       - name: 导出 Xcode 工程
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
