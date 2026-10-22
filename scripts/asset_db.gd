@@ -259,6 +259,8 @@ func _classify(row: Dictionary) -> void:
 	elif id.begins_with("medical"):
 		row.kind = Kind.MEDICAL
 		row.power = 35.0
+	elif id.begins_with("drinkingfountain") or id == "drinkJarEmpty":
+		row.kind = Kind.RESOURCE
 	elif id.begins_with("drink"):
 		row.kind = Kind.DRINK
 		row.power = 25.0

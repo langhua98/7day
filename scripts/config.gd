@@ -38,6 +38,20 @@ const MAX_FOOD := 100.0
 const FOOD_DRAIN := 0.12
 ## 饱食度为 0 时每秒掉血
 const STARVE_DAMAGE := 1.0
+const MAX_WATER := 100.0
+## 每真实秒消耗的水分（比饿得快）
+const WATER_DRAIN := 0.17
+## 水分为 0 时每秒掉血
+const THIRST_DAMAGE := 1.4
+## 被僵尸打中后开始流血的几率、流血每秒掉血、流血多久自己止住（秒）
+const BLEED_CHANCE := 0.3
+const BLEED_DAMAGE := 0.7
+const BLEED_TIME := 40.0
+## 腹泻持续秒数，期间水分掉得快几倍
+const SICK_TIME := 75.0
+const SICK_WATER_MULT := 3.5
+## 咖啡因：体力恢复倍数
+const BUFF_STAMINA_MULT := 2.2
 
 const FIST_DAMAGE := 8.0
 const MELEE_RANGE := 2.3

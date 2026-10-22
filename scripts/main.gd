@@ -20,6 +20,10 @@ var running := false
 var game_hours := C.START_HOUR   # 从第 1 天 0 点起算的小时数
 var hp := C.MAX_HP
 var food := C.MAX_FOOD
+var water := C.MAX_WATER
+var bleed_t := 0.0     # 还要流血几秒
+var sick_t := 0.0      # 腹泻还剩几秒
+var buff_t := 0.0      # 咖啡因还剩几秒
 var kills := 0
 var yaw := 0.0
 var pitch := 0.0
@@ -44,10 +48,17 @@ var _vy := 0.0
 var _flow_t := 0.0
 var _recoil := 0.0
 var _night_announced := -1
+var _step_d := 0.0      # 走了多远，够一步就放脚步声
+var world_seed := 0
+var _save_t := 0.0
+const SAVE_PATH := "user://save.json"
 
 
 func _ready() -> void:
 	rng.randomize()
+	# 城市布局跟着存档走：继续上次时还是同一座城
+	var save := _read_save()
+	world_seed = int(save.get("seed", rng.randi() % 1000000))
 	_build_world()
 	_build_player()
 	music = MusicDirector.new()
@@ -60,6 +71,15 @@ func _ready() -> void:
 	hud.action_pressed.connect(_action)
 	hud.reload_pressed.connect(_reload)
 	hud.jump_pressed.connect(_jump)
+	hud.continue_pressed.connect(_continue)
+	hud.quit_to_title.connect(func():
+		_save()
+		running = false
+		Sfx.stop_loops()
+		hud.show_start(true))
+	hud.settings_changed.connect(_apply_settings)
+	_apply_settings(hud.settings)
+	hud.show_start(save.has("hours"))
 	var info := "素材：物品 %d 个（武器、食物、药品等 %d 个可拾取），僵尸 %d 种，音乐 %d 段" % [
 		Assets.items.size(), _count_loot(), Assets.zombie_models.size(),
 		Assets.music.values().reduce(func(a, l): return a + l.size(), 0)]
@@ -67,6 +87,88 @@ func _ready() -> void:
 		info += "\n注意：" + "；".join(Assets.errors)
 	hud.set_start_info(info)
 	_update_sky()
+
+
+func _apply_settings(st: Dictionary) -> void:
+	Sfx.set_volume("Sfx", st.volume)
+	Sfx.set_volume("Music", st.music)
+	_brightness = st.brightness
+	env.tonemap_exposure = st.brightness
+
+
+var _brightness := 1.0
+
+
+# —— 存档：每 30 秒、切到后台、回标题时自动存 ——
+
+func _notification(what: int) -> void:
+	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_CLOSE_REQUEST]:
+		if running:
+			_save()
+
+
+func _read_save() -> Dictionary:
+	if not FileAccess.file_exists(SAVE_PATH):
+		return {}
+	var d = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
+	return d if d is Dictionary else {}
+
+
+func _save() -> void:
+	var searched := []
+	for i in world.containers.size():
+		if world.containers[i].searched:
+			searched.append(i)
+	var d := {
+		"seed": world_seed, "hours": game_hours, "hp": hp, "food": food, "water": water, "stamina": stamina,
+		"kills": kills, "inventory": inventory, "order": pickup_order, "equipped": equipped, "mags": mags,
+		"pos": [player.position.x, player.position.z], "yaw": yaw,
+		"bleed": bleed_t, "sick": sick_t, "buff": buff_t, "searched": searched,
+	}
+	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(d))
+
+
+func _delete_save() -> void:
+	if FileAccess.file_exists(SAVE_PATH):
+		DirAccess.remove_absolute(SAVE_PATH)
+
+
+func _continue() -> void:
+	var d := _read_save()
+	if not d.has("hours"):
+		_start()
+		return
+	_start(false)
+	game_hours = d.hours
+	hp = d.hp
+	food = d.food
+	water = d.get("water", C.MAX_WATER)
+	stamina = d.get("stamina", 100.0)
+	kills = int(d.kills)
+	for id in d.inventory:
+		if Assets.items_by_id.has(id):
+			inventory[id] = int(d.inventory[id])
+	for id in d.order:
+		if inventory.has(id):
+			pickup_order.append(id)
+	for id in d.mags:
+		mags[id] = int(d.mags[id])
+	bleed_t = d.get("bleed", 0.0)
+	sick_t = d.get("sick", 0.0)
+	buff_t = d.get("buff", 0.0)
+	for i in d.get("searched", []):
+		if int(i) < world.containers.size():
+			world.containers[int(i)].searched = true
+	player.position = world.push_out(Vector3(d.pos[0], 0, d.pos[1]), 0.35)
+	yaw = d.yaw
+	var eq: String = d.get("equipped", "")
+	_equip(eq if inventory.has(eq) else "")
+	_refresh_inventory()
+	var day := int(game_hours / 24.0) + 1
+	_night_announced = day if fmod(game_hours, 24.0) >= C.NIGHT_START else -1
+	hud.toast("继续第 %d 天" % day)
 
 
 func _count_loot() -> int:
@@ -99,7 +201,7 @@ func _build_world() -> void:
 
 	world = World.new()
 	add_child(world)
-	world.build(rng.randi())
+	world.build(world_seed)
 	add_child(zombie_root)
 	add_child(loot_root)
 
@@ -118,7 +220,7 @@ func _build_player() -> void:
 
 # —— 开局 / 结束 ——
 
-func _start() -> void:
+func _start(fresh := true) -> void:
 	for z in zombie_root.get_children():
 		z.queue_free()
 	for l in loot_root.get_children():
@@ -126,6 +228,10 @@ func _start() -> void:
 	game_hours = C.START_HOUR
 	hp = C.MAX_HP
 	food = C.MAX_FOOD
+	water = C.MAX_WATER
+	bleed_t = 0.0
+	sick_t = 0.0
+	buff_t = 0.0
 	kills = 0
 	inventory.clear()
 	pickup_order.clear()
@@ -156,11 +262,17 @@ func _start() -> void:
 	running = true
 	hud.set_banner("")
 	_refresh_inventory()
-	hud.toast("第 1 天。找武器、找吃的，天黑前做好准备。")
+	if fresh:
+		hud.toast("第 1 天。找武器、找吃的，天黑前做好准备。")
+		_save()
 
 
 func _end(win: bool) -> void:
 	running = false
+	_delete_save()
+	Sfx.stop_loops()
+	if not win:
+		Sfx.play("death")
 	music.request("Exp" if win else "Sus", 99.0)
 	var day := int(game_hours / 24.0) + 1
 	if win:
@@ -192,6 +304,10 @@ func _process(delta: float) -> void:
 	_update_survival(delta)
 	_update_music(delta, night, horde)
 	_update_banner(day, hour, night, horde)
+	_save_t += delta
+	if _save_t > 30.0:
+		_save_t = 0.0
+		_save()
 
 	var near := 0
 	for z in zombie_root.get_children():
@@ -204,8 +320,8 @@ func _process(delta: float) -> void:
 
 func _update_player(delta: float) -> void:
 	var look := hud.consume_look()
-	yaw -= look.x * C.LOOK_SENSITIVITY
-	pitch = clamp(pitch - look.y * C.LOOK_SENSITIVITY, -1.3, 1.3)
+	yaw -= look.x * C.LOOK_SENSITIVITY * hud.settings.sensitivity
+	pitch = clamp(pitch - look.y * C.LOOK_SENSITIVITY * hud.settings.sensitivity, -1.3, 1.3)
 	# 电脑上调试：WASD 移动、方向键看、空格攻击
 	var mv := hud.move
 	if Input.is_physical_key_pressed(KEY_W): mv.y += 1
@@ -223,7 +339,7 @@ func _update_player(delta: float) -> void:
 	if sprint:
 		stamina = max(0.0, stamina - C.SPRINT_DRAIN * delta)
 	else:
-		stamina = min(100.0, stamina + C.STAMINA_REGEN * delta * (0.5 if mv.length() > 0.1 else 1.0))
+		stamina = min(100.0, stamina + C.STAMINA_REGEN * (C.BUFF_STAMINA_MULT if buff_t > 0.0 else 1.0) * delta * (0.5 if mv.length() > 0.1 else 1.0))
 	hud.set_stamina(stamina)
 	# 跳：简单的竖直速度和重力
 	if Input.is_physical_key_pressed(KEY_C):
@@ -231,6 +347,8 @@ func _update_player(delta: float) -> void:
 	_vy -= C.GRAVITY * delta
 	player.position.y = max(0.0, player.position.y + _vy * delta)
 	if player.position.y <= 0.0:
+		if _vy < -3.0:
+			Sfx.play("land", Vector3.INF, -6.0)
 		_vy = 0.0
 	# 后坐力：镜头往上一跳，慢慢回落
 	if _recoil > 0.0:
@@ -242,7 +360,13 @@ func _update_player(delta: float) -> void:
 	var fwd := -player.global_basis.z
 	var right := player.global_basis.x
 	var vel := (fwd * mv.y + right * mv.x) * C.PLAYER_SPEED * (C.SPRINT_MULT if sprint else 1.0)
+	var before := player.position
 	player.position = world.push_out(player.position + vel * delta, 0.35)
+	if player.position.y <= 0.01:
+		_step_d += Vector2(player.position.x - before.x, player.position.z - before.z).length()
+		if _step_d > (1.9 if sprint else 1.5):
+			_step_d = 0.0
+			Sfx.play("step", Vector3.INF, -10.0 if not sprint else -6.0, 0.12)
 	arms.set_meta("walking", mv.length() * (1.6 if sprint else 1.0))
 	# 换弹
 	if _reload_left > 0.0:
@@ -270,6 +394,7 @@ func _attack() -> void:
 		return
 	attack_cd = C.MELEE_COOLDOWN
 	arms.swing(1.0 / C.MELEE_COOLDOWN * 0.9)
+	Sfx.play("swing" if kind == Assets.Kind.MELEE else "swing_fist", Vector3.INF, -4.0)
 	var dmg: float = row.get("power", C.FIST_DAMAGE) if kind == Assets.Kind.MELEE else C.FIST_DAMAGE
 	var aim := -camera.global_basis.z
 	var flat_aim := Vector3(aim.x, 0, aim.z).normalized()
@@ -303,6 +428,7 @@ func _fire(row: Dictionary) -> void:
 	var left: int = mags.get(equipped, 0)
 	if left <= 0:
 		attack_cd = 0.35
+		Sfx.play("empty")
 		if Weapons.ammo_count(inventory, equipped) > 0:
 			_reload()
 		else:
@@ -312,6 +438,7 @@ func _fire(row: Dictionary) -> void:
 	attack_cd = st.rate
 	arms.swing(7.0)
 	Fx.muzzle(arms, arms.muzzle_position())
+	Sfx.play(st.fire_snd, Vector3.INF, -2.0, 0.05)
 	_recoil += 0.012 + st.damage * 0.0004 * st.pellets
 	var eye := camera.global_position
 	var aim := -camera.global_basis.z
@@ -365,9 +492,12 @@ func _shoot_ray(eye: Vector3, dir: Vector3, st: Dictionary) -> void:
 		_hit_zombie(best, st.damage * (C.HEADSHOT_MULT if head else 1.0), head, hit, dir)
 	elif best_t < reach:
 		Fx.impact(self, hit - dir * 0.05, -dir)
+		if best_t < 25.0:
+			Sfx.play("bullet_wall", hit, -6.0)
 
 
 func _explode(at: Vector3, st: Dictionary) -> void:
+	Sfx.play("explosion", at, 6.0)
 	Fx.impact(self, at, Vector3.UP)
 	Fx.blood(self, at, Vector3.UP, true)
 	for z in zombie_root.get_children():
@@ -384,6 +514,8 @@ func _explode(at: Vector3, st: Dictionary) -> void:
 func _hit_zombie(z: Zombie, dmg: float, head: bool, at: Vector3, dir: Vector3) -> void:
 	z.take_hit(dmg, player.global_position, head)
 	Fx.blood(self, at, dir.normalized() + Vector3.UP * 0.2, head)
+	var gun: bool = Assets.items_by_id.get(equipped, {}).get("kind", -1) == Assets.Kind.GUN
+	Sfx.play("bullet_flesh" if gun else "hit_flesh", at, -2.0)
 	if head:
 		hud.toast("爆头！")
 
@@ -400,6 +532,7 @@ func _reload() -> void:
 		return
 	_reload_left = st.reload
 	arms.reload(st.reload)
+	Sfx.play(st.reload_snd)
 
 
 func _finish_reload() -> void:
@@ -433,6 +566,7 @@ func _jump() -> void:
 	if player.position.y <= 0.01 and stamina > 8.0:
 		_vy = C.JUMP_SPEED
 		stamina -= 8.0
+		Sfx.play("jump", Vector3.INF, -6.0)
 
 
 func _update_zombies(delta: float, day: int, night: bool, horde: bool) -> void:
@@ -449,6 +583,11 @@ func _update_zombies(delta: float, day: int, night: bool, horde: bool) -> void:
 		if dmg > 0.0:
 			hp -= dmg
 			hud.hurt()
+			Sfx.play("pain", Vector3.INF, -3.0)
+			if rng.randf() < C.BLEED_CHANCE:
+				if bleed_t <= 0.0:
+					hud.toast("你在流血！用绷带止血")
+				bleed_t = C.BLEED_TIME
 		# 离太远的僵尸回收掉，在身边重新刷
 		if z.distance_to_target() > C.ZOMBIE_DESPAWN:
 			z.queue_free()
@@ -624,6 +763,7 @@ func _action() -> void:
 		return
 	_search = c
 	_search_t = 0.0
+	Sfx.play("search", c.pos + Vector3.UP * 0.8)
 	_search_from = player.position
 
 
@@ -656,6 +796,7 @@ func _pickup(id: String) -> void:
 	if not pickup_order.has(id):
 		pickup_order.append(id)
 	var row: Dictionary = Assets.items_by_id[id]
+	Sfx.play("loot", Vector3.INF, -8.0)
 	hud.toast("捡到：%s" % Assets.display_name(id) + (" ×%d" % n if n > 1 else ""))
 	# 捡到更好的武器自动换上
 	if row.kind in [Assets.Kind.MELEE, Assets.Kind.GUN]:
@@ -672,19 +813,36 @@ func _use_item(id: String) -> void:
 	match row.kind:
 		Assets.Kind.MELEE, Assets.Kind.GUN:
 			_equip("" if equipped == id else id)
-		Assets.Kind.FOOD:
-			food = min(C.MAX_FOOD, food + row.power)
-			_consume(id, "吃了%s" % Assets.display_name(id))
-		Assets.Kind.DRINK:
-			food = min(C.MAX_FOOD, food + row.power * 0.6)
-			hp = min(C.MAX_HP, hp + 5.0)
-			_consume(id, "喝了%s" % Assets.display_name(id))
-		Assets.Kind.MEDICAL:
-			hp = min(C.MAX_HP, hp + row.power)
-			_consume(id, "用了%s" % Assets.display_name(id))
+		Assets.Kind.FOOD, Assets.Kind.DRINK, Assets.Kind.MEDICAL:
+			_apply_effect(id, row.kind)
 		_:
 			hud.toast("%s：材料，留着吧" % Assets.display_name(id))
 	_refresh_inventory()
+
+
+## 吃喝用药：按 Survival 表加减各项，再把物品用掉
+func _apply_effect(id: String, kind: int) -> void:
+	var e := Survival.effect(id, kind)
+	food = clampf(food + e.food, 0.0, C.MAX_FOOD)
+	water = clampf(water + e.water, 0.0, C.MAX_WATER)
+	hp = clampf(hp + e.hp, 1.0, C.MAX_HP)
+	stamina = minf(100.0, stamina + e.get("stamina", 0.0))
+	var verb: String = {Assets.Kind.FOOD: "吃了", Assets.Kind.DRINK: "喝了"}.get(kind, "用了")
+	Sfx.play({Assets.Kind.FOOD: "eat", Assets.Kind.DRINK: "drink"}.get(kind, "bandage"))
+	var msg: String = verb + Assets.display_name(id)
+	if e.get("stop_bleed", false) and bleed_t > 0.0:
+		bleed_t = 0.0
+		msg += "，血止住了"
+	if e.get("cure", false) and sick_t > 0.0:
+		sick_t = 0.0
+		msg += "，肚子好了"
+	if e.has("buff"):
+		buff_t = maxf(buff_t, e.buff)
+		msg += "，精神一振"
+	if rng.randf() < e.get("sick", 0.0):
+		sick_t = C.SICK_TIME
+		msg += "……肚子不对劲"
+	_consume(id, msg)
 
 
 func _consume(id: String, msg: String) -> void:
@@ -727,10 +885,25 @@ func _refresh_inventory() -> void:
 
 func _update_survival(delta: float) -> void:
 	food = max(0.0, food - C.FOOD_DRAIN * delta)
+	water = max(0.0, water - C.WATER_DRAIN * delta * (C.SICK_WATER_MULT if sick_t > 0.0 else 1.0))
 	if food <= 0.0:
 		hp -= C.STARVE_DAMAGE * delta
-	elif food > 60.0:
+	if water <= 0.0:
+		hp -= C.THIRST_DAMAGE * delta
+	if bleed_t > 0.0:
+		bleed_t -= delta
+		hp -= C.BLEED_DAMAGE * delta
+	sick_t = maxf(0.0, sick_t - delta)
+	buff_t = maxf(0.0, buff_t - delta)
+	if food > 60.0 and water > 50.0 and bleed_t <= 0.0:
 		hp = min(C.MAX_HP, hp + delta * 0.4)
+	var st := []
+	if bleed_t > 0.0: st.append("流血")
+	if sick_t > 0.0: st.append("腹泻")
+	if buff_t > 0.0: st.append("咖啡因")
+	if water < 20.0: st.append("口渴")
+	if food < 20.0: st.append("饥饿")
+	hud.set_survival(water, "  ".join(st))
 
 
 func _update_sky() -> void:
@@ -785,6 +958,9 @@ func _update_music(delta: float, night: bool, horde: bool) -> void:
 	elif night or nearest < C.TENSION_DISTANCE:
 		want = "Sus"
 	music.request(want, delta)
+	# 环境声：白天风声，夜里虫鸣
+	Sfx.loop("amb_day", -80.0 if night else -14.0, delta)
+	Sfx.loop("amb_night", -12.0 if night else -80.0, delta)
 
 
 func _update_banner(day: int, hour: float, night: bool, horde: bool) -> void:

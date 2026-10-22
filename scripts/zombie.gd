@@ -37,6 +37,9 @@ var _bones := {}
 var _rng := RandomNumberGenerator.new()
 var _meshes: Array[MeshInstance3D] = []
 var _height := GameConfig.ZOMBIE_HEIGHT
+var _voice := "zm_"      # 男声 zm_ / 女声 zf_
+var _roam_t := 0.0
+var _alerted := false
 # 骨骼空间里的「前」和「右」，从脚尖方向推出来（不同僵尸的导出朝向不一样）
 var _fwd := Vector3.BACK
 var _side := Vector3.RIGHT
@@ -66,6 +69,8 @@ func setup(model_name: String, hp_value: float, speed_value: float, player: Node
 	_fall_dir = -1.0 if _rng.randf() < 0.6 else 1.0
 	target = player
 	_phase = _rng.randf() * TAU
+	_voice = "zf_" if type in ["nurse", "arlene", "screamer"] or type.contains("female") else "zm_"
+	_roam_t = _rng.randf_range(2.0, 9.0)
 	var found := _model.find_children("*", "Skeleton3D", true, false)
 	if found.size() > 0:
 		_skel = found[0]
@@ -142,8 +147,18 @@ func _process(delta: float) -> void:
 		_screamed = true
 		_scream_t = 1.2
 		screamed.emit(self)
+		Sfx.play("scream", global_position + Vector3.UP * 1.6, 6.0)
 	if _scream_t > 0.0:
 		_scream_t -= delta
+	# 叫声：第一次靠近时吼一声，平时隔一阵哼一声
+	if not _alerted and dist < 16.0:
+		_alerted = true
+		Sfx.play(_voice + "alert", global_position + Vector3.UP * 1.6)
+	_roam_t -= delta
+	if _roam_t <= 0.0:
+		_roam_t = _rng.randf_range(5.0, 12.0)
+		if dist < 40.0:
+			Sfx.play(_voice + "roam", global_position + Vector3.UP * 1.6, -3.0)
 	if _stagger > 0.0:
 		_stagger -= delta
 		_animate()
@@ -186,6 +201,7 @@ func try_attack() -> float:
 		return d
 	if _attack_cd <= 0.0 and _windup < 0.0 and _stagger <= 0.0 and distance_to_target() <= GameConfig.ZOMBIE_REACH:
 		_windup = GameConfig.ZOMBIE_WINDUP
+		Sfx.play(_voice + "attack", global_position + Vector3.UP * 1.6)
 	return 0.0
 
 
@@ -203,6 +219,8 @@ func take_hit(amount: float, from: Vector3, headshot := false) -> void:
 		return
 	hp -= amount
 	_hit_flash = 0.15
+	if hp > 0.0 and _rng.randf() < 0.5:
+		Sfx.play(_voice + "pain", global_position + Vector3.UP * 1.6)
 	_set_tint(Color(1.0, 0.45, 0.45))
 	# 受击硬直：打断出手
 	_stagger = GameConfig.ZOMBIE_HEADSHOT_STAGGER if headshot else GameConfig.ZOMBIE_STAGGER
@@ -215,6 +233,7 @@ func take_hit(amount: float, from: Vector3, headshot := false) -> void:
 			position = world.push_out(position, 0.35)
 	if hp <= 0.0:
 		dead = true
+		Sfx.play(_voice + "death", global_position + Vector3.UP * 1.4)
 		_set_tint(Color.WHITE)
 		# 打的方向决定往哪边倒
 		var back := (global_position - from)

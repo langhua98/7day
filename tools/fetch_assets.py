@@ -662,6 +662,83 @@ def fetch_music(dest, per_kind):
         print(f"音乐 {kind}: {len(chosen)} 段")
     print(f"音乐新下载 {mb(total)}")
 
+# 音效：组名 → (zip 名, 文件名正则, 最多几个)。存到 assets/sounds/<组名>/，游戏里随机挑一个播
+SOUND_GROUPS = {
+    "fire_pistol": ("weapons", r"pistol_fire\d*\.wav", 3),
+    "fire_magnum": ("weapons", r"(44magnum|desertvulture)_fire\d*\.wav", 3),
+    "fire_smg": ("weapons", r"smg_fire\d+\.wav", 3),
+    "fire_rifle": ("weapons", r"(tacticalar|ak47)_fire\d+\.wav", 4),
+    "fire_mg": ("weapons", r"m60_fire\d+\.wav", 3),
+    "fire_sniper": ("weapons", r"(sniperrifle|lever_action_rifle)_fire\d*\.wav", 3),
+    "fire_shotgun": ("weapons", r"(pump_shotgun|autoshotgun|shotgundb)_fire\d+\.wav", 3),
+    "fire_bow": ("weapons", r"(bow|crossbow2)_fire\d+\.wav", 3),
+    "fire_rocket": ("weapons", r"m136_fire\.wav", 1),
+    "reload_rifle": ("weapons", r"(ak47|mp5|sniperrifle)_reload\.wav", 3),
+    "reload_pistol": ("weapons", r"(pistol|44magnum)_reload\.wav", 2),
+    "reload_shotgun": ("weapons", r"shotgun_reload\.wav", 1),
+    "empty": ("weapons", r"(weapon_empty|dryfire)\d+\.wav", 2),
+    "swing": ("weapons", r"(club|batwood|machete|axe)_swinglight\d*\.wav", 4),
+    "swing_fist": ("weapons", r"fists_swinglight\d+\.wav", 3),
+    "hit_flesh": ("impactsurface", r"(metalhitorganic|organichitorganic)\d*\.wav", 4),
+    "bullet_flesh": ("impactsurface", r"bullethitorganic\d*\.wav", 3),
+    "bullet_wall": ("impactsurface", r"bullethit(stone|metal)\d*\.wav", 4),
+    "explosion": ("explosions", r"explosion\d\.wav", 3),
+    "zm_roam": ("enemies", r"zombiemale2?roam\d+\.wav", 5),
+    "zm_alert": ("enemies", r"zombiemale2?alert\d+\.wav", 4),
+    "zm_attack": ("enemies", r"zombiemale2?attack\d+\.wav", 4),
+    "zm_pain": ("enemies", r"zombiemale2?pain\d+\.wav", 4),
+    "zm_death": ("enemies", r"zombiemale2?death\d+\.wav", 4),
+    "zf_roam": ("enemies", r"zombiefemale2?roam\d+\.wav", 4),
+    "zf_alert": ("enemies", r"zombiefemale2?alert\d+\.wav", 3),
+    "zf_attack": ("enemies", r"zombiefemale2?attack\d+\.wav", 4),
+    "zf_pain": ("enemies", r"zombiefemale2?pain\d+\.wav", 3),
+    "zf_death": ("enemies", r"zombiefemale2?death\d+\.wav", 3),
+    "scream": ("enemies", r"zombiefemalescoutalert\d+\.wav", 3),
+    "step": ("step", r"stepstone\d+\.wav", 6),
+    "pain": ("player_male", r"player1pain(sm|lg)\d*\.wav", 4),
+    "death": ("player_male", r"player1death\d*\.wav", 1),
+    "jump": ("player_male", r"player1jump\d*\.wav", 2),
+    "land": ("player_male", r"player1landSoft\d*\.wav", 2),
+    "eat": ("useactions", r"player_eating\.wav", 1),
+    "drink": ("useactions", r"player_drinking\.wav", 1),
+    "bandage": ("useactions", r"player_bandage\.wav", 1),
+    "search": ("useactions", r"open_(cardboard|garbage|fridge|cupboard|trashcan|dumpster|backpack)\.wav", 7),
+    "loot": ("ui", r"ui_loot_success\.wav", 1),
+    "amb_day": ("ambient_loops", r"a_windlight_lp\.wav", 1),
+    "amb_night": ("ambient_loops", r"a_crickets_lp\.wav", 1),
+    "amb_flies": ("ambient_loops", r"flies_lp\.wav", 1),
+}
+
+
+def fetch_sounds(dest):
+    out_dir = os.path.join(dest, "sounds")
+    index_out = os.path.join(out_dir, "index.json")
+    if os.path.exists(index_out):
+        print("音效: 已有，跳过（删掉 assets/sounds/index.json 可重新取）")
+        return
+    zips, index, total = {}, {}, 0
+    for group, (pack, pattern, limit) in SOUND_GROUPS.items():
+        if pack not in zips:
+            zf = open_remote_zip(f"{DRIVE_ROOT}/小橘素材库/automatic_assets_sounds/{pack}.zip")
+            zips[pack] = (zf, zf.infolist() if zf else [])
+        zf, infos = zips[pack]
+        rx = re.compile(pattern, re.I)
+        hits = sorted((i for i in infos if rx.fullmatch(os.path.basename(i.filename))), key=lambda i: i.filename)
+        step = max(1, len(hits) // limit)
+        chosen = hits[::step][:limit]
+        os.makedirs(os.path.join(out_dir, group), exist_ok=True)
+        for i in chosen:
+            base = os.path.basename(i.filename)
+            with zf.open(i) as src, open(os.path.join(out_dir, group, base), "wb") as dst:
+                shutil.copyfileobj(src, dst)
+            index.setdefault(group, []).append(f"sounds/{group}/{base}")
+            total += i.file_size
+        if not chosen:
+            print(f"  音效 {group}: 没找到")
+    with open(index_out, "w", encoding="utf-8") as f:
+        json.dump(index, f, ensure_ascii=False, indent=1)
+    print(f"音效: {sum(len(v) for v in index.values())} 个，{mb(total)}")
+
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -669,7 +746,7 @@ def main():
     ap.add_argument("--zombies", default=",".join(DEFAULT_ZOMBIES), help="逗号分隔的僵尸名，或 all")
     ap.add_argument("--music", type=int, default=6, help="每类音乐取几段")
     ap.add_argument("--all-icons", action="store_true", help="取全部图标（默认只取游戏会用到的）")
-    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,poi,effects,music")
+    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,poi,effects,music,sounds")
     args = ap.parse_args()
     skip = set(filter(None, args.skip.split(",")))
     dest = os.path.abspath(args.dest)
@@ -693,6 +770,8 @@ def main():
         fetch_effects(dest)
     if "music" not in skip:
         fetch_music(dest, args.music)
+    if "sounds" not in skip:
+        fetch_sounds(dest)
     print("完成。用 Godot 打开项目即可（第一次打开会导入素材，需要几分钟）。")
 
 

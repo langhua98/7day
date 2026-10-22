@@ -8,6 +8,9 @@ signal item_used(id: String)
 signal action_pressed
 signal reload_pressed
 signal jump_pressed
+signal continue_pressed
+signal settings_changed(settings: Dictionary)
+signal quit_to_title
 
 var move := Vector2.ZERO          # 摇杆输出，x 右 y 前
 var look_delta := Vector2.ZERO    # 本帧视角拖动量（像素）
@@ -18,6 +21,8 @@ var _status := Label.new()
 var _hp_bar := ProgressBar.new()
 var _food_bar := ProgressBar.new()
 var _stamina_bar := ProgressBar.new()
+var _water_bar := ProgressBar.new()
+var _effects := Label.new()
 var _reload_btn := Button.new()
 var _jump_btn := Button.new()
 var _ammo := Label.new()
@@ -39,6 +44,12 @@ var _end_label := Label.new()
 var _joy_base := Panel.new()
 var _joy_knob := Panel.new()
 var _hurt := ColorRect.new()
+var _pause_btn := Button.new()
+var _pause_panel := PanelContainer.new()
+var _continue_btn := Button.new()
+## 设置：灵敏度、亮度、音量、音乐音量（倍数），存在 user://settings.cfg
+var settings := {"sensitivity": 1.0, "brightness": 1.0, "volume": 1.0, "music": 0.8}
+const SETTINGS_PATH := "user://settings.cfg"
 
 var _joy_id := -1
 var _attack_id := -1
@@ -54,6 +65,8 @@ func _ready() -> void:
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.theme = _make_theme()
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	_load_settings()
 	add_child(_root)
 
 	_hurt.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -68,7 +81,7 @@ func _ready() -> void:
 	_root.add_child(tl)
 	_status.add_theme_font_size_override("font_size", 30)
 	tl.add_child(_status)
-	for pair in [[_hp_bar, Color(0.75, 0.12, 0.1)], [_food_bar, Color(0.8, 0.6, 0.15)], [_stamina_bar, Color(0.3, 0.7, 0.45)]]:
+	for pair in [[_hp_bar, Color(0.75, 0.12, 0.1)], [_food_bar, Color(0.8, 0.6, 0.15)], [_water_bar, Color(0.2, 0.5, 0.85)], [_stamina_bar, Color(0.3, 0.7, 0.45)]]:
 		var bar: ProgressBar = pair[0]
 		bar.custom_minimum_size = Vector2(260, 16 if bar != _stamina_bar else 8)
 		bar.show_percentage = false
@@ -81,6 +94,9 @@ func _ready() -> void:
 		bar.add_theme_stylebox_override("background", bg)
 		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tl.add_child(bar)
+	_effects.add_theme_font_size_override("font_size", 24)
+	_effects.add_theme_color_override("font_color", Color(1, 0.55, 0.45))
+	tl.add_child(_effects)
 
 	_kills.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	_kills.position = Vector2(-260, 18)
@@ -230,8 +246,16 @@ func _ready() -> void:
 	_joy_knob.size = Vector2(76, 76)
 	_reset_joystick()
 
+	_pause_btn.text = "暂停"
+	_pause_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_pause_btn.position = Vector2(-300, 70)
+	_pause_btn.size = Vector2(120, 64)
+	_pause_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_pause_btn)
+
 	_build_start_panel()
 	_build_end_panel()
+	_build_pause_panel()
 
 
 func _make_theme() -> Theme:
@@ -288,6 +312,16 @@ func _build_start_panel() -> void:
 	btn.pressed.connect(func():
 		_start_panel.visible = false
 		start_pressed.emit())
+	_continue_btn.text = "继续上次"
+	_continue_btn.custom_minimum_size = Vector2(280, 80)
+	_continue_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_continue_btn.add_theme_font_size_override("font_size", 34)
+	_continue_btn.visible = false
+	_continue_btn.pressed.connect(func():
+		_start_panel.visible = false
+		continue_pressed.emit())
+	v.add_child(_continue_btn)
+	btn.text = "新的一局"
 	v.add_child(btn)
 	var help := Label.new()
 	help.text = "左半屏拖动移动 · 右半屏拖动看 · 按住攻击 · 走近垃圾桶、车、箱子按「搜索」· 地上的东西按「拾取」"
@@ -323,6 +357,85 @@ func _build_end_panel() -> void:
 	_root.add_child(_end_panel)
 
 
+func _build_pause_panel() -> void:
+	_pause_panel.set_anchors_preset(Control.PRESET_CENTER)
+	_pause_panel.custom_minimum_size = Vector2(640, 0)
+	_pause_panel.position = Vector2(-320, -260)
+	_pause_panel.visible = false
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 18)
+	_pause_panel.add_child(v)
+	var title := Label.new()
+	title.text = "暂停"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 44)
+	v.add_child(title)
+	for row in [["sensitivity", "视角灵敏度", 0.3, 2.5], ["brightness", "亮度", 0.5, 1.8],
+			["volume", "音效音量", 0.0, 1.0], ["music", "音乐音量", 0.0, 1.0]]:
+		var h := HBoxContainer.new()
+		var l := Label.new()
+		l.text = row[1]
+		l.custom_minimum_size = Vector2(180, 0)
+		h.add_child(l)
+		var sl := HSlider.new()
+		sl.min_value = row[2]
+		sl.max_value = row[3]
+		sl.step = 0.05
+		sl.value = settings[row[0]]
+		sl.custom_minimum_size = Vector2(380, 50)
+		sl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var key: String = row[0]
+		sl.value_changed.connect(func(val):
+			settings[key] = val
+			_save_settings()
+			settings_changed.emit(settings))
+		h.add_child(sl)
+		v.add_child(h)
+	var btns := HBoxContainer.new()
+	btns.alignment = BoxContainer.ALIGNMENT_CENTER
+	btns.add_theme_constant_override("separation", 30)
+	var resume := Button.new()
+	resume.text = "继续游戏"
+	resume.custom_minimum_size = Vector2(220, 80)
+	resume.pressed.connect(func(): set_paused(false))
+	btns.add_child(resume)
+	var quit := Button.new()
+	quit.text = "存档并回标题"
+	quit.custom_minimum_size = Vector2(220, 80)
+	quit.pressed.connect(func():
+		set_paused(false)
+		quit_to_title.emit())
+	btns.add_child(quit)
+	v.add_child(btns)
+	_root.add_child(_pause_panel)
+
+
+func set_paused(on: bool) -> void:
+	_pause_panel.visible = on
+	_press_attack(false)
+	get_tree().paused = on
+
+
+func show_start(can_continue: bool) -> void:
+	_continue_btn.visible = can_continue
+	_start_panel.visible = true
+	_end_panel.visible = false
+
+
+func _load_settings() -> void:
+	var cf := ConfigFile.new()
+	if cf.load(SETTINGS_PATH) == OK:
+		for k in settings:
+			settings[k] = float(cf.get_value("settings", k, settings[k]))
+
+
+func _save_settings() -> void:
+	var cf := ConfigFile.new()
+	for k in settings:
+		cf.set_value("settings", k, settings[k])
+	cf.save(SETTINGS_PATH)
+
+
 func set_start_info(text: String) -> void:
 	_start_info.text = text
 
@@ -338,6 +451,11 @@ func set_ammo(text: String) -> void:
 	_ammo.visible = text != ""
 	_ammo.text = text
 	_reload_btn.visible = text != ""
+
+
+func set_survival(water: float, effects: String) -> void:
+	_water_bar.value = water
+	_effects.text = effects
 
 
 func set_stamina(v: float) -> void:
@@ -454,7 +572,7 @@ func consume_look() -> Vector2:
 
 
 func _panel_open() -> bool:
-	return _bag_panel.visible or _start_panel.visible or _end_panel.visible
+	return _bag_panel.visible or _start_panel.visible or _end_panel.visible or _pause_panel.visible
 
 
 func _press_attack(pressed: bool) -> void:
@@ -475,6 +593,9 @@ func _touch_down(index: int, pos: Vector2) -> void:
 		return
 	if _action_btn.visible and _action_btn.get_global_rect().grow(12).has_point(pos):
 		action_pressed.emit()
+		return
+	if _pause_btn.get_global_rect().has_point(pos):
+		set_paused(true)
 		return
 	if _bag_btn.get_global_rect().has_point(pos):
 		_bag_panel.visible = true
