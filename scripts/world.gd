@@ -9,6 +9,7 @@ const ROOT := "res://assets"
 const INDEX := "res://assets/index/world_models.json"
 const POI_INDEX := "res://assets/poi/index.json"
 const POI_SHADER := preload("res://scripts/poi.gdshader")
+const TERRAIN_INDEX := "res://assets/terrain/terrain.json"
 
 ## 街道中线（x、z 两个方向一样）。原点是市中心的十字路口
 const ROADS := [-152.0, -76.0, 0.0, 76.0, 152.0]
@@ -47,6 +48,8 @@ var models := {}
 var textures := {}
 var decals: PackedStringArray = []
 var pois := {}
+## 地面贴图（游戏的地形贴图数组）：名字 -> {albedo, normal, orm, tile}
+var terrain := {}
 var ready_ok := false
 
 var _mesh_info := {}    # 模型名 -> {mesh, xf, size}
@@ -64,6 +67,10 @@ func _ready() -> void:
 		var p = JSON.parse_string(FileAccess.get_file_as_string(POI_INDEX))
 		if p is Dictionary:
 			pois = p
+	if FileAccess.file_exists(TERRAIN_INDEX):
+		var t = JSON.parse_string(FileAccess.get_file_as_string(TERRAIN_INDEX))
+		if t is Dictionary:
+			terrain = t
 	if not FileAccess.file_exists(INDEX):
 		push_warning("没有 world_models.json，街上没有车和杂物")
 		return
@@ -172,11 +179,14 @@ func free_point(center: Vector3, min_r: float, max_r: float) -> Vector3:
 	return push_out(center + Vector3(min_r, 0, 0), 0.6)
 
 
-## 有没有方块贴图（以后上传了 blocktextureatlases 就换上）
-func set_block_atlas(atlas: Texture2DArray) -> void:
-	if _poi_mat and atlas:
-		_poi_mat.set_shader_parameter("atlas", atlas)
-		_poi_mat.set_shader_parameter("use_atlas", true)
+## 换上方块贴图图集（tools/build_poi.gd 打包的 assets/poi/atlas_*.res），没有就用纯色
+func set_block_atlas(atlas: Texture2DArray, normal: Texture2DArray = null) -> void:
+	var mat := _poi_material()
+	if atlas:
+		mat.set_shader_parameter("atlas", atlas)
+		if normal:
+			mat.set_shader_parameter("atlas_normal", normal)
+		mat.set_shader_parameter("use_atlas", true)
 
 
 # —— 僵尸寻路：以玩家为中心的距离场，僵尸沿着距离变小的方向走就能绕开楼 ——
@@ -354,6 +364,18 @@ func _flat(rect: Rect2, y: float, tex_name: String, tile: float, tint := Color.W
 	mi.mesh = pm
 	mi.position = Vector3(rect.get_center().x, y, rect.get_center().y)
 	var key := "flat:%s:%s:%s" % [tex_name, rect.size, tint]
+	if not _mat_cache.has(key) and terrain.has(tex_name):
+		# 游戏的地形贴图：颜色 + 法线 + 粗糙度/AO，路面有凹凸感
+		var t: Dictionary = terrain[tex_name]
+		var m := ORMMaterial3D.new()
+		m.albedo_color = tint
+		m.albedo_texture = load("%s/%s" % [ROOT, t.albedo])
+		m.normal_enabled = true
+		m.normal_texture = load("%s/%s" % [ROOT, t.normal])
+		m.orm_texture = load("%s/%s" % [ROOT, t.orm])
+		m.uv1_scale = Vector3(rect.size.x / tile, rect.size.y / tile, 1)
+		m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+		_mat_cache[key] = m
 	if not _mat_cache.has(key):
 		var m := StandardMaterial3D.new()
 		m.roughness = 0.95
@@ -562,6 +584,16 @@ func _poi_material() -> ShaderMaterial:
 	if _poi_mat == null:
 		_poi_mat = ShaderMaterial.new()
 		_poi_mat.shader = POI_SHADER
+		var albedo := "%s/poi/atlas_albedo.res" % ROOT
+		var normal := "%s/poi/atlas_normal.res" % ROOT
+		if ResourceLoader.exists(albedo):
+			var tex: Texture2DArray = load(albedo).to_texture()
+			var ntex: Texture2DArray = load(normal).to_texture() if ResourceLoader.exists(normal) else null
+			if tex:
+				_poi_mat.set_shader_parameter("atlas", tex)
+				if ntex:
+					_poi_mat.set_shader_parameter("atlas_normal", ntex)
+				_poi_mat.set_shader_parameter("use_atlas", true)
 	return _poi_mat
 
 

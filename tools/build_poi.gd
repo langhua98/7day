@@ -2,6 +2,8 @@ extends SceneTree
 ## 把七日杀建筑的远景网格（assets/poi/*.poimesh，原文件扩展名是 .mesh）转成 Godot 网格（assets/poi/*.res），
 ## 并写 assets/poi/index.json（尺寸、地面高度等）。
 ## 用法：godot --headless --path . -s tools/build_poi.gd
+## 有 assets/blocks（fetch_assets.py 取的方块贴图）时，顺便打包成图集 assets/poi/atlas_albedo.res、atlas_normal.res，
+## 并把每个顶点的贴图编号换成图集层号（UV2.x = 起始层，UV2.y = 大贴图占几格；-1 = 没贴图，用顶点颜色）。
 ##
 ## .mesh 格式（游戏自带的远景简化网格，"hsem" 第 7 版）：
 ##   "hsem" u8 版本 u16 分块数，每块：u8 长度+块名、u32 n + n 个 float xyz、
@@ -9,10 +11,15 @@ extends SceneTree
 ##   之后是招牌之类的附加数据，用不到。
 
 const DIR := "res://assets/poi"
+const BLOCKS := "res://assets/blocks"
+const IMAGE_LAYERS := preload("res://scripts/image_layers.gd")
 const CORNERS := [Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)]
+
+var atlas_ids := {}   # 贴图编号 → [起始层, 横向格数, 纵向格数]
 
 
 func _init() -> void:
+	_build_atlas()
 	var index := {}
 	for f in DirAccess.get_files_at(DIR):
 		if not f.ends_with(".poimesh"):
@@ -78,7 +85,8 @@ func _convert(name: String) -> Dictionary:
 			var tex := a & 0xffff
 			var corner := ((a >> 16) & 0xffff) - 256
 			uvs[i] = CORNERS[clampi(corner, 0, 3)]
-			uv2[i] = Vector2(tex, 0)
+			var at: Array = atlas_ids.get(str(tex), [])
+			uv2[i] = Vector2(at[0], at[1]) if at.size() >= 2 else Vector2(-1, 1)
 			colors[i] = _palette(tex)
 			tex_ids[tex] = true
 		var idx := PackedInt32Array()
@@ -155,6 +163,32 @@ func _footprint(chunk_data: Array, lo: Vector3, hi: Vector3) -> Array:
 	for i in w * h:
 		rows += "1" if cells[i] == 1 else "0"
 	return [w, h, rows]
+
+
+## 方块贴图 → 图层组（颜色和法线各一个，游戏里拼成 Texture2DArray），压缩成 ETC2 省手机显存
+func _build_atlas() -> void:
+	var path := ProjectSettings.globalize_path(BLOCKS)
+	var info = JSON.parse_string(FileAccess.get_file_as_string(BLOCKS + "/atlas.json")) if FileAccess.file_exists(BLOCKS + "/atlas.json") else null
+	if not (info is Dictionary) or int(info.get("layers", 0)) == 0:
+		print("没有方块贴图（assets/blocks），楼用纯色")
+		return
+	atlas_ids = info.ids
+	var n := int(info.layers)
+	for kind in [["c", "albedo"], ["n", "normal"]]:
+		var images: Array[Image] = []
+		for i in n:
+			var img := Image.load_from_file("%s/%s_%03d.png" % [path, kind[0], i])
+			img.convert(Image.FORMAT_RGB8)
+			img.generate_mipmaps(kind[0] == "n")
+			if kind[0] == "n":
+				img.compress(Image.COMPRESS_ETC2, Image.COMPRESS_SOURCE_NORMAL)
+			else:
+				img.compress(Image.COMPRESS_ETC2, Image.COMPRESS_SOURCE_SRGB)
+			images.append(img)
+		var res: Resource = IMAGE_LAYERS.new()
+		res.images = images
+		ResourceSaver.save(res, "%s/atlas_%s.res" % [DIR, kind[1]], ResourceSaver.FLAG_COMPRESS)
+	print("方块图集: %d 种贴图，%d 层" % [atlas_ids.size(), n])
 
 
 func _prop(xml: String, key: String) -> String:

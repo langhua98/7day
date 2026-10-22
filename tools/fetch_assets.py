@@ -17,6 +17,9 @@
     assets/world/*.obj/.png            （市中心场景：车辆、可翻找的容器、杂物、地面和楼的贴图）
     assets/index/world_models.json     （场景模型的类别、中文名、战利品类型）
     assets/poi/*.poimesh/.xml          （市中心建筑，再用 tools/build_poi.gd 转成 .res）
+    assets/blocks/c_*.png n_*.png      （楼用到的方块贴图和法线，atlas.json 是贴图编号 → 层号；
+                                        tools/build_poi.gd 再打包成 assets/poi/atlas_*.res）
+    assets/terrain/*.png               （地面贴图：颜色、法线、粗糙度）
     assets/textures/*.png              （地面贴图）
     assets/effects/*.png               （枪口火光、血雾、火花）
     assets/music/*.wav                 （文件名里 Exp=探索 Cbt=战斗 Sus=紧张 Bld=血月）
@@ -589,6 +592,143 @@ def fetch_poi(dest):
     print(f"市中心建筑: {n} 栋")
 
 
+# —— 楼和地面的真实贴图 ——
+# 方块贴图：图集 ta_opaque 有 407 层（每层是一个方块面），对照表 ta_opaquexml 里每条
+# <uv id index blockw blockh>：id 是网格里记的贴图编号，index 是起始层；大贴图占 blockw×blockh 层（按行排）。
+BLOCK_ZIP = "小橘素材库/blocktextureatlases_assets_all.zip"
+BLOCK_MAP = "小橘素材库/meshdescriptions_textassets"
+BLOCK_TEX = 256        # 每层缩到 256（一个方块 1 米，够清楚，也省手机内存）
+# 地形贴图数组（MicroSplat）：24 层，颜色 / 法线（x 在 A、y 在 G）/ 光滑度+AO（G、A）。
+# 层号是和 terraintextures_assets_all 里的单张贴图逐一比对出来的；tile = 几米重复一次（ta_terrainxml 的 blockw）。
+TERRAIN_ZIP = "小橘素材库/terraintextures_arrays.zip"
+TERRAIN_LAYERS = {"asphalt": (4, 8), "concrete": (6, 4), "gravel": (5, 8), "dirt": (9, 8), "rubble": (8, 8),
+                  "forest_ground": (2, 8), "burnt_forest_ground": (10, 8), "desert_debris": (11, 8)}
+TERRAIN_TEX = 1024
+
+
+def _poi_tex_ids(poi_dir):
+    """市中心建筑网格里用到的贴图编号（格式见 tools/build_poi.gd）"""
+    import struct
+    ids = set()
+    for f in os.listdir(poi_dir):
+        if not f.endswith(".poimesh"):
+            continue
+        data = open(os.path.join(poi_dir, f), "rb").read()
+        if data[:4] != b"hsem":
+            continue
+        p, chunks = 7, struct.unpack_from("<H", data, 5)[0]
+        for _ in range(chunks):
+            p += 1 + data[p]
+            nv = struct.unpack_from("<I", data, p)[0]
+            p += 4 + nv * 12
+            na = struct.unpack_from("<I", data, p)[0]
+            p += 4
+            ids.update(struct.unpack_from("<H", data, p + k * 8)[0] for k in range(na))
+            p += na * 8
+            ni = struct.unpack_from("<I", data, p)[0]
+            p += 4 + ni * 2
+    return ids
+
+
+def _unpack_normal(im, size):
+    """Unity 的打包法线（x 在 A 通道、y 在 G 通道）→ 普通 RGB 法线图"""
+    from PIL import Image
+    im = im.convert("RGBA")
+    if max(im.size) > size:
+        im = im.resize((size, size), Image.LANCZOS)
+    _, g, _, a = im.split()
+    xs, ys = a.tobytes(), g.tobytes()
+    zs = bytearray(len(xs))
+    for i in range(len(xs)):
+        x, y = xs[i] / 127.5 - 1.0, ys[i] / 127.5 - 1.0
+        zs[i] = int((max(0.0, 1.0 - x * x - y * y) ** 0.5 * 0.5 + 0.5) * 255)
+    return Image.merge("RGB", (a, g, Image.frombytes("L", im.size, bytes(zs))))
+
+
+def fetch_blocks(dest):
+    out_dir = os.path.join(dest, "blocks")
+    index_out = os.path.join(out_dir, "atlas.json")
+    if os.path.exists(index_out):
+        print("方块贴图: 已有，跳过（删掉 assets/blocks/atlas.json 可重新取）")
+        return
+    try:
+        from PIL import Image
+    except ImportError:
+        print("方块贴图: 需要 Pillow（pip install Pillow），跳过，楼先用纯色")
+        return
+    it = find(list_dir(f"{DRIVE_ROOT}/{BLOCK_MAP}"), "ta_opaquexml")
+    zf = open_remote_zip(f"{DRIVE_ROOT}/{BLOCK_ZIP}")
+    if not it or zf is None:
+        print("云盘里没有方块贴图或对照表，楼先用纯色")
+        return
+    with request(f"/items/{it['id']}/content") as r:
+        xml = r.read().decode("utf-8-sig")
+    uv = {}
+    for line in xml.splitlines():
+        if "<uv " in line:
+            a = dict(re.findall(r'(\w+)="([^"]*)"', line))
+            uv[int(a["id"])] = (int(a["index"]), int(a.get("blockw", 1)), int(a.get("blockh", 1)))
+    poi_dir = os.path.join(dest, "poi")
+    used = _poi_tex_ids(poi_dir) if os.path.isdir(poi_dir) else set()
+    wanted = sorted(i for i in (used or uv.keys()) if i in uv)
+    names = {os.path.basename(i.filename): i for i in zf.infolist()}
+    os.makedirs(out_dir, exist_ok=True)
+    # 这些图只给 tools/build_poi.gd 打包成图集用，不让 Godot 单独导入
+    open(os.path.join(out_dir, ".gdignore"), "w").close()
+    ids, layer = {}, 0
+    for tid in wanted:
+        start, bw, bh = uv[tid]
+        ids[str(tid)] = [layer, bw, bh]
+        for k in range(bw * bh):
+            src = start + k
+            c = Image.open(io.BytesIO(zf.read(names[f"ta_opaque_0_{src:03d}.png"]))).convert("RGB")
+            c.resize((BLOCK_TEX, BLOCK_TEX), Image.LANCZOS).save(os.path.join(out_dir, f"c_{layer:03d}.png"))
+            n = Image.open(io.BytesIO(zf.read(names[f"ta_opaque_n_0_{src:03d}.png"])))
+            _unpack_normal(n, BLOCK_TEX).save(os.path.join(out_dir, f"n_{layer:03d}.png"))
+            layer += 1
+    missing = sorted(used - set(uv))
+    with open(index_out, "w", encoding="utf-8") as f:
+        json.dump({"layers": layer, "size": BLOCK_TEX, "ids": ids, "missing": missing}, f, indent=1)
+    print(f"方块贴图: {len(ids)} 种，{layer} 层" + (f"（对照表里没有的编号 {missing}）" if missing else ""))
+
+
+def fetch_terrain(dest):
+    out_dir = os.path.join(dest, "terrain")
+    index_out = os.path.join(out_dir, "terrain.json")
+    if os.path.exists(index_out):
+        print("地形贴图: 已有，跳过")
+        return
+    try:
+        from PIL import Image
+    except ImportError:
+        print("地形贴图: 需要 Pillow，跳过")
+        return
+    zf = open_remote_zip(f"{DRIVE_ROOT}/{TERRAIN_ZIP}")
+    if zf is None:
+        print("云盘里没有 terraintextures_arrays.zip，地面用单张贴图")
+        return
+    names = {os.path.basename(i.filename): i for i in zf.infolist()}
+    os.makedirs(out_dir, exist_ok=True)
+    index = {}
+
+    def layer(kind, k):
+        return Image.open(io.BytesIO(zf.read(names[f"MicroSplatConfig_{kind}_tarray_{k:03d}.png"])))
+
+    for name, (k, tile) in TERRAIN_LAYERS.items():
+        size = (TERRAIN_TEX, TERRAIN_TEX)
+        layer("diff", k).convert("RGB").resize(size, Image.LANCZOS).save(os.path.join(out_dir, name + ".png"))
+        _unpack_normal(layer("normal", k), TERRAIN_TEX).save(os.path.join(out_dir, name + "_n.png"))
+        # ORM：R=AO，G=粗糙度（1-光滑度），B=金属度 0
+        _, g, _, a = layer("smoothAO", k).convert("RGBA").resize(size, Image.LANCZOS).split()
+        rough = g.point(lambda v: 255 - v)
+        Image.merge("RGB", (a, rough, Image.new("L", size, 0))).save(os.path.join(out_dir, name + "_orm.png"))
+        index[name] = {"albedo": f"terrain/{name}.png", "normal": f"terrain/{name}_n.png",
+                       "orm": f"terrain/{name}_orm.png", "tile": tile}
+    with open(index_out, "w", encoding="utf-8") as f:
+        json.dump(index, f, ensure_ascii=False, indent=1)
+    print(f"地形贴图: {len(index)} 种（颜色+法线+粗糙度）")
+
+
 # 特效贴图：枪口火光、血雾、血迹、火花、烟
 EFFECT_TEXTURES = ["muzzleflash_point", "muzzle_large", "blood_mist02", "blood_mist04", "blood_spray", "blood_splat_1",
                    "p_blood", "blood_slash", "sparksSheet_A_2x2", "smoke_A_sprite", "p_smoke2"]
@@ -746,7 +886,7 @@ def main():
     ap.add_argument("--zombies", default=",".join(DEFAULT_ZOMBIES), help="逗号分隔的僵尸名，或 all")
     ap.add_argument("--music", type=int, default=6, help="每类音乐取几段")
     ap.add_argument("--all-icons", action="store_true", help="取全部图标（默认只取游戏会用到的）")
-    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,poi,effects,music,sounds")
+    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,poi,blocks,terrain,effects,music,sounds")
     args = ap.parse_args()
     skip = set(filter(None, args.skip.split(",")))
     dest = os.path.abspath(args.dest)
@@ -766,6 +906,10 @@ def main():
         fetch_world(dest)
     if "poi" not in skip:
         fetch_poi(dest)
+    if "blocks" not in skip:
+        fetch_blocks(dest)
+    if "terrain" not in skip:
+        fetch_terrain(dest)
     if "effects" not in skip:
         fetch_effects(dest)
     if "music" not in skip:
