@@ -879,6 +879,75 @@ def fetch_sounds(dest):
         json.dump(index, f, ensure_ascii=False, indent=1)
     print(f"音效: {sum(len(v) for v in index.values())} 个，{mb(total)}")
 
+SKY_CUBES = ["WhispyClouds", "FluffyClouds", "ThickOvercastClouds", "MilkyWay_V_Cross_1024"]
+FONTS = ["NotoSansCJKjp-Medium.otf", "AGENCYB.ttf", "opinionproextracondensed-bold.otf"]
+
+
+def _cube_to_pano(folder, w=2048):
+    """六面立方体贴图（Unity 左手坐标）→ 全景图 pano.png，游戏里按经纬度查。"""
+    try:
+        import numpy as np
+        from PIL import Image
+    except ImportError:
+        print("  没有 numpy/Pillow，跳过全景图", folder)
+        return
+    faces = {}
+    for f in ["px", "nx", "py", "ny", "pz", "nz"]:
+        path = os.path.join(folder, f + ".png")
+        if not os.path.exists(path):
+            return
+        faces[f] = np.asarray(Image.open(path).convert("RGB"), dtype=np.uint8)
+    n = faces["px"].shape[0]
+    h = w // 2
+    lon = (np.arange(w) + 0.5) / w * 2 * np.pi - np.pi
+    lat = np.pi / 2 - (np.arange(h) + 0.5) / h * np.pi
+    lon, lat = np.meshgrid(lon, lat)
+    x, y, z = np.cos(lat) * np.sin(lon), np.sin(lat), np.cos(lat) * np.cos(lon)
+    ax, ay, az = np.abs(x), np.abs(y), np.abs(z)
+    out = np.zeros((h, w, 3), dtype=np.uint8)
+    # 每个方向看哪个轴最大，落在哪一面；面内坐标按 OpenGL/Unity 立方体贴图的约定
+    rules = [
+        ("px", (ax >= ay) & (ax >= az) & (x > 0), -z, -y, ax),
+        ("nx", (ax >= ay) & (ax >= az) & (x <= 0), z, -y, ax),
+        ("py", (ay > ax) & (ay >= az) & (y > 0), x, z, ay),
+        ("ny", (ay > ax) & (ay >= az) & (y <= 0), x, -z, ay),
+        ("pz", (az > ax) & (az > ay) & (z > 0), x, -y, az),
+        ("nz", (az > ax) & (az > ay) & (z <= 0), -x, -y, az),
+    ]
+    for f, m, sc, tc, ma in rules:
+        u = ((sc[m] / ma[m] + 1) / 2 * (n - 1)).round().astype(int)
+        v = ((tc[m] / ma[m] + 1) / 2 * (n - 1)).round().astype(int)
+        out[m] = faces[f][v, u]
+    Image.fromarray(out).save(os.path.join(folder, "pano.png"))
+
+
+def fetch_sky_fonts(dest):
+    """天空盒（云层、银河，六面立方体贴图）和游戏字体。"""
+    sky_dir, font_dir = os.path.join(dest, "sky"), os.path.join(dest, "fonts")
+    if os.path.isdir(sky_dir) and os.path.isdir(font_dir):
+        print("天空和字体: 已有，跳过")
+        return
+    zf = open_remote_zip(f"{DRIVE_ROOT}/小橘素材库/其他/天空盒与反射贴图.zip")
+    if zf:
+        for i in zf.infolist():
+            parts = i.filename.split("/")
+            if len(parts) == 3 and parts[1] in SKY_CUBES and parts[2].endswith(".png"):
+                os.makedirs(os.path.join(sky_dir, parts[1]), exist_ok=True)
+                _save_png(zf.read(i), os.path.join(sky_dir, parts[1], parts[2]), 1024)
+    for name in SKY_CUBES:
+        _cube_to_pano(os.path.join(sky_dir, name))
+    zf = open_remote_zip(f"{DRIVE_ROOT}/小橘素材库/其他/字体.zip")
+    if zf:
+        os.makedirs(font_dir, exist_ok=True)
+        done = set()
+        for i in zf.infolist():
+            base = os.path.basename(i.filename)
+            if base in FONTS and base not in done:
+                done.add(base)
+                with zf.open(i) as src, open(os.path.join(font_dir, base), "wb") as dst:
+                    shutil.copyfileobj(src, dst)
+    print("天空和字体: 完成")
+
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -886,7 +955,7 @@ def main():
     ap.add_argument("--zombies", default=",".join(DEFAULT_ZOMBIES), help="逗号分隔的僵尸名，或 all")
     ap.add_argument("--music", type=int, default=6, help="每类音乐取几段")
     ap.add_argument("--all-icons", action="store_true", help="取全部图标（默认只取游戏会用到的）")
-    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,poi,blocks,terrain,effects,music,sounds")
+    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,poi,blocks,terrain,effects,music,sounds,sky")
     args = ap.parse_args()
     skip = set(filter(None, args.skip.split(",")))
     dest = os.path.abspath(args.dest)
@@ -916,6 +985,8 @@ def main():
         fetch_music(dest, args.music)
     if "sounds" not in skip:
         fetch_sounds(dest)
+    if "sky" not in skip:
+        fetch_sky_fonts(dest)
     print("完成。用 Godot 打开项目即可（第一次打开会导入素材，需要几分钟）。")
 
 

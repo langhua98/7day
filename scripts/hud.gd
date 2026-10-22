@@ -170,7 +170,8 @@ func _ready() -> void:
 	_ammo.position = Vector2(-230, -280)
 	_ammo.size = Vector2(210, 44)
 	_ammo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_ammo.add_theme_font_size_override("font_size", 30)
+	_ammo.add_theme_font_size_override("font_size", 40)
+	_ammo.add_theme_font_override("font", Hud.number_font())
 	_ammo.visible = false
 	_root.add_child(_ammo)
 
@@ -260,10 +261,7 @@ func _ready() -> void:
 
 func _make_theme() -> Theme:
 	var t := Theme.new()
-	var f := SystemFont.new()
-	# iPhone 上是苹方；电脑上调试时依次回退
-	f.font_names = PackedStringArray(["PingFang SC", "Hiragino Sans GB", "Heiti SC", "Noto Sans CJK SC", "Microsoft YaHei", "sans-serif"])
-	t.default_font = f
+	t.default_font = Hud.game_font()
 	t.default_font_size = 24
 	var panel := StyleBoxFlat.new()
 	panel.bg_color = Color(0.06, 0.06, 0.05, 0.92)
@@ -282,6 +280,36 @@ func _make_theme() -> Theme:
 	t.set_constant("outline_size", "Label", 6)
 	t.set_color("font_outline_color", "Label", Color(0, 0, 0, 0.8))
 	return t
+
+
+## 游戏自带字体：中文用 Noto Sans CJK，数字用七日杀界面的 Agency；没有就用系统字体
+static var _font: Font
+static var _num_font: Font
+
+
+static func game_font() -> Font:
+	if _font == null:
+		var sys := SystemFont.new()
+		# iPhone 上是苹方；电脑上调试时依次回退
+		sys.font_names = PackedStringArray(["PingFang SC", "Hiragino Sans GB", "Heiti SC", "Noto Sans CJK SC", "Microsoft YaHei", "sans-serif"])
+		_font = sys
+		var path := "res://assets/fonts/NotoSansCJKjp-Medium.otf"
+		if ResourceLoader.exists(path):
+			var f: FontFile = load(path)
+			f.fallbacks = [sys]
+			_font = f
+	return _font
+
+
+static func number_font() -> Font:
+	if _num_font == null:
+		_num_font = game_font()
+		var path := "res://assets/fonts/AGENCYB.ttf"
+		if ResourceLoader.exists(path):
+			var f: FontFile = load(path)
+			f.fallbacks = [game_font()]
+			_num_font = f
+	return _num_font
 
 
 func _build_start_panel() -> void:

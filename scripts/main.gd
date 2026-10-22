@@ -11,7 +11,8 @@ var world: World
 var music: MusicDirector
 var sun := DirectionalLight3D.new()
 var env := Environment.new()
-var sky_mat := ProceduralSkyMaterial.new()
+var sky_mat := ShaderMaterial.new()
+var _cloud_day := -1
 var zombie_root := Node3D.new()
 var loot_root := Node3D.new()
 var rng := RandomNumberGenerator.new()
@@ -183,7 +184,12 @@ func _count_loot() -> int:
 func _build_world() -> void:
 	var we := WorldEnvironment.new()
 	var sky := Sky.new()
+	sky_mat.shader = load("res://scripts/sky.gdshader")
 	sky.sky_material = sky_mat
+	var stars := _load_cube("MilkyWay_V_Cross_1024")
+	if stars:
+		sky_mat.set_shader_parameter("stars", stars)
+		sky_mat.set_shader_parameter("has_stars", true)
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
@@ -191,7 +197,7 @@ func _build_world() -> void:
 	env.tonemap_exposure = 1.0
 	env.fog_enabled = true
 	env.fog_density = 0.018
-	env.fog_sky_affect = 0.6
+	env.fog_sky_affect = 0.25
 	we.environment = env
 	add_child(we)
 
@@ -694,11 +700,8 @@ func _update_loot(delta: float) -> void:
 		_spawn_loot(world.free_point(player.position, 15.0, 45.0))
 
 
-func _cjk_font() -> SystemFont:
-	if _label_font == null:
-		_label_font = SystemFont.new()
-		_label_font.font_names = PackedStringArray(["PingFang SC", "Hiragino Sans GB", "Heiti SC", "Noto Sans CJK SC", "Microsoft YaHei", "sans-serif"])
-	return _label_font
+func _cjk_font() -> Font:
+	return Hud.game_font()
 
 
 ## 离玩家最近、能拾取的地上物品（优先看准星对着的）
@@ -929,13 +932,27 @@ func _update_sky() -> void:
 	var horde := (day == C.HORDE_DAY and hour >= C.NIGHT_START) or (day == C.HORDE_DAY + 1 and hour < C.NIGHT_END)
 	if horde:
 		night_sky = Color(0.35, 0.05, 0.04)
-	sky_mat.sky_top_color = night_sky.lerp(day_sky, light)
+	sky_mat.set_shader_parameter("top_color", night_sky.lerp(day_sky, light))
 	var horizon := Color(0.16, 0.19, 0.28).lerp(Color(0.66, 0.70, 0.74), light).lerp(Color(0.95, 0.6, 0.4), dusk * 0.6)
 	if horde:
 		horizon = horizon.lerp(Color(0.5, 0.08, 0.05), 1.0 - light)
-	sky_mat.sky_horizon_color = horizon
-	sky_mat.ground_horizon_color = horizon
-	sky_mat.ground_bottom_color = Color(0.12, 0.12, 0.13).lerp(Color(0.25, 0.22, 0.18), light)
+	sky_mat.set_shader_parameter("horizon_color", horizon)
+	sky_mat.set_shader_parameter("ground_color", Color(0.12, 0.12, 0.13).lerp(Color(0.25, 0.22, 0.18), light))
+	sky_mat.set_shader_parameter("night", 1.0 - light)
+	sky_mat.set_shader_parameter("cloud_turn", game_hours * 0.01)
+	var lit := Color(0.22, 0.24, 0.3).lerp(Color(1.0, 0.98, 0.94), light).lerp(Color(1.0, 0.7, 0.5), dusk * light)
+	if horde:
+		lit = lit.lerp(Color(0.6, 0.15, 0.1), 1.0 - light)
+	sky_mat.set_shader_parameter("cloud_lit", lit)
+	sky_mat.set_shader_parameter("cloud_dark", lit * Color(0.45, 0.47, 0.55))
+	# 每天换一种云：薄云、积云、阴天
+	if day != _cloud_day:
+		_cloud_day = day
+		var kinds := ["WhispyClouds", "FluffyClouds", "ThickOvercastClouds"]
+		var cube := _load_cube(kinds[(day + world_seed) % kinds.size()])
+		sky_mat.set_shader_parameter("has_clouds", cube != null)
+		if cube:
+			sky_mat.set_shader_parameter("clouds", cube)
 	env.fog_light_color = horizon
 	# 环境光不跟天空走，夜里也保证能看清地面和僵尸
 	env.ambient_light_color = C.NIGHT_AMBIENT.lerp(Color(0.78, 0.75, 0.7), light)
@@ -943,6 +960,12 @@ func _update_sky() -> void:
 		env.ambient_light_color = env.ambient_light_color.lerp(Color(0.6, 0.25, 0.22), 1.0 - light)
 	env.ambient_light_energy = lerp(C.NIGHT_AMBIENT_ENERGY, 0.45, light)
 	env.fog_density = lerp(0.014, 0.0045, light)
+
+
+## 天空全景图（由 fetch_assets 把七日杀的六面立方体贴图拼成）
+func _load_cube(name: String) -> Texture2D:
+	var path := "res://assets/sky/%s/pano.png" % name
+	return load(path) if ResourceLoader.exists(path) else null
 
 
 func _update_music(delta: float, night: bool, horde: bool) -> void:
