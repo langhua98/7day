@@ -11,6 +11,9 @@
     assets/icons/<物品名>.png
     assets/models/zombie_<名字>.glb   （带骨骼和贴图）
     assets/models/<模型名>.glb         （物品模型、第一人称手臂，带贴图）
+    assets/models/fp_arms.glb          （带骨骼和手指的第一人称手臂）
+    assets/items/<模型名>.obj/.png      （物品网格和真贴图，从 items.zip 里按需取）
+    assets/index/item_models.json      （物品模型名 → 网格、贴图）
     assets/props/*.glb                 （场景里摆的车辆、家具）
     assets/textures/*.png              （地面贴图）
     assets/music/*.wav                 （文件名里 Exp=探索 Cbt=战斗 Sus=紧张 Bld=血月）
@@ -18,6 +21,7 @@
 只用 Python 自带库。已存在且大小一致的文件会跳过，可以反复运行。
 """
 import argparse
+import io
 import json
 import os
 import re
@@ -175,6 +179,223 @@ def fetch_zombies(dest, choice):
             print(f"  → {os.path.relpath(out)} ({mb(os.path.getsize(out))})")
 
 
+class RemoteFile(io.RawIOBase):
+    """用 HTTP Range 按需读取云盘上的大文件，打开大 zip 时只下载用得到的部分。"""
+
+    def __init__(self, item):
+        self.id, self.size, self.pos = item["id"], item["size"], 0
+
+    def readable(self):
+        return True
+
+    def seekable(self):
+        return True
+
+    def tell(self):
+        return self.pos
+
+    def seek(self, off, whence=0):
+        self.pos = off if whence == 0 else (self.pos + off if whence == 1 else self.size + off)
+        return self.pos
+
+    def readinto(self, buf):
+        n = min(len(buf), self.size - self.pos)
+        if n <= 0:
+            return 0
+        url = API + f"/items/{self.id}/content"
+        for attempt in range(5):
+            try:
+                req = urllib.request.Request(url, headers={"Authorization": "Bearer " + token(),
+                                                           "Range": f"bytes={self.pos}-{self.pos + n - 1}"})
+                with urllib.request.urlopen(req, timeout=300) as r:
+                    data = r.read()
+                break
+            except OSError as e:
+                print(f"  读取中断（{e}），重试 …")
+        else:
+            sys.exit("读取云盘文件失败，请稍后再试")
+        buf[:len(data)] = data
+        self.pos += len(data)
+        return len(data)
+
+
+def open_remote_zip(path):
+    folder, name = path.rsplit("/", 1)
+    it = find(list_dir(folder), name)
+    if not it:
+        return None
+    return zipfile.ZipFile(io.BufferedReader(RemoteFile(it), buffer_size=1 << 20))
+
+
+def fetch_fp_arms(dest):
+    """带骨骼（肩、臂、手、每根手指）的第一人称手臂，游戏里摆成握持姿势。"""
+    out = os.path.join(dest, "models", "fp_arms.glb")
+    if os.path.exists(out):
+        print("第一人称手臂: 已有，跳过")
+        return
+    zf = open_remote_zip(f"{DRIVE_ROOT}/小橘素材库/player_assets_entities/player/common.zip")
+    if zf is None:
+        print("云盘里没有 player/common.zip，跳过带骨骼手臂")
+        return
+    glbs = [i for i in zf.infolist() if i.filename.startswith("rigged/") and i.filename.endswith(".glb")]
+    if not glbs:
+        print("player/common.zip 里没有带骨骼的手臂")
+        return
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    with zf.open(glbs[0]) as src, open(out, "wb") as dst:
+        shutil.copyfileobj(src, dst)
+    print(f"第一人称手臂 → {os.path.relpath(out)}")
+
+
+def _norm(s):
+    return re.sub(r"[^a-z0-9]", "", s.lower())
+
+
+def _base(s):
+    s = re.sub(r"(?i)prefab", "", s)
+    s = re.sub(r"(?i)_?lod\d+(_\d+)?$", "", s)
+    return re.sub(r"(?i)(mesh|held|_)+$", "", s)
+
+
+def _tokens(s):
+    return re.findall(r"[A-Z]?[a-z0-9]+|[A-Z]+(?![a-z])", _base(s).replace("_", " "))
+
+
+def _candidates(name):
+    toks = _tokens(name)
+    out = [_norm(_base(name))]
+    out += [_norm("".join(toks[:i])) for i in range(len(toks) - 1, 0, -1)]  # 去掉后缀词：cannedFood_Peas → cannedFood
+    out += [_norm("".join(toks[i:])) for i in range(1, len(toks))]          # 去掉前缀词
+    return [c for c in out if c]
+
+
+def _lod(n):
+    m = re.search(r"(?i)lod(\d)", n)
+    return int(m.group(1)) if m else 0
+
+
+TEX_SKIP = re.compile(r"(?i)(_n|_rmom|_rmoe|_r|_m|_o|_e|_s|_h|_ao|_i|_gme|_gmer|_rme|_normal|_n_\d)$")
+
+
+def match_item_models(model_names, mesh_sizes, tex_sizes):
+    """物品表里的模型名（如 cannedFood_PeasPrefab）→ items.zip 里的网格和贴图。"""
+    mesh_by = {}
+    for m in mesh_sizes:
+        if re.search(r"(?i)collision", m) or re.match(r"(?i)^(lod\d|object\d+|main_mesh|mesh)", m):
+            continue
+        mesh_by.setdefault(_norm(_base(m)), []).append(m)
+    tex_by = {}
+    for t in tex_sizes:
+        if not TEX_SKIP.search(t):
+            tex_by.setdefault(_norm(re.sub(r"(?i)_(d|df|diff)$", "", t)), []).append(t)
+
+    def pick_mesh(name):
+        for c in _candidates(name):
+            if c in mesh_by:
+                return min(mesh_by[c], key=lambda m: (_lod(m), -mesh_sizes[m]))
+        k = _norm(_base(name))
+        for mk, lst in mesh_by.items():
+            if len(k) >= 5 and k in mk and "bullet" not in mk:
+                return min(lst, key=lambda m: (_lod(m), -mesh_sizes[m]))
+        return None
+
+    def pick_tex(*names):
+        for name in names:
+            if not name:
+                continue
+            for c in _candidates(name):
+                for key in (c, "new" + c):
+                    if key in tex_by:
+                        return max(tex_by[key], key=lambda t: tex_sizes[t])
+            k = _norm(_base(name))
+            for tk, lst in tex_by.items():
+                if len(k) >= 5 and (k in tk or (len(tk) >= 5 and tk in k)):
+                    return max(lst, key=lambda t: tex_sizes[t])
+        return None
+
+    out = {}
+    for name in model_names:
+        mesh = pick_mesh(name)
+        if not mesh:
+            continue
+        # 有的模型拆成几块（pickaxeIron_1/_2/_3），一起取
+        parts = [mesh]
+        m = re.match(r"^(.*)_(\d+)$", mesh)
+        if m:
+            parts = sorted(x for x in mesh_sizes if re.fullmatch(re.escape(m.group(1)) + r"_\d+", x))
+        out[name] = {"meshes": parts, "texture": pick_tex(name, mesh)}
+    return out
+
+
+def _merge_obj(texts):
+    """把几个 obj 拼成一个（顶点编号顺延）。"""
+    out, nv, nt, nn = [], 0, 0, 0
+    for text in texts:
+        cv = ct = cn = 0
+        for line in text.splitlines():
+            if line.startswith("v "):
+                cv += 1
+                out.append(line)
+            elif line.startswith("vt "):
+                ct += 1
+                out.append(line)
+            elif line.startswith("vn "):
+                cn += 1
+                out.append(line)
+            elif line.startswith("f "):
+                fixed = []
+                for corner in line.split()[1:]:
+                    p = corner.split("/")
+                    p[0] = str(int(p[0]) + nv)
+                    if len(p) > 1 and p[1]:
+                        p[1] = str(int(p[1]) + nt)
+                    if len(p) > 2 and p[2]:
+                        p[2] = str(int(p[2]) + nn)
+                    fixed.append("/".join(p))
+                out.append("f " + " ".join(fixed))
+        nv, nt, nn = nv + cv, nt + ct, nn + cn
+    return "\n".join(out) + "\n"
+
+
+def fetch_items(dest, rows):
+    """从 items.zip（近 1GB）里只取物品表用得到的网格和贴图。"""
+    index_out = os.path.join(dest, "index", "item_models.json")
+    if os.path.exists(index_out):
+        print("物品模型: 已有，跳过（删掉 assets/index/item_models.json 可重新取）")
+        return
+    zf = open_remote_zip(f"{DRIVE_ROOT}/小橘素材库/automatic_assets_other/items.zip")
+    if zf is None:
+        print("云盘里没有 automatic_assets_other/items.zip，物品用样例模型")
+        return
+    infos = {i.filename: i for i in zf.infolist()}
+    meshes = {os.path.basename(n)[:-4]: n for n in infos if n.startswith("meshes/") and n.endswith(".obj")}
+    texs = {os.path.basename(n)[:-4]: n for n in infos if n.startswith("textures/") and n.endswith(".png")}
+    names = sorted({r[3] for r in rows if len(r) > 3 and r[3] and not r[3].startswith("gear_")})
+    matched = match_item_models(names, {k: infos[v].file_size for k, v in meshes.items()},
+                                {k: infos[v].file_size for k, v in texs.items()})
+    out_dir = os.path.join(dest, "items")
+    os.makedirs(out_dir, exist_ok=True)
+    index, done_tex = {}, {}
+    for name, m in matched.items():
+        stem = re.sub(r"[^A-Za-z0-9_]", "_", name)
+        obj_path = os.path.join(out_dir, stem + ".obj")
+        merged = _merge_obj([zf.read(meshes[p]).decode("utf-8", "replace") for p in m["meshes"]])
+        with open(obj_path, "w", encoding="utf-8") as f:
+            f.write(merged)
+        entry = {"mesh": f"items/{stem}.obj"}
+        if m["texture"]:
+            t = m["texture"]
+            if t not in done_tex:
+                with zf.open(infos[texs[t]]) as src, open(os.path.join(out_dir, t + ".png"), "wb") as dst:
+                    shutil.copyfileobj(src, dst)
+                done_tex[t] = f"items/{t}.png"
+            entry["texture"] = done_tex[t]
+        index[name] = entry
+    with open(index_out, "w", encoding="utf-8") as f:
+        json.dump(index, f, ensure_ascii=False, indent=1)
+    print(f"物品模型: {len(index)} 个（带贴图 {sum(1 for e in index.values() if 'texture' in e)} 个）")
+
+
 # 样例文件夹里的现成素材：(云盘目录, 本地子目录, 文件筛选)
 SAMPLE_SOURCES = [
     ("样例/models/items", "models", lambda n: n.lower().endswith(".glb")),          # 物品模型
@@ -234,7 +455,7 @@ def main():
     ap.add_argument("--zombies", default=",".join(DEFAULT_ZOMBIES), help="逗号分隔的僵尸名，或 all")
     ap.add_argument("--music", type=int, default=6, help="每类音乐取几段")
     ap.add_argument("--all-icons", action="store_true", help="取全部图标（默认只取游戏会用到的）")
-    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,music")
+    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,music")
     args = ap.parse_args()
     skip = set(filter(None, args.skip.split(",")))
     dest = os.path.abspath(args.dest)
@@ -246,6 +467,10 @@ def main():
         fetch_zombies(dest, [z.strip() for z in args.zombies.split(",") if z.strip()])
     if "samples" not in skip:
         fetch_samples(dest)
+    if "items" not in skip:
+        fetch_items(dest, rows)
+    if "arms" not in skip:
+        fetch_fp_arms(dest)
     if "music" not in skip:
         fetch_music(dest, args.music)
     print("完成。用 Godot 打开项目即可（第一次打开会导入素材，需要几分钟）。")

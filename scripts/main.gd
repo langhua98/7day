@@ -66,8 +66,9 @@ func _build_world() -> void:
 	sky.sky_material = sky_mat
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_exposure = 1.15
 	env.fog_enabled = true
 	env.fog_density = 0.018
 	env.fog_sky_affect = 0.6
@@ -463,25 +464,41 @@ func _update_survival(delta: float) -> void:
 
 func _update_sky() -> void:
 	var hour := fmod(game_hours, 24.0)
-	var day_t: float = clamp(sin((hour - 6.0) / 24.0 * TAU), -1.0, 1.0)  # 中午 1，午夜 -1
-	var light: float = clamp(day_t * 1.4 + 0.25, 0.0, 1.0)
-	sun.rotation = Vector3(-PI / 2.0 * max(day_t, 0.08) - 0.1, deg_to_rad(35.0), 0)
-	sun.light_energy = lerp(0.22, 1.15, light)  # 夜里留一点月光，手机屏幕上才看得清
-	sun.light_color = Color(1.0, 0.95, 0.85).lerp(Color(1.0, 0.55, 0.35), clamp(1.0 - abs(day_t) * 3.0, 0.0, 1.0) * float(day_t > -0.1))
-	if light < 0.05:
-		sun.light_color = Color(0.55, 0.65, 0.95)
-	var day_sky := Color(0.38, 0.55, 0.78)
-	var night_sky := Color(0.05, 0.07, 0.13)
-	var horde := int(game_hours / 24.0) + 1 == C.HORDE_DAY and hour >= C.NIGHT_START or int(game_hours / 24.0) == C.HORDE_DAY and hour < C.NIGHT_END
+	# 太阳高度：6 点日出、20 点日落，中午最高；夜里是负数
+	var elev: float
+	if hour >= C.SUNRISE and hour <= C.SUNSET:
+		elev = sin(PI * (hour - C.SUNRISE) / (C.SUNSET - C.SUNRISE))
+	else:
+		var night_len := 24.0 - (C.SUNSET - C.SUNRISE)
+		var t := fmod(hour - C.SUNSET + 24.0, 24.0) / night_len
+		elev = -sin(PI * t) * 0.6
+	var light: float = smoothstep(-0.12, 0.3, elev)
+	var dusk: float = clamp(1.0 - abs(elev) * 4.0, 0.0, 1.0)
+	var sun_up: float = max(elev, 0.12)
+	# 夜里这盏灯当月光用，从另一侧照过来
+	sun.rotation = Vector3(-asin(sun_up) - 0.05, deg_to_rad(35.0 if elev > 0.0 else 215.0), 0)
+	sun.light_energy = lerp(C.MOON_LIGHT, 1.2, light)
+	sun.light_color = Color(0.62, 0.7, 1.0).lerp(Color(1.0, 0.96, 0.88), light).lerp(Color(1.0, 0.62, 0.4), dusk * light)
+	var day_sky := Color(0.36, 0.55, 0.82)
+	var night_sky := Color(0.07, 0.1, 0.2)
+	var day := int(game_hours / 24.0) + 1
+	var horde := (day == C.HORDE_DAY and hour >= C.NIGHT_START) or (day == C.HORDE_DAY + 1 and hour < C.NIGHT_END)
 	if horde:
-		night_sky = Color(0.32, 0.04, 0.03)
+		night_sky = Color(0.35, 0.05, 0.04)
 	sky_mat.sky_top_color = night_sky.lerp(day_sky, light)
-	sky_mat.sky_horizon_color = night_sky.lerp(Color(0.72, 0.68, 0.6), light)
-	sky_mat.ground_horizon_color = sky_mat.sky_horizon_color
-	sky_mat.ground_bottom_color = Color(0.1, 0.09, 0.08).lerp(Color(0.25, 0.22, 0.18), light)
-	env.fog_light_color = sky_mat.sky_horizon_color
-	env.ambient_light_energy = lerp(0.55, 1.0, light)
-	env.fog_density = lerp(0.026, 0.014, light)
+	var horizon := Color(0.16, 0.19, 0.28).lerp(Color(0.78, 0.74, 0.66), light).lerp(Color(0.95, 0.6, 0.4), dusk * 0.6)
+	if horde:
+		horizon = horizon.lerp(Color(0.5, 0.08, 0.05), 1.0 - light)
+	sky_mat.sky_horizon_color = horizon
+	sky_mat.ground_horizon_color = horizon
+	sky_mat.ground_bottom_color = Color(0.12, 0.12, 0.13).lerp(Color(0.25, 0.22, 0.18), light)
+	env.fog_light_color = horizon
+	# 环境光不跟天空走，夜里也保证能看清地面和僵尸
+	env.ambient_light_color = C.NIGHT_AMBIENT.lerp(Color(0.78, 0.75, 0.7), light)
+	if horde:
+		env.ambient_light_color = env.ambient_light_color.lerp(Color(0.6, 0.25, 0.22), 1.0 - light)
+	env.ambient_light_energy = lerp(C.NIGHT_AMBIENT_ENERGY, 0.7, light)
+	env.fog_density = lerp(0.016, 0.009, light)
 
 
 func _update_music(delta: float, night: bool, horde: bool) -> void:

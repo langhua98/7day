@@ -18,6 +18,7 @@ var music := {"Exp": PackedStringArray(), "Cbt": PackedStringArray(), "Sus": Pac
 var errors: PackedStringArray = []
 
 var _models := {}       # 归一化名 -> res 路径（.glb 优先，其次 .obj）
+var _item_models := {}  # 归一化名 -> {mesh, texture}（来自 items.zip，带真贴图，优先使用）
 var _model_png := {}    # obj 同名贴图
 var _icon_files := {}   # 小写名 -> 真实名
 var _cache := {}
@@ -35,6 +36,7 @@ func scan() -> void:
 	loot_pool.clear()
 	errors.clear()
 	_models.clear()
+	_item_models.clear()
 	_model_png.clear()
 	_icon_files.clear()
 	zombie_models.clear()
@@ -47,6 +49,14 @@ func scan() -> void:
 	for ext in ["obj", "glb"]:
 		for n in _list("%s/models" % ROOT, [ext]):
 			_models[model_key(n.get_basename())] = "%s/models/%s" % [ROOT, n]
+	var item_index := "%s/index/item_models.json" % ROOT
+	if FileAccess.file_exists(item_index):
+		var data = JSON.parse_string(FileAccess.get_file_as_string(item_index))
+		if data is Dictionary:
+			for k in data:
+				var e: Dictionary = data[k]
+				if ResourceLoader.exists("%s/%s" % [ROOT, e.get("mesh", "")]):
+					_item_models[model_key(k)] = e
 	var zseen := {}
 	for n in _list("%s/models" % ROOT, ["glb", "obj"]):
 		var base := n.get_basename()
@@ -92,7 +102,32 @@ func model_key(name: String) -> String:
 
 
 func has_model(name: String) -> bool:
-	return name != "" and _models.has(model_key(name))
+	return name != "" and (_item_models.has(model_key(name)) or _models.has(model_key(name)))
+
+
+## 物品模型原样（保留原点，七日杀物品的原点就是握把位置），带真贴图。没有就返回 null。
+func make_item_mesh(name: String) -> Node3D:
+	var e: Dictionary = _item_models.get(model_key(name), {})
+	if e.is_empty():
+		return null
+	var mesh = _cached_load("%s/%s" % [ROOT, e.mesh])
+	if not (mesh is Mesh):
+		return null
+	var key := "%s#itemmat" % e.get("texture", "")
+	if not _cache.has(key):
+		var mat := StandardMaterial3D.new()
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		mat.roughness = 0.75
+		if e.has("texture"):
+			mat.albedo_texture = _cached_load("%s/%s" % [ROOT, e.texture])
+			mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+		else:
+			mat.albedo_color = Color(0.55, 0.53, 0.5)
+		_cache[key] = mat
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	mi.material_override = _cache[key]
+	return mi
 
 
 func _load_index() -> void:
@@ -271,10 +306,12 @@ func icon(id: String) -> Texture2D:
 ## tint：模型没带贴图时用的底色（物品用图标的平均色）。
 func make_model(name: String, size: float, by_height := false, tint := Color(0.55, 0.53, 0.5)) -> Node3D:
 	var path: String = _models.get(model_key(name), "")
-	if path == "":
+	var inst: Node3D = make_item_mesh(name)
+	if inst == null and path == "":
 		return null
-	var inst: Node3D = null
-	if path.ends_with(".glb"):
+	if inst != null:
+		pass
+	elif path.ends_with(".glb"):
 		var scene = _cached_load(path)
 		if scene is PackedScene:
 			inst = scene.instantiate()
@@ -296,6 +333,7 @@ func make_model(name: String, size: float, by_height := false, tint := Color(0.5
 	inst.position = Vector3(-c.x, -aabb.position.y, -c.z) * s
 	root.add_child(inst)
 	root.set_meta("height", aabb.size.y * s)
+	root.set_meta("extent", max(aabb.size.x, aabb.size.y, aabb.size.z) * s)
 	return root
 
 
@@ -440,7 +478,13 @@ func make_item_visual(id: String, size: float) -> Node3D:
 	if row.is_empty():
 		return null
 	if row.model != "":
-		var m := make_model(row.model, size, false, icon_tint(id))
+		# 带真贴图的物品按真实大小（放大一点，地上好找）；样例模型统一缩放
+		var real := _item_models.has(model_key(row.model))
+		var m := make_model(row.model, 0.0 if real else size, false, icon_tint(id))
+		if m and real:
+			var ext: float = m.get_meta("extent", size)
+			var want: float = clamp(ext * 1.5, size * 0.6, size * 1.6)
+			m.scale = Vector3.ONE * want / max(ext, 0.001)
 		if m:
 			return m
 	var tex := icon(id)

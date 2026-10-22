@@ -31,6 +31,7 @@ var _joy_knob := Panel.new()
 var _hurt := ColorRect.new()
 
 var _joy_id := -1
+var _attack_id := -1
 var _joy_origin := Vector2.ZERO
 var _look_id := -1
 var _look_last := Vector2.ZERO
@@ -112,15 +113,16 @@ func _ready() -> void:
 	_attack_btn.position = Vector2(-210, -230)
 	_attack_btn.size = Vector2(170, 170)
 	_attack_btn.add_theme_font_size_override("font_size", 36)
-	_attack_btn.button_down.connect(func(): attack_held = true)
-	_attack_btn.button_up.connect(func(): attack_held = false)
+	# 攻击、背包、快捷栏都在 _input 里按触点自己处理：
+	# 系统自带的按钮只认第一根手指，一边走路一边按攻击会没反应
+	_attack_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_attack_btn)
 
 	_bag_btn.text = "背包"
 	_bag_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	_bag_btn.position = Vector2(-160, 70)
 	_bag_btn.size = Vector2(130, 64)
-	_bag_btn.pressed.connect(func(): _bag_panel.visible = not _bag_panel.visible)
+	_bag_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_bag_btn)
 
 	# 背包
@@ -151,17 +153,19 @@ func _ready() -> void:
 	bag_v.add_child(scroll)
 	_root.add_child(_bag_panel)
 
-	# 摇杆（只是显示，不拦截触摸）
+	# 摇杆：平时停在左下角，手指按在左半屏哪里就移到哪里
 	for p in [_joy_base, _joy_knob]:
 		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color(1, 1, 1, 0.12 if p == _joy_base else 0.35)
+		sb.bg_color = Color(1, 1, 1, 0.10 if p == _joy_base else 0.35)
+		sb.border_color = Color(1, 1, 1, 0.35)
+		sb.set_border_width_all(3 if p == _joy_base else 0)
 		sb.set_corner_radius_all(200)
 		p.add_theme_stylebox_override("panel", sb)
 		p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		p.visible = false
 		_root.add_child(p)
 	_joy_base.size = Vector2(JOY_RADIUS * 2, JOY_RADIUS * 2)
-	_joy_knob.size = Vector2(70, 70)
+	_joy_knob.size = Vector2(76, 76)
+	_reset_joystick()
 
 	_build_start_panel()
 	_build_end_panel()
@@ -301,6 +305,15 @@ func set_inventory(list: Array, hotbar_ids: Array) -> void:
 		_bag_grid.add_child(_slot(e.id, list, true))
 
 
+func _reset_joystick() -> void:
+	var vp := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2(1280, 720)
+	var home := Vector2(JOY_RADIUS + 70, vp.y - JOY_RADIUS - 70)
+	_joy_base.position = home - _joy_base.size * 0.5
+	_joy_knob.position = home - _joy_knob.size * 0.5
+	_joy_base.modulate.a = 0.6
+	_joy_knob.modulate.a = 0.6
+
+
 func _slot(id: String, list: Array, with_name := false) -> Control:
 	var entry: Dictionary = {}
 	for e in list:
@@ -326,7 +339,11 @@ func _slot(id: String, list: Array, with_name := false) -> Control:
 		sb.set_border_width_all(3)
 		sb.set_corner_radius_all(12)
 		b.add_theme_stylebox_override("normal", sb)
-	b.pressed.connect(func(): item_used.emit(id))
+	b.set_meta("item", id)
+	if with_name:
+		b.pressed.connect(func(): item_used.emit(id))
+	else:
+		b.mouse_filter = Control.MOUSE_FILTER_IGNORE  # 快捷栏在 _input 里处理
 	return b
 
 
@@ -345,40 +362,60 @@ func consume_look() -> Vector2:
 	return d
 
 
-func _over_button(pos: Vector2) -> bool:
-	if _bag_panel.visible or _start_panel.visible or _end_panel.visible:
-		return true
-	for c in [_attack_btn, _bag_btn, _hotbar]:
-		if (c as Control).get_global_rect().has_point(pos):
-			return true
-	return false
+func _panel_open() -> bool:
+	return _bag_panel.visible or _start_panel.visible or _end_panel.visible
+
+
+func _press_attack(pressed: bool) -> void:
+	attack_held = pressed
+	_attack_btn.modulate = Color(1.6, 0.7, 0.6) if pressed else Color.WHITE
+
+
+func _touch_down(index: int, pos: Vector2) -> void:
+	if _attack_btn.get_global_rect().grow(20).has_point(pos):
+		_attack_id = index
+		_press_attack(true)
+		return
+	if _bag_btn.get_global_rect().has_point(pos):
+		_bag_panel.visible = true
+		_press_attack(false)
+		return
+	for slot in _hotbar.get_children():
+		if (slot as Control).get_global_rect().has_point(pos):
+			item_used.emit(slot.get_meta("item"))
+			return
+	var half := get_viewport().get_visible_rect().size.x * 0.5
+	if pos.x < half and _joy_id == -1:
+		_joy_id = index
+		_joy_origin = pos
+		_joy_base.position = pos - _joy_base.size * 0.5
+		_joy_knob.position = pos - _joy_knob.size * 0.5
+		_joy_base.modulate.a = 1.0
+		_joy_knob.modulate.a = 1.0
+	elif pos.x >= half and _look_id == -1:
+		_look_id = index
+		_look_last = pos
+
+
+func _touch_up(index: int) -> void:
+	if index == _attack_id:
+		_attack_id = -1
+		_press_attack(false)
+	elif index == _joy_id:
+		_joy_id = -1
+		move = Vector2.ZERO
+		_reset_joystick()
+	elif index == _look_id:
+		_look_id = -1
 
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
-		var pos: Vector2 = event.position
 		if event.pressed:
-			if _over_button(pos):
-				return
-			var half := get_viewport().get_visible_rect().size.x * 0.5
-			if pos.x < half and _joy_id == -1:
-				_joy_id = event.index
-				_joy_origin = pos
-				_joy_base.visible = true
-				_joy_knob.visible = true
-				_joy_base.position = pos - _joy_base.size * 0.5
-				_joy_knob.position = pos - _joy_knob.size * 0.5
-			elif pos.x >= half and _look_id == -1:
-				_look_id = event.index
-				_look_last = pos
+			if not _panel_open():
+				_touch_down(event.index, event.position)
 		else:
-			if event.index == _joy_id:
-				_joy_id = -1
-				move = Vector2.ZERO
-				_joy_base.visible = false
-				_joy_knob.visible = false
-			elif event.index == _look_id:
-				_look_id = -1
+			_touch_up(event.index)
 	elif event is InputEventScreenDrag:
 		if event.index == _joy_id:
 			var d: Vector2 = event.position - _joy_origin

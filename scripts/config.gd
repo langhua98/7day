@@ -4,12 +4,20 @@ class_name GameConfig
 ## 一整天（24 小时）对应的真实秒数
 const DAY_SECONDS := 300.0
 ## 开局时间（小时）
-const START_HOUR := 8.0
+const START_HOUR := 7.0
+## 日出、日落（小时）
+const SUNRISE := 5.5
+const SUNSET := 20.5
 ## 夜晚：22:00 到 06:00
 const NIGHT_START := 22.0
 const NIGHT_END := 6.0
 ## 第几天夜里是血月尸潮，撑到第二天早上就赢
 const HORDE_DAY := 7
+
+## 夜里的亮度：月光强度、环境光颜色和强度。嫌夜里太黑就调大
+const MOON_LIGHT := 0.55
+const NIGHT_AMBIENT := Color(0.42, 0.48, 0.66)
+const NIGHT_AMBIENT_ENERGY := 0.75
 
 ## 地图半径（米）
 const WORLD_RADIUS := 90.0
