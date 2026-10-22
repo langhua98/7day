@@ -58,6 +58,22 @@ def find_links(obj):
     return found
 
 
+def direct_links(share):
+    """分享返回的是网页地址（share.html#口令），签名软件要的是文件直链。
+    用口令去公开接口 /api/s/口令 换出 /dl/ 直链（有效约 6 小时）。"""
+    web = share.get("web_path", "")
+    if "#" not in web:
+        return []
+    code = web.split("#", 1)[1]
+    try:
+        with urllib.request.urlopen(f"{SITE}/api/s/{code}", timeout=60) as r:
+            data = json.load(r)
+    except Exception as e:  # noqa: BLE001
+        print("换直链失败：", e)
+        return []
+    return [SITE + it["url"] for it in data.get("items", []) if it.get("url")]
+
+
 def summary(lines):
     path = os.environ.get("GITHUB_STEP_SUMMARY")
     if path:
@@ -87,7 +103,7 @@ def main():
     item_id = item["id"]
     drive_path = item.get("path", f"{FOLDER}/{name}")
     share = None
-    for body in ({"item_id": item_id}, {"id": item_id}, {"path": drive_path}, {"item": item_id}):
+    for body in ({"id": item_id}, {"item_id": item_id}, {"path": drive_path}, {"item": item_id}):
         status, text = call("POST", "/shares", body=body)
         print("POST /shares", list(body)[0], status, text[:800])
         if status < 300:
@@ -96,7 +112,7 @@ def main():
 
     lines = [f"### 安装包已上传到小桔云盘", f"- 云盘位置：`{drive_path}`"]
     if share is not None:
-        links = find_links(share)
+        links = direct_links(share) or find_links(share)
         for link in links:
             print(f"::notice title=ipa 下载链接::{link}")
             lines.append(f"- 下载链接：{link}")
