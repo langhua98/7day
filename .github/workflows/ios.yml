@@ -1,0 +1,132 @@
+ # 在 GitHub 的云端 Mac 上把游戏编译成 iPhone 安装包。
+# 素材在编译时从小桔云盘下载（需要在仓库 Settings → Secrets → Actions 里添加 XIAOJU_TOKEN），
+# 放进安装包，提交进仓库。产物在这个仓库的 Actions 页面里能下载，保留 7 天。
+name: iOS 安装包
+
+on:
+  workflow_dispatch:
+    inputs:
+      zombies:
+        description: "僵尸（逗号分隔，或 all）"
+        default: "soldier,nurse,cop,biker,lumberjack,joe,arlene,screamer"
+      music:
+        description: "每类音乐几段"
+        default: "6"
+  push:
+    branches: [main]
+    paths-ignore: ["**.md"]
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.4.1"
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 检查云盘令牌
+        env:
+          XIAOJU_TOKEN: ${{ secrets.XIAOJU_TOKEN }}
+        run: |
+          if [ -z "$XIAOJU_TOKEN" ]; then
+            echo "::error::请先在仓库 Settings → Secrets and variables → Actions 里添加 XIAOJU_TOKEN（小桔云盘令牌）"
+            exit 1
+          fi
+
+      - name: 缓存素材
+        uses: actions/cache@v4
+        with:
+          path: assets
+          key: assets-${{ github.event.inputs.zombies || 'default' }}-${{ github.event.inputs.music || '6' }}-v1
+
+      - name: 从小桔云盘下载素材
+        env:
+          XIAOJU_TOKEN: ${{ secrets.XIAOJU_TOKEN }}
+        run: |
+          python3 tools/fetch_assets.py \
+            --zombies "${{ github.event.inputs.zombies || 'soldier,nurse,cop,biker,lumberjack,joe,arlene,screamer' }}" \
+            --music "${{ github.event.inputs.music || '6' }}"
+          du -sh assets/*
+
+      - name: 缓存 Godot
+        id: godot-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/Library/Application Support/Godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-macos
+
+      - name: 安装 Godot 和导出模板
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        run: |
+          set -e
+          base="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable"
+          mkdir -p ~/godot && cd ~/godot
+          curl -fsSL -o godot.zip "$base/Godot_v${GODOT_VERSION}-stable_macos.universal.zip"
+          unzip -q godot.zip && rm godot.zip
+          curl -fsSL -o templates.tpz "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz && rm templates.tpz
+          dest="$HOME/Library/Application Support/Godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$dest"
+          mv templates/* "$dest/"
+          ls "$dest"
+
+      - name: 导入素材
+        run: |
+          GODOT="$HOME/godot/Godot.app/Contents/MacOS/Godot"
+          "$GODOT" --headless --import || true
+          "$GODOT" --headless --import
+
+      - name: 导出 Xcode 工程
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          BUNDLE_ID: ${{ vars.BUNDLE_ID }}
+        run: |
+          set -e
+          GODOT="$HOME/godot/Godot.app/Contents/MacOS/Godot"
+          # 没配置开发者账号时填个占位 Team ID，后面编译时不签名
+          team="${APPLE_TEAM_ID:-ABCDE12345}"
+          sed -i '' "s/^application\/app_store_team_id=.*/application\/app_store_team_id=\"$team\"/" export_presets.cfg
+          if [ -n "$BUNDLE_ID" ]; then
+            sed -i '' "s/^application\/bundle_identifier=.*/application\/bundle_identifier=\"$BUNDLE_ID\"/" export_presets.cfg
+          fi
+          mkdir -p build/ios
+          "$GODOT" --headless --export-release "iOS" build/ios/7day.ipa 2>&1 | tee build/export.log
+          ls -la build/ios
+          test -d build/ios/7day.xcodeproj
+
+      - name: 编译（不签名）
+        run: |
+          set -o pipefail
+          xcodebuild -project build/ios/7day.xcodeproj -scheme 7day -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/dd \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build | tail -40
+          app=$(find build/dd/Build/Products -maxdepth 2 -name '*.app' | head -1)
+          echo "app: $app"
+          mkdir -p build/ipa/Payload
+          cp -R "$app" build/ipa/Payload/
+          (cd build/ipa && zip -qry ../7day-unsigned.ipa Payload)
+          ls -la build/7day-unsigned.ipa
+
+      - name: 上传安装包
+        uses: actions/upload-artifact@v4
+        with:
+          name: 7day-unsigned-ipa
+          path: build/7day-unsigned.ipa
+          retention-days: 7
+
+      - name: 上传导出日志
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: build/*.log
+          retention-days: 3
