@@ -5,16 +5,23 @@ extends Node3D
 ## 手指弯成握拳，武器挂在右手掌心，挥动时让手沿一条弧线运动。
 
 ## 手的位置（相机空间：x 右、y 上、-z 前，单位米）。拿到真机上不顺眼可以改这里。
-const RIGHT_HAND := Vector3(0.20, -0.20, -0.40)
-const LEFT_HAND_FISTS := Vector3(-0.20, -0.21, -0.38)   # 空手：两个拳头都举在前面
+const RIGHT_HAND := Vector3(0.19, -0.15, -0.38)
+const LEFT_HAND_FISTS := Vector3(-0.19, -0.16, -0.36)   # 空手：两个拳头都举在前面
 const LEFT_HAND_GUN := Vector3(-0.03, -0.17, -0.58)     # 枪：左手在前面托着
 const LEFT_HAND_AWAY := Vector3(-0.30, -0.55, -0.20)    # 单手武器：左手放下，基本看不到
 ## 武器在手里往前倾多少（弧度）
 const WEAPON_TILT := 0.55
-## 手指弯曲程度（弧度）：近节、中节、远节
-const FINGER_CURL := [1.25, 1.45, 0.9]
+## 手指弯曲程度（弧度）。每根手指 6 节骨头：1 是掌骨，2~5 是关节，6 是指尖
+const FINGER_CURL := [0.0, 1.1, 0.5, 0.9, 0.6]
 
-enum Pose { FISTS, MELEE, GUN }
+## 枪手的位置；矛的位置
+const PISTOL_HAND := Vector3(0.17, -0.19, -0.40)
+const RIFLE_HAND := Vector3(0.13, -0.17, -0.26)
+const SPEAR_HAND := Vector3(0.22, -0.20, -0.30)
+## 枪模型的枪口朝 +Z 还是 -Z（拿到手里枪口朝后就改这个）
+const GUN_BARREL_PLUS_Z := true
+
+enum Grip { NONE, ONE_HAND, SPEAR, PISTOL, RIFLE, SMALL }
 
 var has_arms := false
 var _skel: Skeleton3D
@@ -22,10 +29,10 @@ var _bones := {}
 var _root := Node3D.new()      # 手臂模型的根，转 180° 让模型的 +Z 朝镜头前方
 var _weapon_mount := Node3D.new()
 var _weapon: Node3D
-var _pose := Pose.FISTS
+var _grip := Grip.NONE
+var _weapon_len := 0.3
 var _swing := 0.0
 var _swing_speed := 3.0
-var _gun := false
 var _bob := 0.0
 var _rest_len := {}
 
@@ -75,11 +82,7 @@ func _build() -> void:
 		var f := _rest_pos(side + "ForeArm")
 		var h := _rest_pos(side + "Hand")
 		_rest_len[side] = [a.distance_to(f), f.distance_to(h)]
-	# 武器挂在右手骨上
-	var att := BoneAttachment3D.new()
-	att.bone_name = _skel.get_bone_name(_bones.RightHand)
-	_skel.add_child(att)
-	att.add_child(_weapon_mount)
+	add_child(_weapon_mount)
 	for m in inst.find_children("*", "MeshInstance3D", true, false):
 		(m as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_update_pose(0.0)
@@ -171,9 +174,9 @@ func _place_arm(side: String, hand_cam: Vector3, palm_cam: Vector3, finger_cam: 
 ## 手指弯向掌心
 func _curl(side: String, amount: float) -> void:
 	for f in ["Index", "Middle", "Ring", "Pinky"]:
-		for j in 3:
+		for j in FINGER_CURL.size():
 			var bone := "%sHand%s%d" % [side, f, j + 1]
-			if not _bones.has(bone):
+			if not _bones.has(bone) or FINGER_CURL[j] == 0.0:
 				continue
 			_bend(bone, FINGER_CURL[j] * amount)
 	for j in 3:
@@ -233,52 +236,71 @@ func _update_pose(delta: float) -> void:
 			strike = 1.0 - smoothstep(0.7, 1.0, t)
 	var hand := RIGHT_HAND + bob
 	var tilt := WEAPON_TILT
-	if _gun:
-		hand += Vector3(0, 0.01, 0.05) * strike * 3.0  # 后坐
-		lift = 0.0
-		strike = 0.0
-	hand += Vector3(0.04, 0.16, 0.10) * lift + Vector3(-0.14, 0.02, -0.18) * strike
-	tilt += -0.9 * lift + 1.2 * strike
-	# 右手：拳眼朝上，手指（握拳前）朝前，掌心朝左
-	var fwd := Vector3(0, 0, -1).rotated(Vector3.RIGHT, -0.15)
-	var up := Vector3.UP.rotated(Vector3.RIGHT, -tilt)
-	var finger := fwd.rotated(Vector3.RIGHT, -tilt * 0.5)
+	var finger := Vector3(0, 0, -1)
+	var kick := 0.0
+	match _grip:
+		Grip.PISTOL, Grip.RIFLE:
+			# 枪：手腕放平，握把略向后倾；开枪时往后上方一顿
+			kick = sin(t * PI) if t > 0.0 else 0.0
+			hand = (PISTOL_HAND if _grip == Grip.PISTOL else RIFLE_HAND) + bob + Vector3(0, 0.015, 0.06) * kick
+			tilt = -0.25 + 0.25 * kick
+			finger = Vector3(0, -0.25, -1)
+		Grip.SPEAR:
+			# 矛：举在身侧，向前捅
+			hand = SPEAR_HAND + bob + Vector3(0.02, 0.06, 0.12) * lift + Vector3(-0.05, 0.03, -0.32) * strike
+			finger = Vector3(0, -1, -0.2)
+		_:
+			hand += Vector3(0.04, 0.16, 0.10) * lift + Vector3(-0.14, 0.02, -0.18) * strike
+			tilt += -0.9 * lift + 1.2 * strike
+			finger = Vector3(0, 0, -1).rotated(Vector3.RIGHT, -0.15 - tilt * 0.5)
+	# 右手：拳眼朝上，掌心朝左
 	_place_arm("Right", hand, Vector3.LEFT, finger, Vector3(0.6, -1.0, 0.2))
 	_curl("Right", 1.0)
+	_update_mount(tilt, kick)
 	# 左手
-	match _pose:
-		Pose.FISTS:
-			var lh := LEFT_HAND_FISTS + Vector3(-bob.x, bob.y, 0)
-			_place_arm("Left", lh, Vector3.RIGHT, fwd, Vector3(-0.6, -1.0, 0.2))
+	match _grip:
+		Grip.NONE:
+			var lh := LEFT_HAND_FISTS + Vector3(-bob.x, bob.y, 0) + Vector3(0.05, 0.1, 0.08) * lift + Vector3(0.05, 0.02, -0.1) * strike
+			_place_arm("Left", lh, Vector3.RIGHT, Vector3(0, 0, -1).rotated(Vector3.RIGHT, -0.15), Vector3(-0.6, -1.0, 0.2))
 			_curl("Left", 1.0)
-		Pose.GUN:
-			_place_arm("Left", LEFT_HAND_GUN + bob, Vector3.UP, Vector3(0.6, 0, -1), Vector3(-0.8, -1.0, 0))
-			_curl("Left", 0.55)
+		Grip.RIFLE:
+			# 左手托在枪管下面
+			var fwd := -_weapon_mount.basis.z
+			var lh := _weapon_mount.position + fwd * _weapon_len * 0.32 + Vector3(0, -0.045, 0)
+			_place_arm("Left", lh, Vector3.UP, Vector3(0.7, 0, -0.7), Vector3(-0.8, -1.0, 0))
+			_curl("Left", 0.75)
 		_:
 			_place_arm("Left", LEFT_HAND_AWAY + bob, Vector3.RIGHT, Vector3(0, -0.3, -1), Vector3(-0.6, -1.0, 0.2))
 			_curl("Left", 0.6)
-	_weapon_mount_frame(up)
 
 
-## 武器挂点：掌心中间，武器的 +Y（握把方向）朝拳眼（上），+Z 朝前
-func _weapon_mount_frame(_up_cam: Vector3) -> void:
+## 武器摆在右手掌心（相机空间）。
+## 七日杀的近战武器沿 +Y 伸出、原点在握把；枪沿 Z 方向、原点在握把附近。
+func _update_mount(tilt: float, kick: float) -> void:
 	if not _weapon:
 		return
 	var hb: int = _bones.RightHand
 	var hand_g := _skel.get_bone_global_pose(hb)
 	var hand_rest := _skel.get_bone_global_rest(hb)
-	var to_world := hand_g.basis * hand_rest.basis.inverse()   # 静止 → 当前 的旋转
-	# 静止时：手指朝 -X，掌心朝 -Y，拇指朝 +Z（模型的前方）
-	var fingers := to_world * Vector3.LEFT
-	var palm := to_world * Vector3.DOWN
-	var thumb := to_world * Vector3.BACK
-	var grip_up := thumb.normalized()
-	var grip_fwd := fingers.normalized()
-	var grip_x := grip_up.cross(grip_fwd).normalized()
-	var center := hand_g.origin + fingers * 0.055 + palm * 0.03 + thumb * 0.01
-	var g := Transform3D(Basis(grip_x, grip_up, grip_x.cross(grip_up)), center)
-	# BoneAttachment3D 跟着手骨走，这里算相对手骨的变换
-	_weapon_mount.transform = hand_g.affine_inverse() * g
+	var to_now := hand_g.basis * hand_rest.basis.inverse()
+	# 静止时：手指朝 -X，掌心朝 -Y，拇指朝 +Z
+	var fingers := to_now * Vector3.LEFT
+	var palm := to_now * Vector3.DOWN
+	var center := _root.transform * (hand_g.origin + fingers * 0.05 + palm * 0.035)
+	var b := Basis(Vector3.UP, PI)   # 物品的 +Z 朝镜头前方
+	match _grip:
+		Grip.SPEAR:
+			b = Basis(Vector3.UP, 0.06) * Basis(Vector3.RIGHT, -PI * 0.5 + 0.08)
+		Grip.PISTOL, Grip.RIFLE:
+			# 枪口稍微对准准星
+			var yaw := 0.22 if _grip == Grip.PISTOL else 0.04
+			b = Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, 0.12 * kick) * Basis(Vector3.UP, PI if GUN_BARREL_PLUS_Z else 0.0)
+			center += Vector3(0, 0.035, 0)
+		Grip.SMALL:
+			b = Basis(Vector3.FORWARD, 0.2) * b
+		_:
+			b = Basis(Vector3.BACK, 0.3) * Basis(Vector3.RIGHT, -tilt) * b
+	_weapon_mount.transform = Transform3D(b, center)
 
 
 ## 换手上的东西：有模型用模型（真实大小，原点就是握把），没模型用图标
@@ -286,22 +308,36 @@ func hold(item_id: String) -> void:
 	if _weapon:
 		_weapon.queue_free()
 		_weapon = null
-	_pose = Pose.FISTS
-	_gun = false
+	_grip = Grip.NONE
 	if item_id == "":
 		return
 	var row: Dictionary = Assets.items_by_id.get(item_id, {})
-	_gun = row.get("kind", -1) == Assets.Kind.GUN
-	_pose = Pose.GUN if _gun else Pose.MELEE
+	var kind: int = row.get("kind", -1)
 	var holder := Node3D.new()
 	var vis: Node3D = null
+	var size := Vector3(0.1, 0.3, 0.1)
 	if row.get("model", "") != "":
-		vis = Assets.make_item_mesh(row.model)
+		vis = Assets.make_item_mesh(row.model, Assets.icon_tint(item_id))
+		if vis is MeshInstance3D:
+			size = (vis as MeshInstance3D).mesh.get_aabb().size
+			if size.length() < 0.03:   # 有的导出网格缩得极小，当作没有模型
+				vis.free()
+				vis = null
 		if vis == null:
 			# 只有样例 glb 的物品：缩放到合适大小，底部当握把
 			vis = Assets.make_model(row.model, GameConfig.HELD_SIZE, false, Assets.icon_tint(item_id))
 			if vis:
 				vis.position.y = -0.08
+				size = Vector3(0.1, GameConfig.HELD_SIZE, 0.1)
+	if kind == Assets.Kind.GUN:
+		_grip = Grip.RIFLE if max(size.z, size.x) > 0.55 else Grip.PISTOL
+		_weapon_len = max(size.z, size.x)
+	elif size.y > 1.4:
+		_grip = Grip.SPEAR
+	elif max(size.x, size.y, size.z) < 0.25:
+		_grip = Grip.SMALL
+	else:
+		_grip = Grip.ONE_HAND
 	if vis:
 		holder.add_child(vis)
 	else:
@@ -310,10 +346,11 @@ func hold(item_id: String) -> void:
 			return
 		var sp := Sprite3D.new()
 		sp.texture = tex
-		sp.pixel_size = 0.2 / max(tex.get_width(), 1)
+		sp.pixel_size = 0.16 / max(tex.get_width(), 1)
 		sp.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
-		sp.position = Vector3(0, 0.08, 0)
+		sp.position = Vector3(0, 0.05, 0)
 		holder.add_child(sp)
+		_grip = Grip.SMALL
 	_weapon_mount.add_child(holder)
 	_weapon = holder
 	for m in holder.find_children("*", "GeometryInstance3D", true, false):
@@ -336,3 +373,7 @@ func _process(delta: float) -> void:
 	elif _swing > 0.0:
 		_swing = max(0.0, _swing - delta * _swing_speed)
 		_weapon_mount.rotation.x = -1.1 * sin((1.0 - _swing) * PI)
+
+
+func is_gun() -> bool:
+	return _grip == Grip.PISTOL or _grip == Grip.RIFLE

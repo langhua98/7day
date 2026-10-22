@@ -106,14 +106,14 @@ func has_model(name: String) -> bool:
 
 
 ## 物品模型原样（保留原点，七日杀物品的原点就是握把位置），带真贴图。没有就返回 null。
-func make_item_mesh(name: String) -> Node3D:
+func make_item_mesh(name: String, tint := Color(0.55, 0.53, 0.5)) -> Node3D:
 	var e: Dictionary = _item_models.get(model_key(name), {})
 	if e.is_empty():
 		return null
 	var mesh = _cached_load("%s/%s" % [ROOT, e.mesh])
 	if not (mesh is Mesh):
 		return null
-	var key := "%s#itemmat" % e.get("texture", "")
+	var key := "%s#itemmat" % e.get("texture", str(tint))
 	if not _cache.has(key):
 		var mat := StandardMaterial3D.new()
 		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
@@ -122,7 +122,7 @@ func make_item_mesh(name: String) -> Node3D:
 			mat.albedo_texture = _cached_load("%s/%s" % [ROOT, e.texture])
 			mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 		else:
-			mat.albedo_color = Color(0.55, 0.53, 0.5)
+			mat.albedo_color = tint
 		_cache[key] = mat
 	var mi := MeshInstance3D.new()
 	mi.mesh = mesh
@@ -306,7 +306,7 @@ func icon(id: String) -> Texture2D:
 ## tint：模型没带贴图时用的底色（物品用图标的平均色）。
 func make_model(name: String, size: float, by_height := false, tint := Color(0.55, 0.53, 0.5)) -> Node3D:
 	var path: String = _models.get(model_key(name), "")
-	var inst: Node3D = make_item_mesh(name)
+	var inst: Node3D = make_item_mesh(name, tint)
 	if inst == null and path == "":
 		return null
 	if inst != null:

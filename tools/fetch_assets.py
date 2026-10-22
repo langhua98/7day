@@ -230,7 +230,8 @@ def open_remote_zip(path):
 def fetch_fp_arms(dest):
     """带骨骼（肩、臂、手、每根手指）的第一人称手臂，游戏里摆成握持姿势。"""
     out = os.path.join(dest, "models", "fp_arms.glb")
-    if os.path.exists(out):
+    skin = os.path.join(dest, "textures", "fp_arms_skin.png")
+    if os.path.exists(out) and os.path.exists(skin):
         print("第一人称手臂: 已有，跳过")
         return
     zf = open_remote_zip(f"{DRIVE_ROOT}/小橘素材库/player_assets_entities/player/common.zip")
@@ -242,8 +243,14 @@ def fetch_fp_arms(dest):
         print("player/common.zip 里没有带骨骼的手臂")
         return
     os.makedirs(os.path.dirname(out), exist_ok=True)
+    os.makedirs(os.path.dirname(skin), exist_ok=True)
     with zf.open(glbs[0]) as src, open(out, "wb") as dst:
         shutil.copyfileobj(src, dst)
+    # 手臂的原贴图（4K），样例里那张是缩小过的、带黑块
+    for i in zf.infolist():
+        if os.path.basename(i.filename) == "HD_Hands_Male.png":
+            with zf.open(i) as src, open(skin, "wb") as dst:
+                shutil.copyfileobj(src, dst)
     print(f"第一人称手臂 → {os.path.relpath(out)}")
 
 

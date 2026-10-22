@@ -69,7 +69,7 @@ const HELD_SIZE := 0.7
 ## 第一人称手臂模型（assets/models/ 里的文件名，不含扩展名）
 const FP_ARMS_MODEL := "FP_ARM_M"
 ## 手臂模型没带贴图时，依次尝试 assets/textures/ 里这些贴图
-const FP_ARMS_TEXTURES := ["playerMale_Hand.png", "HD_Hands_Male.png"]
+const FP_ARMS_TEXTURES := ["fp_arms_skin.png", "HD_Hands_Male.png"]
 
 ## 贴图 alpha 当成镂空（头发、树叶）。如果模型出现奇怪的洞，改成 false
 const ALPHA_CUTOUT := false

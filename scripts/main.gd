@@ -68,7 +68,7 @@ func _build_world() -> void:
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.tonemap_exposure = 1.15
+	env.tonemap_exposure = 1.0
 	env.fog_enabled = true
 	env.fog_density = 0.018
 	env.fog_sky_affect = 0.6
@@ -90,7 +90,7 @@ func _build_world() -> void:
 		var path := "res://assets/textures/%s" % t
 		if ResourceLoader.exists(path):
 			gm.albedo_texture = load(path)
-			gm.albedo_color = Color(0.85, 0.85, 0.85)
+			gm.albedo_color = Color(0.72, 0.70, 0.68)
 			gm.uv1_scale = Vector3.ONE * (plane.size.x / C.GROUND_TILE)
 			gm.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 			break
@@ -477,16 +477,16 @@ func _update_sky() -> void:
 	var sun_up: float = max(elev, 0.12)
 	# 夜里这盏灯当月光用，从另一侧照过来
 	sun.rotation = Vector3(-asin(sun_up) - 0.05, deg_to_rad(35.0 if elev > 0.0 else 215.0), 0)
-	sun.light_energy = lerp(C.MOON_LIGHT, 1.2, light)
+	sun.light_energy = lerp(C.MOON_LIGHT, 1.0, light)
 	sun.light_color = Color(0.62, 0.7, 1.0).lerp(Color(1.0, 0.96, 0.88), light).lerp(Color(1.0, 0.62, 0.4), dusk * light)
-	var day_sky := Color(0.36, 0.55, 0.82)
+	var day_sky := Color(0.30, 0.50, 0.80)
 	var night_sky := Color(0.07, 0.1, 0.2)
 	var day := int(game_hours / 24.0) + 1
 	var horde := (day == C.HORDE_DAY and hour >= C.NIGHT_START) or (day == C.HORDE_DAY + 1 and hour < C.NIGHT_END)
 	if horde:
 		night_sky = Color(0.35, 0.05, 0.04)
 	sky_mat.sky_top_color = night_sky.lerp(day_sky, light)
-	var horizon := Color(0.16, 0.19, 0.28).lerp(Color(0.78, 0.74, 0.66), light).lerp(Color(0.95, 0.6, 0.4), dusk * 0.6)
+	var horizon := Color(0.16, 0.19, 0.28).lerp(Color(0.66, 0.70, 0.74), light).lerp(Color(0.95, 0.6, 0.4), dusk * 0.6)
 	if horde:
 		horizon = horizon.lerp(Color(0.5, 0.08, 0.05), 1.0 - light)
 	sky_mat.sky_horizon_color = horizon
@@ -497,8 +497,8 @@ func _update_sky() -> void:
 	env.ambient_light_color = C.NIGHT_AMBIENT.lerp(Color(0.78, 0.75, 0.7), light)
 	if horde:
 		env.ambient_light_color = env.ambient_light_color.lerp(Color(0.6, 0.25, 0.22), 1.0 - light)
-	env.ambient_light_energy = lerp(C.NIGHT_AMBIENT_ENERGY, 0.7, light)
-	env.fog_density = lerp(0.016, 0.009, light)
+	env.ambient_light_energy = lerp(C.NIGHT_AMBIENT_ENERGY, 0.45, light)
+	env.fog_density = lerp(0.014, 0.0045, light)
 
 
 func _update_music(delta: float, night: bool, horde: bool) -> void:
