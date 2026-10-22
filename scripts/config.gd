@@ -123,3 +123,47 @@ const FP_ARMS_TEXTURES := ["fp_arms_skin.png", "HD_Hands_Male.png"]
 ## 贴图 alpha 当成镂空（头发、树叶）。如果模型出现奇怪的洞，改成 false
 const ALPHA_CUTOUT := false
 
+## 画质档位：省电 / 均衡 / 高清。暂停菜单里切换。
+## scale_* 是 3D 渲染分辨率比例（UI 始终按屏幕原生分辨率绘制）。
+const QUALITY_PRESETS := [
+	{
+		"name": "省电", "fps": 30, "scale_min": 0.45, "scale_max": 0.6, "scale_start": 0.55,
+		"shadow_distance": 16.0, "shadow_atlas": 1024,
+		"poi_shadow_distance": 0.0, "prop_shadow_distance": 0.0,
+		"poi_range": 170.0, "car_range": 80.0, "prop_range": 45.0, "small_range": 25.0,
+		"deco_range": 35.0, "decal_range": 30.0,
+	},
+	{
+		"name": "均衡", "fps": 60, "scale_min": 0.55, "scale_max": 0.85, "scale_start": 0.7,
+		"shadow_distance": 28.0, "shadow_atlas": 2048,
+		"poi_shadow_distance": 28.0, "prop_shadow_distance": 18.0,
+		"poi_range": 220.0, "car_range": 100.0, "prop_range": 60.0, "small_range": 35.0,
+		"deco_range": 50.0, "decal_range": 45.0,
+	},
+	{
+		"name": "高清", "fps": 60, "scale_min": 0.7, "scale_max": 1.0, "scale_start": 0.9,
+		"shadow_distance": 40.0, "shadow_atlas": 4096,
+		"poi_shadow_distance": 40.0, "prop_shadow_distance": 28.0,
+		"poi_range": 260.0, "car_range": 110.0, "prop_range": 70.0, "small_range": 40.0,
+		"deco_range": 60.0, "decal_range": 60.0,
+	},
+]
+
+## 第一人称基础视野和冲刺时额外拉宽的角度
+const BASE_FOV := 70.0
+const SPRINT_FOV_BONUS := 7.0
+## 开枪后视角回弹的速度（越大回得越快）
+const RECOIL_RECOVERY := 12.0
+## 每次后坐力里有多少会留在准星上（剩下的只是视觉回弹）
+const RECOIL_AIM_SHARE := 0.16
+## 落地时镜头最多下压多少米
+const LAND_DIP_MAX := 0.06
+## 性能面板和远处阴影的刷新间隔（秒）
+const PERF_UPDATE_INTERVAL := 0.5
+const SKY_UPDATE_INTERVAL := 0.1
+const LOD_UPDATE_INTERVAL := 0.5
+## 地上最多留多少摊血
+const BLOOD_POOL_MAX := 24
+## 地上贴花数量
+const DECAL_COUNT := 140
+

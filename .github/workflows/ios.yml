@@ -89,6 +89,14 @@ jobs:
           "$GODOT" --headless -s tools/build_poi.gd
           "$GODOT" --headless --import
 
+      - name: 运行无头测试
+        run: |
+          set -e
+          GODOT="$HOME/godot/Godot.app/Contents/MacOS/Godot"
+          "$GODOT" --headless --path . -s tests/test_perf.gd
+          "$GODOT" --headless --path . -s tests/test_config.gd
+          "$GODOT" --headless --path . res://tests/test_smoke.tscn
+
       - name: 导出 Xcode 工程
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}

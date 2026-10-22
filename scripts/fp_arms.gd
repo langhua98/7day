@@ -50,6 +50,8 @@ var _reload_total := 1.0
 var _swing := 0.0
 var _swing_speed := 3.0
 var _bob := 0.0
+var _sway := Vector2.ZERO
+var _sway_target := Vector2.ZERO
 var _rest_len := {}
 
 
@@ -86,6 +88,7 @@ func _build() -> void:
 		if not (_bones.has(side + "Arm") and _bones.has(side + "ForeArm") and _bones.has(side + "Hand")):
 			return
 	has_arms = true
+	_skel.reset_bone_poses()
 	_apply_texture()
 	# 让模型里的 CameraNode 正好落在镜头位置上
 	_root.basis = Basis(Vector3.UP, PI)
@@ -235,11 +238,19 @@ func _finger_dir_rest(bone: String) -> Vector3:
 	return d.normalized() if d.length() > 0.0001 else Vector3.LEFT
 
 
+## 转头时给手臂一点惯性：先被甩一下，再慢慢回到原位。
+func look(px: Vector2) -> void:
+	_sway_target += Vector2(-px.x, -px.y) * 0.0009
+	_sway_target = _sway_target.limit_length(0.4)
+
+
 func _update_pose(delta: float) -> void:
 	if not has_arms:
 		return
-	_skel.reset_bone_poses()
 	_bob += delta
+	_sway_target = _sway_target.lerp(Vector2.ZERO, 1.0 - exp(-delta * 10.0))
+	_sway = _sway.lerp(_sway_target, 1.0 - exp(-delta * 18.0))
+	var sway_hand := Vector3(_sway.x * 0.12, -_sway.y * 0.1, 0.0)
 	var walk: float = get_meta("walking", 0.0)
 	var bob := Vector3(sin(_bob * 9.0) * 0.012, -abs(cos(_bob * 9.0)) * 0.014, 0) * walk
 	bob += Vector3(0, sin(_bob * 1.7) * 0.004, 0)
@@ -258,7 +269,7 @@ func _update_pose(delta: float) -> void:
 			strike = smoothstep(0.35, 0.55, t)
 		else:
 			strike = 1.0 - smoothstep(0.7, 1.0, t)
-	var hand := RIGHT_HAND + bob
+	var hand := RIGHT_HAND + bob + sway_hand
 	var tilt := WEAPON_TILT
 	var finger := Vector3(0, 0, -1)
 	var kick := 0.0
@@ -270,13 +281,13 @@ func _update_pose(delta: float) -> void:
 			if _reload_t > 0.0:
 				_reload_t = max(0.0, _reload_t - delta)
 				rl = sin((1.0 - _reload_t / _reload_total) * PI)
-			hand = (PISTOL_HAND if _grip == Grip.PISTOL else RIFLE_HAND) + bob + Vector3(0, 0.015, 0.06) * kick \
+			hand = (PISTOL_HAND if _grip == Grip.PISTOL else RIFLE_HAND) + bob + sway_hand + Vector3(0, 0.015, 0.06) * kick \
 				+ Vector3(-0.05, -0.12, 0.06) * rl
 			tilt = -0.25 + 0.25 * kick - 0.5 * rl
 			finger = Vector3(0, -0.25, -1)
 		Grip.SPEAR:
 			# 矛：举在身侧，向前捅
-			hand = SPEAR_HAND + bob + Vector3(0.02, 0.06, 0.12) * lift + Vector3(-0.05, 0.03, -0.32) * strike
+			hand = SPEAR_HAND + bob + sway_hand + Vector3(0.02, 0.06, 0.12) * lift + Vector3(-0.05, 0.03, -0.32) * strike
 			finger = Vector3(0, -1, -0.2)
 		_:
 			hand += Vector3(0.04, 0.16, 0.10) * lift + Vector3(-0.14, 0.02, -0.18) * strike
@@ -292,7 +303,7 @@ func _update_pose(delta: float) -> void:
 	# 左手
 	match _grip:
 		Grip.NONE:
-			var lh := LEFT_HAND_FISTS + Vector3(-bob.x, bob.y, 0) + Vector3(0.05, 0.1, 0.08) * lift + Vector3(0.05, 0.02, -0.1) * strike
+			var lh := LEFT_HAND_FISTS + Vector3(-bob.x, bob.y, 0) + sway_hand + Vector3(0.05, 0.1, 0.08) * lift + Vector3(0.05, 0.02, -0.1) * strike
 			_place_arm("Left", lh, Vector3(1, -0.6, 0), Vector3(0.15, 0, -1).rotated(Vector3.RIGHT, 0.2), Vector3(-0.6, -1.0, 0.2))
 			_curl("Left", 1.0)
 		Grip.RIFLE:
@@ -301,7 +312,7 @@ func _update_pose(delta: float) -> void:
 			_place_arm("Left", lh, Vector3.UP, Vector3(0.7, 0, -0.7), Vector3(-0.8, -1.0, 0))
 			_curl("Left", 0.75)
 		_:
-			_place_arm("Left", LEFT_HAND_AWAY + bob, Vector3.RIGHT, Vector3(0, -0.3, -1), Vector3(-0.6, -1.0, 0.2))
+			_place_arm("Left", LEFT_HAND_AWAY + bob + sway_hand, Vector3.RIGHT, Vector3(0, -0.3, -1), Vector3(-0.6, -1.0, 0.2))
 			_curl("Left", 0.6)
 
 
@@ -331,6 +342,7 @@ func _update_mount(tilt: float, kick: float) -> void:
 			b = Basis(Vector3.FORWARD, 0.2) * b
 		_:
 			b = Basis(Vector3.BACK, 0.3) * Basis(Vector3.RIGHT, -tilt) * b
+	b = Basis(Vector3.UP, _sway.x * 0.45) * Basis(Vector3.RIGHT, -_sway.y * 0.35) * b
 	_weapon_mount.transform = Transform3D(b, center)
 
 

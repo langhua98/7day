@@ -54,9 +54,20 @@ var world_seed := 0
 var _save_t := 0.0
 const SAVE_PATH := "user://save.json"
 
+## 画质和动态分辨率
+var _quality := 1
+var _quality_ready := false
+var _governor := PerfGovernor.new()
+var _land_dip := 0.0
+var _sky_t := 0.0
+var _lod_t := 0.0
+var _perf_t := 0.0
+
 
 func _ready() -> void:
 	rng.randomize()
+	# 先按均衡档锁帧，读完设置后再切到玩家选的档位
+	Engine.max_fps = C.QUALITY_PRESETS[1].fps
 	# 城市布局跟着存档走：继续上次时还是同一座城
 	var save := _read_save()
 	world_seed = int(save.get("seed", rng.randi() % 1000000))
@@ -76,7 +87,9 @@ func _ready() -> void:
 	hud.quit_to_title.connect(func():
 		_save()
 		running = false
+		zombie_root.process_mode = Node.PROCESS_MODE_DISABLED
 		Sfx.stop_loops()
+		hud.set_perf_visible(false)
 		hud.show_start(true))
 	hud.settings_changed.connect(_apply_settings)
 	_apply_settings(hud.settings)
@@ -95,6 +108,51 @@ func _apply_settings(st: Dictionary) -> void:
 	Sfx.set_volume("Music", st.music)
 	_brightness = st.brightness
 	env.tonemap_exposure = st.brightness
+	var q := clampi(int(st.get("quality", 1)), 0, C.QUALITY_PRESETS.size() - 1)
+	# 拖亮度/灵敏度滑条也会发 settings_changed，只有画质变了才重建阴影和可见距离
+	if not _quality_ready or q != _quality:
+		_quality_ready = true
+		_apply_quality(q)
+	if hud:
+		hud.set_perf_visible(float(st.get("show_perf", 0.0)) > 0.5 and running)
+
+
+func _apply_quality(level: int) -> void:
+	_quality = clampi(level, 0, C.QUALITY_PRESETS.size() - 1)
+	var p: Dictionary = C.QUALITY_PRESETS[_quality]
+	Engine.max_fps = int(p.fps)
+	_governor.configure(p.scale_min, p.scale_max, p.scale_start, p.fps, C.PERF_UPDATE_INTERVAL)
+	get_viewport().scaling_3d_scale = _governor.scale
+	sun.shadow_enabled = _quality > 0
+	sun.directional_shadow_max_distance = p.shadow_distance
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS if _quality < 2 \
+		else DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+	RenderingServer.directional_shadow_atlas_set_size(int(p.shadow_atlas), true)
+	world.apply_quality(_quality, p)
+	world.update_shadows(player.global_position, _quality)
+	_perf_t = 0.0
+
+
+func _update_render_scale(delta: float) -> void:
+	var s := _governor.step(delta)
+	if not is_equal_approx(s, get_viewport().scaling_3d_scale):
+		get_viewport().scaling_3d_scale = s
+
+
+func _update_perf(delta: float) -> void:
+	if hud.settings.show_perf <= 0.5:
+		return
+	_perf_t += delta
+	if _perf_t < C.PERF_UPDATE_INTERVAL:
+		return
+	_perf_t = 0.0
+	var fps := int(Engine.get_frames_per_second())
+	var ms := 1000.0 / maxf(fps, 1.0)
+	var draws := int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
+	var prims := int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
+	var nodes := int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
+	hud.set_perf("FPS %d  %.1f ms\n绘制 %d  三角面 %dk\n3D %.2f  僵尸 %d  节点 %d" % [
+		fps, ms, draws, prims / 1000, get_viewport().scaling_3d_scale, zombie_root.get_child_count(), nodes])
 
 
 var _brightness := 1.0
@@ -169,6 +227,8 @@ func _continue() -> void:
 	_refresh_inventory()
 	var day := int(game_hours / 24.0) + 1
 	_night_announced = day if fmod(game_hours, 24.0) >= C.NIGHT_START else -1
+	_update_sky()
+	world.update_shadows(player.global_position, _quality)
 	hud.toast("继续第 %d 天" % day)
 
 
@@ -218,7 +278,7 @@ func _build_player() -> void:
 	camera.position.y = C.PLAYER_EYE_HEIGHT
 	camera.near = 0.03
 	camera.far = 260.0
-	camera.fov = 70.0
+	camera.fov = C.BASE_FOV
 	player.add_child(camera)
 	arms = FpArms.new()
 	camera.add_child(arms)
@@ -227,6 +287,7 @@ func _build_player() -> void:
 # —— 开局 / 结束 ——
 
 func _start(fresh := true) -> void:
+	zombie_root.process_mode = Node.PROCESS_MODE_INHERIT
 	for z in zombie_root.get_children():
 		z.queue_free()
 	for l in loot_root.get_children():
@@ -257,6 +318,15 @@ func _start(fresh := true) -> void:
 	_reload_left = 0.0
 	stamina = 100.0
 	_vy = 0.0
+	_recoil = 0.0
+	_land_dip = 0.0
+	camera.position.y = C.PLAYER_EYE_HEIGHT
+	camera.fov = C.BASE_FOV
+	_sky_t = 0.0
+	_lod_t = 0.0
+	_apply_quality(_quality)
+	_update_sky()
+	hud.set_perf_visible(hud.settings.show_perf > 0.5)
 	for i in C.LOOT_COUNT / 2:
 		_spawn_loot(world.free_point(Vector3.ZERO, 4.0, 60.0))
 	# 开局在面前放一件近战武器，马上就能看到手里的模型
@@ -275,6 +345,9 @@ func _start(fresh := true) -> void:
 
 func _end(win: bool) -> void:
 	running = false
+	hud.set_perf_visible(false)
+	# 结算界面不跑僵尸 AI 和骨骼，省电
+	zombie_root.process_mode = Node.PROCESS_MODE_DISABLED
 	_delete_save()
 	Sfx.stop_loops()
 	if not win:
@@ -291,7 +364,6 @@ func _end(win: bool) -> void:
 
 func _process(delta: float) -> void:
 	if not running:
-		_update_sky()
 		return
 	game_hours += delta * 24.0 / C.DAY_SECONDS
 	var day := int(game_hours / 24.0) + 1
@@ -303,13 +375,22 @@ func _process(delta: float) -> void:
 		return
 
 	_update_player(delta)
-	_update_sky()
+	_sky_t += delta
+	if _sky_t >= C.SKY_UPDATE_INTERVAL:
+		_sky_t = 0.0
+		_update_sky()
 	_update_zombies(delta, day, night, horde)
 	_update_loot(delta)
 	_update_action(delta)
 	_update_survival(delta)
 	_update_music(delta, night, horde)
 	_update_banner(day, hour, night, horde)
+	_lod_t += delta
+	if _lod_t >= C.LOD_UPDATE_INTERVAL:
+		_lod_t = 0.0
+		world.update_shadows(player.global_position, _quality)
+	_update_render_scale(delta)
+	_update_perf(delta)
 	_save_t += delta
 	if _save_t > 30.0:
 		_save_t = 0.0
@@ -328,6 +409,7 @@ func _update_player(delta: float) -> void:
 	var look := hud.consume_look()
 	yaw -= look.x * C.LOOK_SENSITIVITY * hud.settings.sensitivity
 	pitch = clamp(pitch - look.y * C.LOOK_SENSITIVITY * hud.settings.sensitivity, -1.3, 1.3)
+	arms.look(look)
 	# 电脑上调试：WASD 移动、方向键看、空格攻击
 	var mv := hud.move
 	if Input.is_physical_key_pressed(KEY_W): mv.y += 1
@@ -351,18 +433,22 @@ func _update_player(delta: float) -> void:
 	if Input.is_physical_key_pressed(KEY_C):
 		_jump()
 	_vy -= C.GRAVITY * delta
+	var fall := _vy
 	player.position.y = max(0.0, player.position.y + _vy * delta)
 	if player.position.y <= 0.0:
-		if _vy < -3.0:
+		if fall < -3.0:
 			Sfx.play("land", Vector3.INF, -6.0)
+			_land_dip = minf(C.LAND_DIP_MAX, -fall * 0.012)
 		_vy = 0.0
-	# 后坐力：镜头往上一跳，慢慢回落
-	if _recoil > 0.0:
-		var r := minf(_recoil, delta * 1.6)
-		_recoil -= r
-		pitch = clamp(pitch + r, -1.3, 1.3)
+	# 后坐力：先往上跳，再回弹；只有一小部分留在准星上
+	_recoil = lerp(_recoil, 0.0, 1.0 - exp(-delta * C.RECOIL_RECOVERY))
 	player.rotation.y = yaw
-	camera.rotation.x = pitch
+	camera.rotation.x = clampf(pitch + _recoil, -1.4, 1.4)
+	# 冲刺时视野稍微拉宽，落地时镜头轻压
+	var fov_target := C.BASE_FOV + (C.SPRINT_FOV_BONUS if sprint else 0.0)
+	camera.fov = lerp(camera.fov, fov_target, 1.0 - exp(-delta * 6.0))
+	_land_dip = lerp(_land_dip, 0.0, 1.0 - exp(-delta * 9.0))
+	camera.position.y = C.PLAYER_EYE_HEIGHT - _land_dip
 	var fwd := -player.global_basis.z
 	var right := player.global_basis.x
 	var vel := (fwd * mv.y + right * mv.x) * C.PLAYER_SPEED * (C.SPRINT_MULT if sprint else 1.0)
@@ -393,6 +479,7 @@ func _update_player(delta: float) -> void:
 
 
 func _attack() -> void:
+	hud.crosshair_kick()
 	var row: Dictionary = Assets.items_by_id.get(equipped, {})
 	var kind: int = row.get("kind", -1)
 	if kind == Assets.Kind.GUN:
@@ -445,7 +532,9 @@ func _fire(row: Dictionary) -> void:
 	arms.swing(7.0)
 	Fx.muzzle(arms, arms.muzzle_position())
 	Sfx.play(st.fire_snd, Vector3.INF, -2.0, 0.05)
-	_recoil += 0.012 + st.damage * 0.0004 * st.pellets
+	var kick: float = 0.012 + st.damage * 0.0004 * st.pellets
+	_recoil += kick
+	pitch = clampf(pitch + kick * C.RECOIL_AIM_SHARE, -1.3, 1.3)
 	var eye := camera.global_position
 	var aim := -camera.global_basis.z
 	for p in st.pellets:
@@ -522,6 +611,7 @@ func _hit_zombie(z: Zombie, dmg: float, head: bool, at: Vector3, dir: Vector3) -
 	Fx.blood(self, at, dir.normalized() + Vector3.UP * 0.2, head)
 	var gun: bool = Assets.items_by_id.get(equipped, {}).get("kind", -1) == Assets.Kind.GUN
 	Sfx.play("bullet_flesh" if gun else "hit_flesh", at, -2.0)
+	hud.hitmarker(head)
 	if head:
 		hud.toast("爆头！")
 

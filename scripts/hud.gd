@@ -47,8 +47,12 @@ var _hurt := ColorRect.new()
 var _pause_btn := Button.new()
 var _pause_panel := PanelContainer.new()
 var _continue_btn := Button.new()
-## 设置：灵敏度、亮度、音量、音乐音量（倍数），存在 user://settings.cfg
-var settings := {"sensitivity": 1.0, "brightness": 1.0, "volume": 1.0, "music": 0.8}
+var _cross := Label.new()
+var _hitmarker := Label.new()
+var _perf := Label.new()
+## 设置：灵敏度、亮度、音量、音乐音量（倍数）、画质档位、性能面板，存在 user://settings.cfg
+var settings := {"sensitivity": 1.0, "brightness": 1.0, "volume": 1.0, "music": 0.8,
+	"quality": 1.0, "show_perf": 0.0}
 const SETTINGS_PATH := "user://settings.cfg"
 
 var _joy_id := -1
@@ -58,6 +62,21 @@ var _look_id := -1
 var _look_last := Vector2.ZERO
 var _toast_t := 0.0
 const JOY_RADIUS := 90.0
+var _cross_tween: Tween
+var _hit_tween: Tween
+var _status_text := ""
+var _kills_text := ""
+var _ammo_text := ""
+var _effects_text := ""
+var _banner_text := ""
+var _action_text := ""
+var _action_enabled := true
+var _progress_text := ""
+var _progress_shown := false
+var _water_value := -1.0
+var _stamina_value := -1.0
+var _hp_value := -1.0
+var _food_value := -1.0
 
 
 func _ready() -> void:
@@ -120,13 +139,40 @@ func _ready() -> void:
 	_root.add_child(_toast)
 
 	# 准星
-	var cross := Label.new()
-	cross.text = "+"
-	cross.set_anchors_preset(Control.PRESET_CENTER)
-	cross.position = Vector2(-10, -22)
-	cross.add_theme_font_size_override("font_size", 32)
-	cross.modulate = Color(1, 1, 1, 0.6)
-	_root.add_child(cross)
+	_cross.text = "+"
+	_cross.set_anchors_preset(Control.PRESET_CENTER)
+	_cross.position = Vector2(-16, -28)
+	_cross.size = Vector2(32, 56)
+	_cross.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_cross.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_cross.add_theme_font_size_override("font_size", 32)
+	_cross.modulate = Color(1, 1, 1, 0.6)
+	_cross.pivot_offset = _cross.size * 0.5
+	_cross.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_cross)
+
+	# 命中标记：打中僵尸时在准星旁闪一下
+	_hitmarker.text = "×"
+	_hitmarker.set_anchors_preset(Control.PRESET_CENTER)
+	_hitmarker.position = Vector2(-32, -34)
+	_hitmarker.size = Vector2(64, 64)
+	_hitmarker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_hitmarker.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_hitmarker.add_theme_font_size_override("font_size", 46)
+	_hitmarker.pivot_offset = Vector2(32, 32)
+	_hitmarker.modulate = Color(1, 1, 1, 0)
+	_hitmarker.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_hitmarker)
+
+	# 性能面板：左上角血条下面，默认关闭
+	_perf.position = Vector2(28, 168)
+	_perf.size = Vector2(360, 110)
+	_perf.add_theme_font_override("font", number_font())
+	_perf.add_theme_font_size_override("font_size", 19)
+	_perf.add_theme_color_override("font_color", Color(0.65, 1.0, 0.7))
+	_perf.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_perf.visible = false
+	_root.add_child(_perf)
 
 	# 底部快捷栏
 	_hotbar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
@@ -388,7 +434,7 @@ func _build_end_panel() -> void:
 func _build_pause_panel() -> void:
 	_pause_panel.set_anchors_preset(Control.PRESET_CENTER)
 	_pause_panel.custom_minimum_size = Vector2(640, 0)
-	_pause_panel.position = Vector2(-320, -260)
+	_pause_panel.position = Vector2(-320, -335)
 	_pause_panel.visible = false
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 18)
@@ -419,6 +465,29 @@ func _build_pause_panel() -> void:
 			settings_changed.emit(settings))
 		h.add_child(sl)
 		v.add_child(h)
+
+	# 画质：省电 / 均衡 / 高清
+	var qh := HBoxContainer.new()
+	var ql := Label.new()
+	ql.text = "画质"
+	ql.custom_minimum_size = Vector2(180, 0)
+	qh.add_child(ql)
+	var q := OptionButton.new()
+	for i in GameConfig.QUALITY_PRESETS.size():
+		q.add_item(GameConfig.QUALITY_PRESETS[i].name, i)
+	q.selected = clampi(int(settings.quality), 0, GameConfig.QUALITY_PRESETS.size() - 1)
+	q.custom_minimum_size = Vector2(380, 50)
+	q.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	q.item_selected.connect(_on_quality_selected)
+	qh.add_child(q)
+	v.add_child(qh)
+
+	var perf_toggle := CheckButton.new()
+	perf_toggle.text = "显示性能信息"
+	perf_toggle.button_pressed = settings.show_perf > 0.5
+	perf_toggle.toggled.connect(_on_show_perf_toggled)
+	v.add_child(perf_toggle)
+
 	var btns := HBoxContainer.new()
 	btns.alignment = BoxContainer.ALIGNMENT_CENTER
 	btns.add_theme_constant_override("separation", 30)
@@ -455,6 +524,8 @@ func _load_settings() -> void:
 	if cf.load(SETTINGS_PATH) == OK:
 		for k in settings:
 			settings[k] = float(cf.get_value("settings", k, settings[k]))
+		settings.quality = clampf(settings.quality, 0.0, GameConfig.QUALITY_PRESETS.size() - 1.0)
+		settings.show_perf = 1.0 if settings.show_perf > 0.5 else 0.0
 
 
 func _save_settings() -> void:
@@ -462,6 +533,18 @@ func _save_settings() -> void:
 	for k in settings:
 		cf.set_value("settings", k, settings[k])
 	cf.save(SETTINGS_PATH)
+
+
+func _on_quality_selected(index: int) -> void:
+	settings.quality = float(clampi(index, 0, GameConfig.QUALITY_PRESETS.size() - 1))
+	_save_settings()
+	settings_changed.emit(settings)
+
+
+func _on_show_perf_toggled(on: bool) -> void:
+	settings.show_perf = 1.0 if on else 0.0
+	_save_settings()
+	settings_changed.emit(settings)
 
 
 func set_start_info(text: String) -> void:
@@ -476,35 +559,62 @@ func show_end(text: String) -> void:
 
 ## 拿着枪时显示「弹匣 / 背包」子弹数和换弹键；text 为空就隐藏
 func set_ammo(text: String) -> void:
+	if text == _ammo_text:
+		return
+	_ammo_text = text
 	_ammo.visible = text != ""
 	_ammo.text = text
 	_reload_btn.visible = text != ""
 
 
 func set_survival(water: float, effects: String) -> void:
-	_water_bar.value = water
-	_effects.text = effects
+	if not is_equal_approx(water, _water_value):
+		_water_value = water
+		_water_bar.value = water
+	if effects != _effects_text:
+		_effects_text = effects
+		_effects.text = effects
 
 
 func set_stamina(v: float) -> void:
+	if is_equal_approx(v, _stamina_value):
+		return
+	_stamina_value = v
 	_stamina_bar.value = v
 
 
 func set_status(day: int, hour: float, hp: float, food: float, kills: int, zombies: int, night: bool) -> void:
 	var h := int(hour)
 	var m := int((hour - h) * 60.0)
-	_status.text = "第 %d 天  %02d:%02d %s" % [day, h, m, "夜" if night else ""]
-	_hp_bar.value = hp
-	_food_bar.value = food
-	_kills.text = "击杀 %d   附近 %d" % [kills, zombies]
+	var status := "第 %d 天  %02d:%02d %s" % [day, h, m, "夜" if night else ""]
+	if status != _status_text:
+		_status_text = status
+		_status.text = status
+	if not is_equal_approx(hp, _hp_value):
+		_hp_value = hp
+		_hp_bar.value = hp
+	if not is_equal_approx(food, _food_value):
+		_food_value = food
+		_food_bar.value = food
+	var kills_text := "击杀 %d   附近 %d" % [kills, zombies]
+	if kills_text != _kills_text:
+		_kills_text = kills_text
+		_kills.text = kills_text
 
 
 func set_banner(text: String) -> void:
+	if text == _banner_text:
+		return
+	_banner_text = text
 	_banner.text = text
 
 
 ## 搜索 / 拾取按钮上的字；空字符串就隐藏。enabled=false 时变灰（比如容器已经翻过了）
 func set_action(text: String, enabled := true) -> void:
+	if text == _action_text and enabled == _action_enabled:
+		return
+	_action_text = text
+	_action_enabled = enabled
 	_action_btn.visible = text != ""
 	_action_btn.text = text
 	_action_btn.modulate = Color.WHITE if enabled else Color(1, 1, 1, 0.45)
@@ -513,11 +623,48 @@ func set_action(text: String, enabled := true) -> void:
 ## 翻找进度：value < 0 隐藏
 func set_progress(value: float, text := "") -> void:
 	var show := value >= 0.0
+	if show == _progress_shown and (not show or text == _progress_text):
+		if show:
+			_progress.value = value
+		return
+	_progress_shown = show
+	_progress_text = text
 	_progress.visible = show
 	_progress_label.visible = show
 	if show:
 		_progress.value = value
 		_progress_label.text = text
+
+
+## 暂停菜单里的「显示性能信息」
+func set_perf_visible(on: bool) -> void:
+	_perf.visible = on
+
+
+func set_perf(text: String) -> void:
+	if text != _perf.text:
+		_perf.text = text
+
+
+## 打中僵尸：准星旁闪一个 ×，爆头变红。
+func hitmarker(headshot := false) -> void:
+	if _hit_tween and _hit_tween.is_valid():
+		_hit_tween.kill()
+	_hitmarker.modulate = Color(1.0, 0.32, 0.22, 1.0) if headshot else Color(1, 1, 1, 0.9)
+	_hitmarker.scale = Vector2(1.35, 1.35)
+	_hit_tween = create_tween()
+	_hit_tween.set_parallel(true)
+	_hit_tween.tween_property(_hitmarker, "scale", Vector2.ONE, 0.16)
+	_hit_tween.tween_property(_hitmarker, "modulate:a", 0.0, 0.24)
+
+
+## 开枪/命中时准星轻轻放大再回弹。
+func crosshair_kick() -> void:
+	if _cross_tween and _cross_tween.is_valid():
+		_cross_tween.kill()
+	_cross.scale = Vector2(1.25, 1.25)
+	_cross_tween = create_tween()
+	_cross_tween.tween_property(_cross, "scale", Vector2.ONE, 0.14)
 
 
 func toast(text: String) -> void:
