@@ -44,12 +44,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: assets
-          key: assets-v1
+          key: assets-v2
 
       - name: 从小桔云盘下载素材
         env:
           XIAOJU_TOKEN: ${{ secrets.XIAOJU_TOKEN }}
         run: |
+          # Pillow 用来把场景贴图缩小（省手机内存），装不上也能继续
+          python3 -m pip install --quiet --user --break-system-packages pillow || python3 -m pip install --quiet --user pillow || true
           python3 tools/fetch_assets.py \
             --zombies "${{ github.event.inputs.zombies || 'soldier,nurse,cop,biker,lumberjack,joe,arlene,screamer' }}" \
             --music "${{ github.event.inputs.music || '6' }}"
@@ -83,6 +85,8 @@ jobs:
         run: |
           GODOT="$HOME/godot/Godot.app/Contents/MacOS/Godot"
           "$GODOT" --headless --import || true
+          # 市中心建筑：游戏的远景网格转成 Godot 网格
+          "$GODOT" --headless -s tools/build_poi.gd
           "$GODOT" --headless --import
 
       - name: 导出 Xcode 工程
