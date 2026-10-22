@@ -35,11 +35,79 @@ var _swing := 0.0
 var _swing_speed := 3.0
 var _bob := 0.0
 var _rest_len := {}
+var _reload_t := 0.0
+var _reload_dur := 1.0
+var _sprint := 0.0
+var _extra := Basis.IDENTITY   # 换弹时枪额外转的角度
+var _flash := Node3D.new()
+var _flash_light := OmniLight3D.new()
+var _flash_mesh := MeshInstance3D.new()
+var _flash_t := 0.0
 
 
 func _ready() -> void:
 	add_child(_root)
 	_build()
+	_build_flash()
+
+
+## 枪口火光：一个朝着镜头的亮片加一盏一闪而过的灯（会照亮周围的墙和僵尸）
+func _build_flash() -> void:
+	var g := Gradient.new()
+	g.set_color(0, Color(1.0, 0.95, 0.7, 1.0))
+	g.set_color(1, Color(1.0, 0.45, 0.1, 0.0))
+	g.add_point(0.35, Color(1.0, 0.75, 0.3, 0.85))
+	var tex := GradientTexture2D.new()
+	tex.gradient = g
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(1.0, 0.5)
+	tex.width = 64
+	tex.height = 64
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	mat.albedo_texture = tex
+	mat.no_depth_test = true
+	var q := QuadMesh.new()
+	q.size = Vector2(0.2, 0.2)
+	_flash_mesh.mesh = q
+	_flash_mesh.material_override = mat
+	_flash_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_flash.add_child(_flash_mesh)
+	_flash_light.light_color = Color(1.0, 0.75, 0.4)
+	_flash_light.light_energy = 3.0
+	_flash_light.omni_range = 7.0
+	_flash_light.position = Vector3(0, 0, -0.3)
+	_flash.add_child(_flash_light)
+	_flash.visible = false
+	add_child(_flash)
+
+
+## 枪口在镜头空间里的位置
+func muzzle() -> Vector3:
+	var tip := Vector3(0, 0.03, _weapon_len * 0.8 * (1.0 if GUN_BARREL_PLUS_Z else -1.0))
+	return _weapon_mount.transform * tip
+
+
+func muzzle_flash() -> void:
+	_flash.position = muzzle()
+	_flash_mesh.rotation.z = randf() * TAU
+	_flash_mesh.scale = Vector3.ONE * randf_range(0.8, 1.3)
+	_flash.visible = true
+	_flash_t = 0.05
+
+
+## 换弹动作：枪往下压、侧过来，左手去拿弹匣
+func reload(duration: float) -> void:
+	_reload_dur = max(0.2, duration)
+	_reload_t = _reload_dur
+
+
+func cancel_reload() -> void:
+	_reload_t = 0.0
 
 
 func _build() -> void:
@@ -234,6 +302,13 @@ func _update_pose(delta: float) -> void:
 			strike = smoothstep(0.35, 0.55, t)
 		else:
 			strike = 1.0 - smoothstep(0.7, 1.0, t)
+	_sprint = move_toward(_sprint, get_meta("sprint", 0.0), delta * 4.0)
+	var rl := 0.0
+	if _reload_t > 0.0:
+		_reload_t = max(0.0, _reload_t - delta)
+		rl = sin((1.0 - _reload_t / _reload_dur) * PI)
+	_extra = Basis(Vector3.FORWARD, 0.7 * rl) * Basis(Vector3.RIGHT, 0.35 * rl) * Basis(Vector3.UP, 0.5 * _sprint)
+	bob *= 1.0 + _sprint * 1.5
 	var hand := RIGHT_HAND + bob
 	var tilt := WEAPON_TILT
 	var finger := Vector3(0, 0, -1)
@@ -243,6 +318,7 @@ func _update_pose(delta: float) -> void:
 			# 枪：手腕放平，握把略向后倾；开枪时往后上方一顿
 			kick = sin(t * PI) if t > 0.0 else 0.0
 			hand = (PISTOL_HAND if _grip == Grip.PISTOL else RIFLE_HAND) + bob + Vector3(0, 0.015, 0.06) * kick
+			hand += Vector3(-0.03, -0.08, 0.05) * rl + Vector3(0.04, -0.07, 0.06) * _sprint
 			tilt = -0.25 + 0.25 * kick
 			finger = Vector3(0, -0.25, -1)
 		Grip.SPEAR:
@@ -250,7 +326,7 @@ func _update_pose(delta: float) -> void:
 			hand = SPEAR_HAND + bob + Vector3(0.02, 0.06, 0.12) * lift + Vector3(-0.05, 0.03, -0.32) * strike
 			finger = Vector3(0, -1, -0.2)
 		_:
-			hand += Vector3(0.04, 0.16, 0.10) * lift + Vector3(-0.14, 0.02, -0.18) * strike
+			hand += Vector3(0.04, 0.16, 0.10) * lift + Vector3(-0.14, 0.02, -0.18) * strike + Vector3(0, -0.04, 0.03) * _sprint
 			tilt += -0.9 * lift + 1.2 * strike
 			finger = Vector3(0, 0, -1).rotated(Vector3.RIGHT, -0.15 - tilt * 0.5)
 	# 右手：拳眼朝上，掌心朝左
@@ -267,8 +343,14 @@ func _update_pose(delta: float) -> void:
 			# 左手托在枪管下面
 			var fwd := -_weapon_mount.basis.z
 			var lh := _weapon_mount.position + fwd * _weapon_len * 0.32 + Vector3(0, -0.045, 0)
+			lh += Vector3(0.02, -0.12, 0.1) * rl
 			_place_arm("Left", lh, Vector3.UP, Vector3(0.7, 0, -0.7), Vector3(-0.8, -1.0, 0))
 			_curl("Left", 0.75)
+		Grip.PISTOL:
+			# 换弹时左手过来托住枪
+			var lh := LEFT_HAND_AWAY.lerp(_weapon_mount.position + Vector3(-0.05, -0.09, 0.02), rl) + bob
+			_place_arm("Left", lh, Vector3.RIGHT, Vector3(0.3, -0.3, -1), Vector3(-0.6, -1.0, 0.2))
+			_curl("Left", 0.6 + 0.3 * rl)
 		_:
 			_place_arm("Left", LEFT_HAND_AWAY + bob, Vector3.RIGHT, Vector3(0, -0.3, -1), Vector3(-0.6, -1.0, 0.2))
 			_curl("Left", 0.6)
@@ -294,7 +376,7 @@ func _update_mount(tilt: float, kick: float) -> void:
 		Grip.PISTOL, Grip.RIFLE:
 			# 枪口稍微对准准星
 			var yaw := 0.22 if _grip == Grip.PISTOL else 0.04
-			b = Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, 0.12 * kick) * Basis(Vector3.UP, PI if GUN_BARREL_PLUS_Z else 0.0)
+			b = _extra * Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, 0.12 * kick) * Basis(Vector3.UP, PI if GUN_BARREL_PLUS_Z else 0.0)
 			center += Vector3(0, 0.035, 0)
 		Grip.SMALL:
 			b = Basis(Vector3.FORWARD, 0.2) * b
@@ -305,6 +387,7 @@ func _update_mount(tilt: float, kick: float) -> void:
 
 ## 换手上的东西：有模型用模型（真实大小，原点就是握把），没模型用图标
 func hold(item_id: String) -> void:
+	_reload_t = 0.0
 	if _weapon:
 		_weapon.queue_free()
 		_weapon = null
@@ -368,6 +451,10 @@ func is_swinging() -> bool:
 
 
 func _process(delta: float) -> void:
+	if _flash_t > 0.0:
+		_flash_t -= delta
+		if _flash_t <= 0.0:
+			_flash.visible = false
 	if has_arms:
 		_update_pose(delta)
 	elif _swing > 0.0:

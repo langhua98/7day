@@ -5,7 +5,7 @@ extends Node
 const ROOT := "res://assets"
 const INDEX_PATH := "res://assets/index/icon_to_model.json"
 
-enum Kind { MELEE, GUN, FOOD, DRINK, MEDICAL, RESOURCE, OTHER }
+enum Kind { MELEE, GUN, FOOD, DRINK, MEDICAL, RESOURCE, OTHER, AMMO }
 
 ## 每项: {id, zh, en, model, icon, kind, power}
 var items: Array[Dictionary] = []
@@ -252,7 +252,7 @@ func _classify(row: Dictionary) -> void:
 			if id.contains(word) and word.length() > best:
 				best = word.length()
 				row.power = MELEE_POWER[word]
-	elif id.begins_with("medical"):
+	elif id.begins_with("medical") or id.begins_with("drug"):
 		row.kind = Kind.MEDICAL
 		row.power = 35.0
 	elif id.begins_with("drink"):
@@ -261,8 +261,42 @@ func _classify(row: Dictionary) -> void:
 	elif id.begins_with("food"):
 		row.kind = Kind.FOOD
 		row.power = 35.0
-	elif id.begins_with("resource") or id.begins_with("ammo"):
+	elif id.begins_with("ammo"):
 		row.kind = Kind.RESOURCE
+		for a in GameConfig.AMMO:
+			if id.contains(a[0]):
+				row.kind = Kind.AMMO
+				row.cal = a[1]
+				row.power = a[2]
+				break
+	elif id.begins_with("resource"):
+		row.kind = Kind.RESOURCE
+
+
+## 枪的数值（口径、弹匣、射速……），见 config.gd 的 GUNS
+func gun_stats(id: String) -> Dictionary:
+	var low := id.to_lower()
+	for g in GameConfig.GUNS:
+		if low.contains(g[0]):
+			return g[1]
+	return GameConfig.GUNS[-1][1]
+
+
+## 僵尸种类（名字、血量倍数、特殊能力），见 config.gd 的 ZOMBIE_TYPES
+func zombie_type(model_name: String) -> Dictionary:
+	var low := model_name.to_lower()
+	for t in GameConfig.ZOMBIE_TYPES:
+		if low.contains(t[0]):
+			return t[1]
+	return GameConfig.ZOMBIE_TYPES[-1][1]
+
+
+## 某种口径的弹药物品（没有就返回空字符串）
+func ammo_item(cal: String) -> String:
+	for id in loot_pool.get(Kind.AMMO, []):
+		if items_by_id[id].get("cal", "") == cal:
+			return id
+	return ""
 
 
 func display_name(id: String) -> String:
@@ -276,12 +310,12 @@ func display_name(id: String) -> String:
 
 ## 不同容器掉的东西不一样：垃圾桶多是材料，购物车多是吃的，警车里有枪
 const LOOT_WEIGHTS := {
-	"any": {Kind.MELEE: 18, Kind.GUN: 8, Kind.FOOD: 22, Kind.DRINK: 16, Kind.MEDICAL: 14, Kind.RESOURCE: 22},
-	"trash": {Kind.MELEE: 6, Kind.FOOD: 20, Kind.DRINK: 12, Kind.MEDICAL: 4, Kind.RESOURCE: 58},
+	"any": {Kind.MELEE: 18, Kind.GUN: 8, Kind.FOOD: 22, Kind.DRINK: 16, Kind.MEDICAL: 14, Kind.RESOURCE: 16, Kind.AMMO: 12},
+	"trash": {Kind.MELEE: 6, Kind.FOOD: 20, Kind.DRINK: 12, Kind.MEDICAL: 4, Kind.RESOURCE: 52, Kind.AMMO: 6},
 	"food": {Kind.FOOD: 70, Kind.DRINK: 25, Kind.RESOURCE: 5},
 	"drink": {Kind.DRINK: 80, Kind.FOOD: 20},
 	"medical": {Kind.MEDICAL: 70, Kind.FOOD: 10, Kind.DRINK: 10, Kind.RESOURCE: 10},
-	"weapon": {Kind.MELEE: 35, Kind.GUN: 30, Kind.RESOURCE: 35},
+	"weapon": {Kind.MELEE: 25, Kind.GUN: 30, Kind.RESOURCE: 10, Kind.AMMO: 35},
 	"tool": {Kind.MELEE: 45, Kind.RESOURCE: 55},
 }
 

@@ -638,13 +638,106 @@ def fetch_music(dest, per_kind):
     print(f"音乐新下载 {mb(total)}")
 
 
+# 游戏里的音效：(游戏用的名字, 源文件名里要同时出现的关键字组合…)。云盘里找不到就用游戏自己合成的声音
+SOUND_WANT = [
+    ("gun_pistol", ["pistol", "fire"], ["9mm", "fire"]),
+    ("gun_rifle", ["ak47", "fire"], ["rifle", "fire"], ["m60", "fire"]),
+    ("gun_shotgun", ["shotgun", "fire"]),
+    ("gun_bow", ["bow", "fire"], ["bow", "release"]),
+    ("reload", ["reload"]),
+    ("dry_fire", ["dryfire"], ["dry", "fire"], ["empty", "click"]),
+    ("groan", ["zombie", "roam"], ["zombie", "groan"], ["zombie", "idle"]),
+    ("attack", ["zombie", "attack"]),
+    ("death", ["zombie", "death"], ["zombie", "die"]),
+    ("scream", ["screamer", "scream"], ["scream"]),
+    ("spit", ["vomit"], ["spit"]),
+    ("player_hurt", ["player", "pain"], ["player", "hurt"]),
+    ("footstep", ["footstep"], ["step", "concrete"]),
+    ("hit_flesh", ["flesh", "hit"], ["impact", "flesh"]),
+    ("swing", ["swing"], ["whoosh"]),
+    ("explosion", ["explosion"]),
+]
+SOUND_EXT = (".wav", ".ogg", ".mp3")
+
+
+def _sound_match(name):
+    low = os.path.basename(name).lower()
+    if not low.endswith(SOUND_EXT):
+        return None
+    for want, *combos in SOUND_WANT:
+        if any(all(k in low for k in combo) for combo in combos):
+            return want
+    return None
+
+
+def fetch_sounds(dest, per_kind=3):
+    """在云盘 /7day 和 /7day/小橘素材库 下找名字含 sound/audio/音效 的 zip 或文件夹，按关键字挑音效。"""
+    out_dir = os.path.join(dest, "sounds")
+    if os.path.isdir(out_dir) and os.listdir(out_dir):
+        print("音效: 已有，跳过")
+        return
+    picked = {}
+
+    def keep(want, size):
+        lst = picked.setdefault(want, [])
+        # 每类留几个，优先挑小文件（短促的单个音效）
+        return len(lst) < per_kind and 2_000 < size < 3_000_000
+
+    def is_sound_place(name):
+        low = name.lower()
+        return any(k in low for k in ("sound", "audio", "音效", "声音"))
+
+    places = []
+    for folder in (DRIVE_ROOT, f"{DRIVE_ROOT}/小橘素材库"):
+        try:
+            for it in list_dir(folder):
+                if is_sound_place(it["name"]):
+                    places.append((folder, it))
+        except Exception as e:  # noqa: BLE001
+            print(f"读取 {folder} 失败: {e}")
+    if not places:
+        print("云盘里没有音效包，游戏用合成的音效")
+        return
+    os.makedirs(out_dir, exist_ok=True)
+    for folder, it in places:
+        path = f"{folder}/{it['name']}"
+        if it["type"] == "file" and it["name"].lower().endswith(".zip"):
+            zf = open_remote_zip(path)
+            if zf is None:
+                continue
+            infos = sorted(zf.infolist(), key=lambda i: i.file_size)
+            for i in infos:
+                want = _sound_match(i.filename)
+                if want and keep(want, i.file_size):
+                    ext = os.path.splitext(i.filename)[1].lower()
+                    out = os.path.join(out_dir, f"{want}_{len(picked[want]) + 1}{ext}")
+                    with zf.open(i) as src, open(out, "wb") as dst:
+                        shutil.copyfileobj(src, dst)
+                    picked[want].append(out)
+        elif it["type"] != "file":
+            try:
+                files = list_dir(path)
+            except Exception as e:  # noqa: BLE001
+                print(f"读取 {path} 失败: {e}")
+                continue
+            for f in sorted(files, key=lambda f: f.get("size", 0)):
+                want = _sound_match(f["name"]) if f["type"] == "file" else None
+                if want and keep(want, f.get("size", 0)):
+                    ext = os.path.splitext(f["name"])[1].lower()
+                    out = os.path.join(out_dir, f"{want}_{len(picked[want]) + 1}{ext}")
+                    download(f, out)
+                    picked[want].append(out)
+    got = {k: len(v) for k, v in picked.items() if v}
+    print(f"音效: {sum(got.values())} 个 {got}；没找到的用合成音效")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dest", default=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets"))
     ap.add_argument("--zombies", default=",".join(DEFAULT_ZOMBIES), help="逗号分隔的僵尸名，或 all")
     ap.add_argument("--music", type=int, default=6, help="每类音乐取几段")
     ap.add_argument("--all-icons", action="store_true", help="取全部图标（默认只取游戏会用到的）")
-    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,poi,music")
+    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,poi,music,sounds")
     args = ap.parse_args()
     skip = set(filter(None, args.skip.split(",")))
     dest = os.path.abspath(args.dest)
@@ -666,6 +759,11 @@ def main():
         fetch_poi(dest)
     if "music" not in skip:
         fetch_music(dest, args.music)
+    if "sounds" not in skip:
+        try:
+            fetch_sounds(dest)
+        except Exception as e:  # noqa: BLE001  音效是可选的，出错不影响编译
+            print(f"取音效失败（{e}），游戏用合成的音效")
     print("完成。用 Godot 打开项目即可（第一次打开会导入素材，需要几分钟）。")
 
 

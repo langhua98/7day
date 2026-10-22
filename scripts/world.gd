@@ -37,7 +37,7 @@ const SMALL := ["downtown_filler_01", "downtown_filler_02", "downtown_filler_12"
 const CENTER := ["skyscraper_01", "hotel_ostrich", "skyscraper_04", "courthouse_med_01"]
 
 var rng := RandomNumberGenerator.new()
-## 挡路的车和杂物：{c: 中心 Vector2(x,z), h: 半长宽, rot: 朝向, r: 外接圆半径}
+## 挡路的车和杂物：{c: 中心 Vector2(x,z), h: 半长宽, rot: 朝向, r: 外接圆半径, y: 高度}
 var obstacles: Array[Dictionary] = []
 ## 能翻找的：{node, pos, name, loot, searched, r, kind}
 var containers: Array[Dictionary] = []
@@ -56,6 +56,13 @@ var _poi_mat: ShaderMaterial
 var _cells := PackedByteArray()   # 楼的占地图，(MAP*2)² 格，1 = 挡路
 var _grid := {}         # 粗网格加速查询：格子 -> 障碍物下标
 const GRID := 8.0
+## 寻路：1 米一格，1 = 走不过去（楼、车、高的杂物）
+var _nav := PackedByteArray()
+## 以玩家为中心的一块区域里，每格走到玩家要几步（-1 = 走不到或没算）
+var _flow := PackedInt32Array()
+var _flow_min := Vector2i.ZERO
+var _flow_size := 0
+var _queue := PackedInt32Array()
 
 
 func _ready() -> void:
@@ -86,10 +93,11 @@ func build(seed_value: int) -> void:
 	_build_border()
 	_scatter_decals()
 	_rebuild_grid()
+	_build_nav()
 
 
-## 把一个圆（玩家、僵尸）推出楼和障碍物
-func push_out(p: Vector3, radius: float) -> Vector3:
+## 把一个圆（玩家、僵尸）推出楼和障碍物。feet：脚离地多高，比脚低的杂物不挡（跳上去、跳过去）
+func push_out(p: Vector3, radius: float, feet := 0.0) -> Vector3:
 	var q := Vector2(p.x, p.z)
 	# 楼：查周围的格子，每个挡路的格子当成 1×1 的方块
 	for gz in range(floori(q.y - radius), floori(q.y + radius) + 1):
@@ -107,7 +115,7 @@ func push_out(p: Vector3, radius: float) -> Vector3:
 	for i in _nearby(q):
 		var o: Dictionary = obstacles[i]
 		var d: Vector2 = q - o.c
-		if d.length() > o.r + radius:
+		if d.length() > o.r + radius or o.y <= feet + 0.05:
 			continue
 		var local := d.rotated(o.rot)
 		var h: Vector2 = o.h + Vector2(radius, radius)
@@ -139,14 +147,43 @@ func blocked(p: Vector3, radius := 0.3) -> bool:
 	return false
 
 
+## 这里能站多高：矮杂物（路障、垃圾桶）的顶上。feet 是现在脚的高度，高过脚的东西爬不上去
+func ground_at(p: Vector3, radius: float, feet: float) -> float:
+	var q := Vector2(p.x, p.z)
+	var top := 0.0
+	for i in _nearby(q):
+		var o: Dictionary = obstacles[i]
+		if o.y > GameConfig.STEP_MAX or o.y > feet + 0.05 or o.y <= top:
+			continue
+		var local: Vector2 = (q - o.c).rotated(o.rot)
+		if absf(local.x) < o.h.x + radius * 0.5 and absf(local.y) < o.h.y + radius * 0.5:
+			top = o.y
+	return top
+
+
 ## 两点之间有没有被楼挡住（子弹、视线用）
 func line_blocked(a: Vector3, b: Vector3) -> bool:
-	var steps := int(a.distance_to(b) / 0.5)
+	return block_t(a, b) < 1.0
+
+
+## 从 a 到 b 第一次撞到楼的位置（0~1），没撞到返回 1。楼的占地图只有平面，按楼高 60 米算
+func block_t(a: Vector3, b: Vector3) -> float:
+	var steps := int(a.distance_to(b) / 0.4)
 	for s in range(1, steps):
-		var p := a.lerp(b, float(s) / steps)
-		if _cell(floori(p.x), floori(p.z)):
-			return true
-	return false
+		var t := float(s) / steps
+		var p := a.lerp(b, t)
+		if p.y < 60.0 and _cell(floori(p.x), floori(p.z)):
+			return t
+	return 1.0
+
+
+## 地上的血迹贴花（没有就返回空字符串）
+func blood_decal() -> String:
+	var list := []
+	for d in decals:
+		if d.to_lower().contains("blood"):
+			list.append(d)
+	return "%s/%s" % [ROOT, list.pick_random()] if not list.is_empty() else ""
 
 
 ## 离玩家最近、够得着的容器
@@ -210,7 +247,7 @@ func place(name: String, pos: Vector3, rot := 0.0, solid := true) -> Node3D:
 	var size: Vector3 = info.size
 	var kind: String = e.get("kind", "prop")
 	if solid and kind in ["loot", "car", "prop"] and size.x * size.z > 0.08:
-		_add_obstacle(Vector2(pos.x, pos.z), Vector2(size.x, size.z) * 0.5 * 0.9, rot, size.y > 2.5)
+		_add_obstacle(Vector2(pos.x, pos.z), Vector2(size.x, size.z) * 0.5 * 0.9, rot, size.y)
 	if kind in ["loot", "car"]:
 		containers.append({"node": holder, "pos": pos, "name": e.get("name", name), "loot": e.get("loot", "any"),
 			"searched": false, "r": max(size.x, size.z) * 0.5, "kind": kind})
@@ -626,8 +663,8 @@ func _scatter_decals() -> void:
 
 # —— 车和杂物的碰撞 ——
 
-func _add_obstacle(c: Vector2, h: Vector2, rot: float, tall := false) -> void:
-	obstacles.append({"c": c, "h": h, "rot": rot, "r": h.length(), "tall": tall})
+func _add_obstacle(c: Vector2, h: Vector2, rot: float, height: float) -> void:
+	obstacles.append({"c": c, "h": h, "rot": rot, "r": h.length(), "tall": height > 2.5, "y": height})
 
 
 func _rebuild_grid() -> void:
@@ -651,3 +688,141 @@ func _nearby(q: Vector2) -> PackedInt32Array:
 			all.append(i)
 		return all
 	return _grid.get(Vector2i(floori(q.x / GRID), floori(q.y / GRID)), PackedInt32Array())
+
+
+# —— 寻路：僵尸绕着楼和车走 ——
+# 整张图 1 米一格。每隔一会儿从玩家所在的格子往外做一次广度优先搜索（只算玩家周围一块），
+# 每个僵尸看自己脚下这格周围哪格离玩家更近，就往那格走。
+
+func _build_nav() -> void:
+	var n := MAP * 2
+	_nav = _cells.duplicate()
+	# 车和杂物：格子中心落在障碍物里（往外放宽一点）就算挡路
+	for o in obstacles:
+		if o.y < 0.5:
+			continue   # 很矮的垃圾、贴花之类不挡僵尸
+		var r: float = o.r + 0.3
+		for gz in range(floori(o.c.y - r), floori(o.c.y + r) + 1):
+			for gx in range(floori(o.c.x - r), floori(o.c.x + r) + 1):
+				var local: Vector2 = (Vector2(gx + 0.5, gz + 0.5) - o.c).rotated(o.rot)
+				if absf(local.x) < o.h.x + 0.2 and absf(local.y) < o.h.y + 0.2:
+					var x := gx + MAP
+					var z := gz + MAP
+					if x >= 0 and z >= 0 and x < n and z < n:
+						_nav[z * n + x] = 1
+	_flow_size = GameConfig.NAV_RADIUS * 2 + 1
+	_flow.resize(_flow_size * _flow_size)
+	_flow.fill(-1)
+	_queue.resize(_flow_size * _flow_size)
+
+
+func _nav_free(gx: int, gz: int) -> bool:
+	if absf(gx + 0.5) > EDGE or absf(gz + 0.5) > EDGE:
+		return false
+	var x := gx + MAP
+	var z := gz + MAP
+	if x < 0 or z < 0 or x >= MAP * 2 or z >= MAP * 2:
+		return false
+	return _nav[z * MAP * 2 + x] == 0
+
+
+## 从 target 往外算每格到 target 的步数
+func update_flow(target: Vector3) -> void:
+	if _flow_size == 0:
+		return
+	var s := _flow_size
+	var tx := floori(target.x)
+	var tz := floori(target.z)
+	_flow_min = Vector2i(tx - GameConfig.NAV_RADIUS, tz - GameConfig.NAV_RADIUS)
+	_flow.fill(-1)
+	var n := MAP * 2
+	var head := 0
+	var tail := 0
+	var start := GameConfig.NAV_RADIUS * s + GameConfig.NAV_RADIUS
+	_flow[start] = 0
+	_queue[tail] = start
+	tail += 1
+	var nav := _nav
+	var flow := _flow
+	var q := _queue
+	var ox := _flow_min.x + MAP
+	var oz := _flow_min.y + MAP
+	while head < tail:
+		var cur := q[head]
+		head += 1
+		var cx := cur % s
+		var cz := cur / s
+		var d := flow[cur] + 1
+		for k in 4:
+			var nx := cx + (1 if k == 0 else (-1 if k == 1 else 0))
+			var nz := cz + (1 if k == 2 else (-1 if k == 3 else 0))
+			if nx < 0 or nz < 0 or nx >= s or nz >= s:
+				continue
+			var ni := nz * s + nx
+			if flow[ni] != -1:
+				continue
+			var wx := nx + ox
+			var wz := nz + oz
+			if wx < 0 or wz < 0 or wx >= n or wz >= n or nav[wz * n + wx] != 0:
+				continue
+			flow[ni] = d
+			q[tail] = ni
+			tail += 1
+	_flow = flow
+
+
+func _flow_at(gx: int, gz: int) -> int:
+	var x := gx - _flow_min.x
+	var z := gz - _flow_min.y
+	if x < 0 or z < 0 or x >= _flow_size or z >= _flow_size:
+		return -1
+	return _flow[z * _flow_size + x]
+
+
+## 僵尸该往哪走才能绕过楼走到玩家身边。返回 ZERO 表示不知道（太远或被围住了），直接朝玩家走
+func flow_dir(p: Vector3) -> Vector3:
+	if _flow_size == 0:
+		return Vector3.ZERO
+	var gx := floori(p.x)
+	var gz := floori(p.z)
+	var here := _flow_at(gx, gz)
+	if here == -1:
+		# 被推到挡路的格子里了：找周围最近能走的格子
+		var best := Vector2i(999999, 0)
+		for dz in range(-1, 2):
+			for dx in range(-1, 2):
+				var f := _flow_at(gx + dx, gz + dz)
+				if f >= 0 and f < best.x:
+					best = Vector2i(f, dz * 3 + dx)
+		if best.x == 999999:
+			return Vector3.ZERO
+		here = best.x + 1
+	var best_d := float(here)
+	var best_dir := Vector3.ZERO
+	for dz in range(-1, 2):
+		for dx in range(-1, 2):
+			if dx == 0 and dz == 0:
+				continue
+			var f := _flow_at(gx + dx, gz + dz)
+			if f < 0:
+				continue
+			# 斜着走不能切墙角
+			if dx != 0 and dz != 0 and (_flow_at(gx + dx, gz) < 0 or _flow_at(gx, gz + dz) < 0):
+				continue
+			var score := f + (0.4 if dx != 0 and dz != 0 else 0.0)
+			if score < best_d:
+				best_d = score
+				best_dir = Vector3(gx + dx + 0.5 - p.x, 0, gz + dz + 0.5 - p.z)
+	if best_dir == Vector3.ZERO:
+		return Vector3.ZERO
+	return best_dir.normalized()
+
+
+## 地面上两点之间直线能不能走过去（中间没有楼、车）
+func walkable_line(a: Vector3, b: Vector3) -> bool:
+	var steps := int(Vector2(a.x - b.x, a.z - b.z).length() / 0.7) + 1
+	for s in range(1, steps):
+		var p := a.lerp(b, float(s) / steps)
+		if not _nav_free(floori(p.x), floori(p.z)):
+			return false
+	return true
