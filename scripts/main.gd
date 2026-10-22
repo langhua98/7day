@@ -10,6 +10,7 @@ var hud: Hud
 var world: World
 var music: MusicDirector
 var sfx: Sfx
+var cloud: CloudAssets
 var sun := DirectionalLight3D.new()
 var env := Environment.new()
 var sky_mat := ProceduralSkyMaterial.new()
@@ -71,12 +72,6 @@ var _tracer_mat: StandardMaterial3D
 func _ready() -> void:
 	rng.randomize()
 	_setup_buses()
-	_build_world()
-	_build_player()
-	music = MusicDirector.new()
-	add_child(music)
-	sfx = Sfx.new()
-	add_child(sfx)
 	hud = Hud.new()
 	add_child(hud)
 	hud.start_pressed.connect(_start)
@@ -86,12 +81,45 @@ func _ready() -> void:
 	hud.reload_pressed.connect(_start_reload)
 	hud.settings_changed.connect(_apply_settings)
 	_apply_settings()
+	# 大素材在云盘：先下载（或读手机里存好的）素材包，再搭市中心
+	cloud = CloudAssets.new()
+	add_child(cloud)
+	cloud.progress.connect(hud.set_loading)
+	cloud.finished.connect(_on_cloud)
+	hud.retry_pressed.connect(cloud.start)
+	hud.skip_pressed.connect(_boot)
+	if cloud.needed():
+		hud.show_loading()
+		cloud.start()
+	else:
+		_boot()
+
+
+func _on_cloud(ok: bool, message: String) -> void:
+	if ok:
+		_boot()
+	else:
+		hud.loading_failed(message)
+
+
+## 素材齐了以后：重新扫一遍素材，搭世界、玩家、音乐和音效
+func _boot() -> void:
+	if world != null:
+		return
+	Assets.scan()
+	_build_world()
+	_build_player()
+	music = MusicDirector.new()
+	add_child(music)
+	sfx = Sfx.new()
+	add_child(sfx)
 	var info := "素材：物品 %d 个（武器、食物、药品等 %d 个可拾取），僵尸 %d 种，音乐 %d 段" % [
 		Assets.items.size(), _count_loot(), Assets.zombie_models.size(),
 		Assets.music.values().reduce(func(a, l): return a + l.size(), 0)]
 	if not Assets.errors.is_empty():
 		info += "\n注意：" + "；".join(Assets.errors)
 	hud.set_start_info(info)
+	hud.show_start()
 	_update_sky()
 
 
@@ -260,7 +288,8 @@ func _end(win: bool) -> void:
 
 func _process(delta: float) -> void:
 	if not running:
-		_update_sky()
+		if world:
+			_update_sky()
 		return
 	game_hours += delta * 24.0 / C.DAY_SECONDS
 	var day := int(game_hours / 24.0) + 1

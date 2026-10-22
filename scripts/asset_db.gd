@@ -24,6 +24,8 @@ var _icon_files := {}   # 小写名 -> 真实名
 var _cache := {}
 var _icon_cache := {}
 var _key_re := RegEx.create_from_string("(prefab|_?lod\\d+|mesh|[^a-z0-9])")
+## 云盘素材包里的文件（res:// 路径）。加载素材包后列目录看不到包里的文件，所以靠素材包自带的清单
+var _cloud_files: PackedStringArray = []
 
 
 func _ready() -> void:
@@ -40,6 +42,13 @@ func scan() -> void:
 	_model_png.clear()
 	_icon_files.clear()
 	zombie_models.clear()
+	_cloud_files.clear()
+	var manifest := "%s/index/cloud_files.json" % ROOT
+	if FileAccess.file_exists(manifest):
+		var listed = JSON.parse_string(FileAccess.get_file_as_string(manifest))
+		if listed is Array:
+			for f in listed:
+				_cloud_files.append("res://" + str(f))
 
 	for n in _list("%s/icons" % ROOT, ["png"]):
 		_icon_files[n.get_basename().to_lower()] = n.get_basename()
@@ -85,14 +94,23 @@ func scan() -> void:
 ## 列出目录里某些扩展名的文件。导出到 iPhone 后原文件会变成 .import/.remap，这里统一还原成原名。
 func _list(dir: String, exts: Array) -> PackedStringArray:
 	var out := PackedStringArray()
-	if not DirAccess.dir_exists_absolute(dir):
-		return out
-	for f in DirAccess.get_files_at(dir):
+	var files := PackedStringArray()
+	if DirAccess.dir_exists_absolute(dir):
+		files = DirAccess.get_files_at(dir)
+	for f in _cloud_files:
+		if f.get_base_dir() == dir:
+			files.append(f.get_file())
+	for f in files:
 		var name := f.trim_suffix(".remap").trim_suffix(".import")
 		if exts.has(name.get_extension().to_lower()) and not out.has(name):
 			out.append(name)
 	out.sort()
 	return out
+
+
+## 给别的脚本用：列目录（含云盘素材包里的文件）
+func list_files(dir: String, exts: Array) -> PackedStringArray:
+	return _list(dir, exts)
 
 
 ## 物品表里的模型名是 prefab 名（如 chainsawPrefab），导出的文件名是网格名（如 Chainsaw_LOD0），
