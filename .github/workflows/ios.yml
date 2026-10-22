@@ -44,14 +44,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: assets
-          key: assets-v2
+          key: assets-v3
 
       - name: 从小桔云盘下载素材
         env:
           XIAOJU_TOKEN: ${{ secrets.XIAOJU_TOKEN }}
         run: |
-          # Pillow 用来把场景贴图缩小（省手机内存），装不上也能继续
-          python3 -m pip install --quiet --user --break-system-packages pillow || python3 -m pip install --quiet --user pillow || true
+          # Pillow 用来缩小贴图（省手机内存），numpy 用来拼天空全景图；装不上也能继续
+          python3 -m pip install --quiet --user --break-system-packages pillow numpy || python3 -m pip install --quiet --user pillow numpy || true
           python3 tools/fetch_assets.py \
             --zombies "${{ github.event.inputs.zombies || 'soldier,nurse,cop,biker,lumberjack,joe,arlene,screamer' }}" \
             --music "${{ github.event.inputs.music || '6' }}"
@@ -88,18 +88,6 @@ jobs:
           # 市中心建筑：游戏的远景网格转成 Godot 网格
           "$GODOT" --headless -s tools/build_poi.gd
           "$GODOT" --headless --import
-
-      - name: 大素材打包传云盘（游戏开局时下载）
-        env:
-          XIAOJU_TOKEN: ${{ secrets.XIAOJU_TOKEN }}
-        run: |
-          GODOT="$HOME/godot/Godot.app/Contents/MacOS/Godot"
-          mkdir -p build
-          # 楼、车和杂物、音乐、音效、5 种僵尸打成素材包；上传失败会自动放回安装包
-          python3 tools/cloud_pack.py prepare
-          "$GODOT" --headless --export-pack "Pack" build/assets.pck 2>&1 | grep -v "Storing File" | tail -20 || true
-          ls -la build/assets.pck || true
-          python3 tools/cloud_pack.py upload build/assets.pck
 
       - name: 导出 Xcode 工程
         env:

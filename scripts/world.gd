@@ -9,6 +9,7 @@ const ROOT := "res://assets"
 const INDEX := "res://assets/index/world_models.json"
 const POI_INDEX := "res://assets/poi/index.json"
 const POI_SHADER := preload("res://scripts/poi.gdshader")
+const TERRAIN_INDEX := "res://assets/terrain/terrain.json"
 
 ## 街道中线（x、z 两个方向一样）。原点是市中心的十字路口
 const ROADS := [-152.0, -76.0, 0.0, 76.0, 152.0]
@@ -37,7 +38,7 @@ const SMALL := ["downtown_filler_01", "downtown_filler_02", "downtown_filler_12"
 const CENTER := ["skyscraper_01", "hotel_ostrich", "skyscraper_04", "courthouse_med_01"]
 
 var rng := RandomNumberGenerator.new()
-## 挡路的车和杂物：{c: 中心 Vector2(x,z), h: 半长宽, rot: 朝向, r: 外接圆半径, y: 高度}
+## 挡路的车和杂物：{c: 中心 Vector2(x,z), h: 半长宽, rot: 朝向, r: 外接圆半径}
 var obstacles: Array[Dictionary] = []
 ## 能翻找的：{node, pos, name, loot, searched, r, kind}
 var containers: Array[Dictionary] = []
@@ -47,6 +48,8 @@ var models := {}
 var textures := {}
 var decals: PackedStringArray = []
 var pois := {}
+## 地面贴图（游戏的地形贴图数组）：名字 -> {albedo, normal, orm, tile}
+var terrain := {}
 var ready_ok := false
 
 var _mesh_info := {}    # 模型名 -> {mesh, xf, size}
@@ -56,13 +59,6 @@ var _poi_mat: ShaderMaterial
 var _cells := PackedByteArray()   # 楼的占地图，(MAP*2)² 格，1 = 挡路
 var _grid := {}         # 粗网格加速查询：格子 -> 障碍物下标
 const GRID := 8.0
-## 寻路：1 米一格，1 = 走不过去（楼、车、高的杂物）
-var _nav := PackedByteArray()
-## 以玩家为中心的一块区域里，每格走到玩家要几步（-1 = 走不到或没算）
-var _flow := PackedInt32Array()
-var _flow_min := Vector2i.ZERO
-var _flow_size := 0
-var _queue := PackedInt32Array()
 
 
 func _ready() -> void:
@@ -71,6 +67,10 @@ func _ready() -> void:
 		var p = JSON.parse_string(FileAccess.get_file_as_string(POI_INDEX))
 		if p is Dictionary:
 			pois = p
+	if FileAccess.file_exists(TERRAIN_INDEX):
+		var t = JSON.parse_string(FileAccess.get_file_as_string(TERRAIN_INDEX))
+		if t is Dictionary:
+			terrain = t
 	if not FileAccess.file_exists(INDEX):
 		push_warning("没有 world_models.json，街上没有车和杂物")
 		return
@@ -93,11 +93,10 @@ func build(seed_value: int) -> void:
 	_build_border()
 	_scatter_decals()
 	_rebuild_grid()
-	_build_nav()
 
 
-## 把一个圆（玩家、僵尸）推出楼和障碍物。feet：脚离地多高，比脚低的杂物不挡（跳上去、跳过去）
-func push_out(p: Vector3, radius: float, feet := 0.0) -> Vector3:
+## 把一个圆（玩家、僵尸）推出楼和障碍物
+func push_out(p: Vector3, radius: float) -> Vector3:
 	var q := Vector2(p.x, p.z)
 	# 楼：查周围的格子，每个挡路的格子当成 1×1 的方块
 	for gz in range(floori(q.y - radius), floori(q.y + radius) + 1):
@@ -115,7 +114,7 @@ func push_out(p: Vector3, radius: float, feet := 0.0) -> Vector3:
 	for i in _nearby(q):
 		var o: Dictionary = obstacles[i]
 		var d: Vector2 = q - o.c
-		if d.length() > o.r + radius or o.y <= feet + 0.05:
+		if d.length() > o.r + radius:
 			continue
 		var local := d.rotated(o.rot)
 		var h: Vector2 = o.h + Vector2(radius, radius)
@@ -147,43 +146,14 @@ func blocked(p: Vector3, radius := 0.3) -> bool:
 	return false
 
 
-## 这里能站多高：矮杂物（路障、垃圾桶）的顶上。feet 是现在脚的高度，高过脚的东西爬不上去
-func ground_at(p: Vector3, radius: float, feet: float) -> float:
-	var q := Vector2(p.x, p.z)
-	var top := 0.0
-	for i in _nearby(q):
-		var o: Dictionary = obstacles[i]
-		if o.y > GameConfig.STEP_MAX or o.y > feet + 0.05 or o.y <= top:
-			continue
-		var local: Vector2 = (q - o.c).rotated(o.rot)
-		if absf(local.x) < o.h.x + radius * 0.5 and absf(local.y) < o.h.y + radius * 0.5:
-			top = o.y
-	return top
-
-
 ## 两点之间有没有被楼挡住（子弹、视线用）
 func line_blocked(a: Vector3, b: Vector3) -> bool:
-	return block_t(a, b) < 1.0
-
-
-## 从 a 到 b 第一次撞到楼的位置（0~1），没撞到返回 1。楼的占地图只有平面，按楼高 60 米算
-func block_t(a: Vector3, b: Vector3) -> float:
-	var steps := int(a.distance_to(b) / 0.4)
+	var steps := int(a.distance_to(b) / 0.5)
 	for s in range(1, steps):
-		var t := float(s) / steps
-		var p := a.lerp(b, t)
-		if p.y < 60.0 and _cell(floori(p.x), floori(p.z)):
-			return t
-	return 1.0
-
-
-## 地上的血迹贴花（没有就返回空字符串）
-func blood_decal() -> String:
-	var list := []
-	for d in decals:
-		if d.to_lower().contains("blood"):
-			list.append(d)
-	return "%s/%s" % [ROOT, list.pick_random()] if not list.is_empty() else ""
+		var p := a.lerp(b, float(s) / steps)
+		if _cell(floori(p.x), floori(p.z)):
+			return true
+	return false
 
 
 ## 离玩家最近、够得着的容器
@@ -209,11 +179,92 @@ func free_point(center: Vector3, min_r: float, max_r: float) -> Vector3:
 	return push_out(center + Vector3(min_r, 0, 0), 0.6)
 
 
-## 有没有方块贴图（以后上传了 blocktextureatlases 就换上）
-func set_block_atlas(atlas: Texture2DArray) -> void:
-	if _poi_mat and atlas:
-		_poi_mat.set_shader_parameter("atlas", atlas)
-		_poi_mat.set_shader_parameter("use_atlas", true)
+## 换上方块贴图图集（tools/build_poi.gd 打包的 assets/poi/atlas_*.res），没有就用纯色
+func set_block_atlas(atlas: Texture2DArray, normal: Texture2DArray = null) -> void:
+	var mat := _poi_material()
+	if atlas:
+		mat.set_shader_parameter("atlas", atlas)
+		if normal:
+			mat.set_shader_parameter("atlas_normal", normal)
+		mat.set_shader_parameter("use_atlas", true)
+
+
+# —— 僵尸寻路：以玩家为中心的距离场，僵尸沿着距离变小的方向走就能绕开楼 ——
+
+const FLOW_R := 48
+var _flow := PackedInt32Array()
+var _flow_center := Vector2i(1 << 20, 0)
+
+
+## 每隔一会儿以 target 为中心重算一次（BFS，8 方向，不能斜着穿墙角）
+func update_flow(target: Vector3) -> void:
+	var size := FLOW_R * 2 + 1
+	if _flow.size() != size * size:
+		_flow.resize(size * size)
+	_flow.fill(-1)
+	_flow_center = Vector2i(floori(target.x), floori(target.z))
+	var queue := PackedInt32Array()
+	queue.resize(size * size)
+	var head := 0
+	var tail := 0
+	var start := FLOW_R * size + FLOW_R
+	_flow[start] = 0
+	queue[tail] = start
+	tail += 1
+	var dirs := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
+		Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]
+	while head < tail:
+		var i := queue[head]
+		head += 1
+		var x := i % size
+		var z := i / size
+		var d := _flow[i]
+		for k in 8:
+			var dv: Vector2i = dirs[k]
+			var nx := x + dv.x
+			var nz := z + dv.y
+			if nx < 0 or nz < 0 or nx >= size or nz >= size:
+				continue
+			var ni := nz * size + nx
+			if _flow[ni] != -1:
+				continue
+			var wx := _flow_center.x - FLOW_R + nx
+			var wz := _flow_center.y - FLOW_R + nz
+			if _cell(wx, wz):
+				_flow[ni] = -2
+				continue
+			if k >= 4 and (_cell(_flow_center.x - FLOW_R + x + dv.x, _flow_center.y - FLOW_R + z) or _cell(_flow_center.x - FLOW_R + x, _flow_center.y - FLOW_R + z + dv.y)):
+				continue
+			_flow[ni] = d + 1
+			queue[tail] = ni
+			tail += 1
+
+
+## 从 p 出发往目标走的方向（不在距离场里返回 ZERO，调用方直接朝目标走）
+func flow_dir(p: Vector3) -> Vector3:
+	var size := FLOW_R * 2 + 1
+	var x := floori(p.x) - _flow_center.x + FLOW_R
+	var z := floori(p.z) - _flow_center.y + FLOW_R
+	if x < 1 or z < 1 or x >= size - 1 or z >= size - 1:
+		return Vector3.ZERO
+	var here := _flow[z * size + x]
+	var best := here if here >= 0 else 1 << 30
+	var best_v := Vector2i.ZERO
+	for dz in range(-1, 2):
+		for dx in range(-1, 2):
+			if dx == 0 and dz == 0:
+				continue
+			var v := _flow[(z + dz) * size + x + dx]
+			if v >= 0 and v < best:
+				best = v
+				best_v = Vector2i(dx, dz)
+	if best_v == Vector2i.ZERO:
+		return Vector3.ZERO
+	# 朝相邻格子的中心走，避免贴着墙角卡住
+	var c := Vector3(floori(p.x) + best_v.x + 0.5, p.y, floori(p.z) + best_v.y + 0.5)
+	var d := c - p
+	d.y = 0.0
+	return d.normalized() if d.length() > 0.01 else Vector3.ZERO
 
 
 func _cell(gx: int, gz: int) -> bool:
@@ -246,8 +297,11 @@ func place(name: String, pos: Vector3, rot := 0.0, solid := true) -> Node3D:
 	add_child(holder)
 	var size: Vector3 = info.size
 	var kind: String = e.get("kind", "prop")
+	# 远了就不画：小件 40 米、道具 70 米、车 110 米（手机上省大量三角面）
+	mi.visibility_range_end = {"small": 40.0, "deco": 40.0, "car": 110.0}.get(kind, 70.0)
+	mi.visibility_range_end_margin = 5.0
 	if solid and kind in ["loot", "car", "prop"] and size.x * size.z > 0.08:
-		_add_obstacle(Vector2(pos.x, pos.z), Vector2(size.x, size.z) * 0.5 * 0.9, rot, size.y)
+		_add_obstacle(Vector2(pos.x, pos.z), Vector2(size.x, size.z) * 0.5 * 0.9, rot, size.y > 2.5)
 	if kind in ["loot", "car"]:
 		containers.append({"node": holder, "pos": pos, "name": e.get("name", name), "loot": e.get("loot", "any"),
 			"searched": false, "r": max(size.x, size.z) * 0.5, "kind": kind})
@@ -313,6 +367,18 @@ func _flat(rect: Rect2, y: float, tex_name: String, tile: float, tint := Color.W
 	mi.mesh = pm
 	mi.position = Vector3(rect.get_center().x, y, rect.get_center().y)
 	var key := "flat:%s:%s:%s" % [tex_name, rect.size, tint]
+	if not _mat_cache.has(key) and terrain.has(tex_name):
+		# 游戏的地形贴图：颜色 + 法线 + 粗糙度/AO，路面有凹凸感
+		var t: Dictionary = terrain[tex_name]
+		var m := ORMMaterial3D.new()
+		m.albedo_color = tint
+		m.albedo_texture = load("%s/%s" % [ROOT, t.albedo])
+		m.normal_enabled = true
+		m.normal_texture = load("%s/%s" % [ROOT, t.normal])
+		m.orm_texture = load("%s/%s" % [ROOT, t.orm])
+		m.uv1_scale = Vector3(rect.size.x / tile, rect.size.y / tile, 1)
+		m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+		_mat_cache[key] = m
 	if not _mat_cache.has(key):
 		var m := StandardMaterial3D.new()
 		m.roughness = 0.95
@@ -521,6 +587,16 @@ func _poi_material() -> ShaderMaterial:
 	if _poi_mat == null:
 		_poi_mat = ShaderMaterial.new()
 		_poi_mat.shader = POI_SHADER
+		var albedo := "%s/poi/atlas_albedo.res" % ROOT
+		var normal := "%s/poi/atlas_normal.res" % ROOT
+		if ResourceLoader.exists(albedo):
+			var tex: Texture2DArray = load(albedo).to_texture()
+			var ntex: Texture2DArray = load(normal).to_texture() if ResourceLoader.exists(normal) else null
+			if tex:
+				_poi_mat.set_shader_parameter("atlas", tex)
+				if ntex:
+					_poi_mat.set_shader_parameter("atlas_normal", ntex)
+				_poi_mat.set_shader_parameter("use_atlas", true)
 	return _poi_mat
 
 
@@ -663,8 +739,8 @@ func _scatter_decals() -> void:
 
 # —— 车和杂物的碰撞 ——
 
-func _add_obstacle(c: Vector2, h: Vector2, rot: float, height: float) -> void:
-	obstacles.append({"c": c, "h": h, "rot": rot, "r": h.length(), "tall": height > 2.5, "y": height})
+func _add_obstacle(c: Vector2, h: Vector2, rot: float, tall := false) -> void:
+	obstacles.append({"c": c, "h": h, "rot": rot, "r": h.length(), "tall": tall})
 
 
 func _rebuild_grid() -> void:
@@ -688,141 +764,3 @@ func _nearby(q: Vector2) -> PackedInt32Array:
 			all.append(i)
 		return all
 	return _grid.get(Vector2i(floori(q.x / GRID), floori(q.y / GRID)), PackedInt32Array())
-
-
-# —— 寻路：僵尸绕着楼和车走 ——
-# 整张图 1 米一格。每隔一会儿从玩家所在的格子往外做一次广度优先搜索（只算玩家周围一块），
-# 每个僵尸看自己脚下这格周围哪格离玩家更近，就往那格走。
-
-func _build_nav() -> void:
-	var n := MAP * 2
-	_nav = _cells.duplicate()
-	# 车和杂物：格子中心落在障碍物里（往外放宽一点）就算挡路
-	for o in obstacles:
-		if o.y < 0.5:
-			continue   # 很矮的垃圾、贴花之类不挡僵尸
-		var r: float = o.r + 0.3
-		for gz in range(floori(o.c.y - r), floori(o.c.y + r) + 1):
-			for gx in range(floori(o.c.x - r), floori(o.c.x + r) + 1):
-				var local: Vector2 = (Vector2(gx + 0.5, gz + 0.5) - o.c).rotated(o.rot)
-				if absf(local.x) < o.h.x + 0.2 and absf(local.y) < o.h.y + 0.2:
-					var x := gx + MAP
-					var z := gz + MAP
-					if x >= 0 and z >= 0 and x < n and z < n:
-						_nav[z * n + x] = 1
-	_flow_size = GameConfig.NAV_RADIUS * 2 + 1
-	_flow.resize(_flow_size * _flow_size)
-	_flow.fill(-1)
-	_queue.resize(_flow_size * _flow_size)
-
-
-func _nav_free(gx: int, gz: int) -> bool:
-	if absf(gx + 0.5) > EDGE or absf(gz + 0.5) > EDGE:
-		return false
-	var x := gx + MAP
-	var z := gz + MAP
-	if x < 0 or z < 0 or x >= MAP * 2 or z >= MAP * 2:
-		return false
-	return _nav[z * MAP * 2 + x] == 0
-
-
-## 从 target 往外算每格到 target 的步数
-func update_flow(target: Vector3) -> void:
-	if _flow_size == 0:
-		return
-	var s := _flow_size
-	var tx := floori(target.x)
-	var tz := floori(target.z)
-	_flow_min = Vector2i(tx - GameConfig.NAV_RADIUS, tz - GameConfig.NAV_RADIUS)
-	_flow.fill(-1)
-	var n := MAP * 2
-	var head := 0
-	var tail := 0
-	var start := GameConfig.NAV_RADIUS * s + GameConfig.NAV_RADIUS
-	_flow[start] = 0
-	_queue[tail] = start
-	tail += 1
-	var nav := _nav
-	var flow := _flow
-	var q := _queue
-	var ox := _flow_min.x + MAP
-	var oz := _flow_min.y + MAP
-	while head < tail:
-		var cur := q[head]
-		head += 1
-		var cx := cur % s
-		var cz := cur / s
-		var d := flow[cur] + 1
-		for k in 4:
-			var nx := cx + (1 if k == 0 else (-1 if k == 1 else 0))
-			var nz := cz + (1 if k == 2 else (-1 if k == 3 else 0))
-			if nx < 0 or nz < 0 or nx >= s or nz >= s:
-				continue
-			var ni := nz * s + nx
-			if flow[ni] != -1:
-				continue
-			var wx := nx + ox
-			var wz := nz + oz
-			if wx < 0 or wz < 0 or wx >= n or wz >= n or nav[wz * n + wx] != 0:
-				continue
-			flow[ni] = d
-			q[tail] = ni
-			tail += 1
-	_flow = flow
-
-
-func _flow_at(gx: int, gz: int) -> int:
-	var x := gx - _flow_min.x
-	var z := gz - _flow_min.y
-	if x < 0 or z < 0 or x >= _flow_size or z >= _flow_size:
-		return -1
-	return _flow[z * _flow_size + x]
-
-
-## 僵尸该往哪走才能绕过楼走到玩家身边。返回 ZERO 表示不知道（太远或被围住了），直接朝玩家走
-func flow_dir(p: Vector3) -> Vector3:
-	if _flow_size == 0:
-		return Vector3.ZERO
-	var gx := floori(p.x)
-	var gz := floori(p.z)
-	var here := _flow_at(gx, gz)
-	if here == -1:
-		# 被推到挡路的格子里了：找周围最近能走的格子
-		var best := Vector2i(999999, 0)
-		for dz in range(-1, 2):
-			for dx in range(-1, 2):
-				var f := _flow_at(gx + dx, gz + dz)
-				if f >= 0 and f < best.x:
-					best = Vector2i(f, dz * 3 + dx)
-		if best.x == 999999:
-			return Vector3.ZERO
-		here = best.x + 1
-	var best_d := float(here)
-	var best_dir := Vector3.ZERO
-	for dz in range(-1, 2):
-		for dx in range(-1, 2):
-			if dx == 0 and dz == 0:
-				continue
-			var f := _flow_at(gx + dx, gz + dz)
-			if f < 0:
-				continue
-			# 斜着走不能切墙角
-			if dx != 0 and dz != 0 and (_flow_at(gx + dx, gz) < 0 or _flow_at(gx, gz + dz) < 0):
-				continue
-			var score := f + (0.4 if dx != 0 and dz != 0 else 0.0)
-			if score < best_d:
-				best_d = score
-				best_dir = Vector3(gx + dx + 0.5 - p.x, 0, gz + dz + 0.5 - p.z)
-	if best_dir == Vector3.ZERO:
-		return Vector3.ZERO
-	return best_dir.normalized()
-
-
-## 地面上两点之间直线能不能走过去（中间没有楼、车）
-func walkable_line(a: Vector3, b: Vector3) -> bool:
-	var steps := int(Vector2(a.x - b.x, a.z - b.z).length() / 0.7) + 1
-	for s in range(1, steps):
-		var p := a.lerp(b, float(s) / steps)
-		if not _nav_free(floori(p.x), floori(p.z)):
-			return false
-	return true

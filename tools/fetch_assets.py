@@ -17,12 +17,17 @@
     assets/world/*.obj/.png            （市中心场景：车辆、可翻找的容器、杂物、地面和楼的贴图）
     assets/index/world_models.json     （场景模型的类别、中文名、战利品类型）
     assets/poi/*.poimesh/.xml          （市中心建筑，再用 tools/build_poi.gd 转成 .res）
+    assets/blocks/c_*.png n_*.png      （楼用到的方块贴图和法线，atlas.json 是贴图编号 → 层号；
+                                        tools/build_poi.gd 再打包成 assets/poi/atlas_*.res）
+    assets/terrain/*.png               （地面贴图：颜色、法线、粗糙度）
     assets/textures/*.png              （地面贴图）
+    assets/effects/*.png               （枪口火光、血雾、火花）
     assets/music/*.wav                 （文件名里 Exp=探索 Cbt=战斗 Sus=紧张 Bld=血月）
 
 只用 Python 自带库（装了 Pillow 会把场景贴图缩到 1024，省手机内存）。已存在且大小一致的文件会跳过，可以反复运行。
 """
 import argparse
+import http.client
 import io
 import json
 import os
@@ -30,6 +35,7 @@ import re
 import shutil
 import sys
 import tempfile
+import time
 import urllib.parse
 import urllib.request
 import zipfile
@@ -79,7 +85,7 @@ def download(item, dest):
         try:
             with request(f"/items/{item['id']}/content") as r, open(tmp, "wb") as f:
                 shutil.copyfileobj(r, f, 1 << 20)
-        except OSError as e:
+        except (OSError, http.client.HTTPException) as e:
             print(f"  下载中断（{e}），重试 …")
             continue
         got = os.path.getsize(tmp)
@@ -212,8 +218,9 @@ class RemoteFile(io.RawIOBase):
                 with urllib.request.urlopen(req, timeout=300) as r:
                     data = r.read()
                 break
-            except OSError as e:
+            except (OSError, http.client.HTTPException) as e:
                 print(f"  读取中断（{e}），重试 …")
+                time.sleep(2 ** attempt)
         else:
             sys.exit("读取云盘文件失败，请稍后再试")
         buf[:len(data)] = data
@@ -588,6 +595,167 @@ def fetch_poi(dest):
     print(f"市中心建筑: {n} 栋")
 
 
+# —— 楼和地面的真实贴图 ——
+# 方块贴图：图集 ta_opaque 有 407 层（每层是一个方块面），对照表 ta_opaquexml 里每条
+# <uv id index blockw blockh>：id 是网格里记的贴图编号，index 是起始层；大贴图占 blockw×blockh 层（按行排）。
+BLOCK_ZIP = "小橘素材库/blocktextureatlases_assets_all.zip"
+BLOCK_MAP = "小橘素材库/meshdescriptions_textassets"
+BLOCK_TEX = 256        # 每层缩到 256（一个方块 1 米，够清楚，也省手机内存）
+# 地形贴图数组（MicroSplat）：24 层，颜色 / 法线（x 在 A、y 在 G）/ 光滑度+AO（G、A）。
+# 层号是和 terraintextures_assets_all 里的单张贴图逐一比对出来的；tile = 几米重复一次（ta_terrainxml 的 blockw）。
+TERRAIN_ZIP = "小橘素材库/terraintextures_arrays.zip"
+TERRAIN_LAYERS = {"asphalt": (4, 8), "concrete": (6, 4), "gravel": (5, 8), "dirt": (9, 8), "rubble": (8, 8),
+                  "forest_ground": (2, 8), "burnt_forest_ground": (10, 8), "desert_debris": (11, 8)}
+TERRAIN_TEX = 1024
+
+
+def _poi_tex_ids(poi_dir):
+    """市中心建筑网格里用到的贴图编号（格式见 tools/build_poi.gd）"""
+    import struct
+    ids = set()
+    for f in os.listdir(poi_dir):
+        if not f.endswith(".poimesh"):
+            continue
+        data = open(os.path.join(poi_dir, f), "rb").read()
+        if data[:4] != b"hsem":
+            continue
+        p, chunks = 7, struct.unpack_from("<H", data, 5)[0]
+        for _ in range(chunks):
+            p += 1 + data[p]
+            nv = struct.unpack_from("<I", data, p)[0]
+            p += 4 + nv * 12
+            na = struct.unpack_from("<I", data, p)[0]
+            p += 4
+            ids.update(struct.unpack_from("<H", data, p + k * 8)[0] for k in range(na))
+            p += na * 8
+            ni = struct.unpack_from("<I", data, p)[0]
+            p += 4 + ni * 2
+    return ids
+
+
+def _unpack_normal(im, size):
+    """Unity 的打包法线（x 在 A 通道、y 在 G 通道）→ 普通 RGB 法线图"""
+    from PIL import Image
+    im = im.convert("RGBA")
+    if max(im.size) > size:
+        im = im.resize((size, size), Image.LANCZOS)
+    _, g, _, a = im.split()
+    xs, ys = a.tobytes(), g.tobytes()
+    zs = bytearray(len(xs))
+    for i in range(len(xs)):
+        x, y = xs[i] / 127.5 - 1.0, ys[i] / 127.5 - 1.0
+        zs[i] = int((max(0.0, 1.0 - x * x - y * y) ** 0.5 * 0.5 + 0.5) * 255)
+    return Image.merge("RGB", (a, g, Image.frombytes("L", im.size, bytes(zs))))
+
+
+def fetch_blocks(dest):
+    out_dir = os.path.join(dest, "blocks")
+    index_out = os.path.join(out_dir, "atlas.json")
+    if os.path.exists(index_out):
+        print("方块贴图: 已有，跳过（删掉 assets/blocks/atlas.json 可重新取）")
+        return
+    try:
+        from PIL import Image
+    except ImportError:
+        print("方块贴图: 需要 Pillow（pip install Pillow），跳过，楼先用纯色")
+        return
+    it = find(list_dir(f"{DRIVE_ROOT}/{BLOCK_MAP}"), "ta_opaquexml")
+    zf = open_remote_zip(f"{DRIVE_ROOT}/{BLOCK_ZIP}")
+    if not it or zf is None:
+        print("云盘里没有方块贴图或对照表，楼先用纯色")
+        return
+    with request(f"/items/{it['id']}/content") as r:
+        xml = r.read().decode("utf-8-sig")
+    uv = {}
+    for line in xml.splitlines():
+        if "<uv " in line:
+            a = dict(re.findall(r'(\w+)="([^"]*)"', line))
+            uv[int(a["id"])] = (int(a["index"]), int(a.get("blockw", 1)), int(a.get("blockh", 1)))
+    poi_dir = os.path.join(dest, "poi")
+    used = _poi_tex_ids(poi_dir) if os.path.isdir(poi_dir) else set()
+    wanted = sorted(i for i in (used or uv.keys()) if i in uv)
+    names = {os.path.basename(i.filename): i for i in zf.infolist()}
+    os.makedirs(out_dir, exist_ok=True)
+    # 这些图只给 tools/build_poi.gd 打包成图集用，不让 Godot 单独导入
+    open(os.path.join(out_dir, ".gdignore"), "w").close()
+    ids, layer = {}, 0
+    for tid in wanted:
+        start, bw, bh = uv[tid]
+        ids[str(tid)] = [layer, bw, bh]
+        for k in range(bw * bh):
+            src = start + k
+            c = Image.open(io.BytesIO(zf.read(names[f"ta_opaque_0_{src:03d}.png"]))).convert("RGB")
+            c.resize((BLOCK_TEX, BLOCK_TEX), Image.LANCZOS).save(os.path.join(out_dir, f"c_{layer:03d}.png"))
+            n = Image.open(io.BytesIO(zf.read(names[f"ta_opaque_n_0_{src:03d}.png"])))
+            _unpack_normal(n, BLOCK_TEX).save(os.path.join(out_dir, f"n_{layer:03d}.png"))
+            layer += 1
+    missing = sorted(used - set(uv))
+    with open(index_out, "w", encoding="utf-8") as f:
+        json.dump({"layers": layer, "size": BLOCK_TEX, "ids": ids, "missing": missing}, f, indent=1)
+    print(f"方块贴图: {len(ids)} 种，{layer} 层" + (f"（对照表里没有的编号 {missing}）" if missing else ""))
+
+
+def fetch_terrain(dest):
+    out_dir = os.path.join(dest, "terrain")
+    index_out = os.path.join(out_dir, "terrain.json")
+    if os.path.exists(index_out):
+        print("地形贴图: 已有，跳过")
+        return
+    try:
+        from PIL import Image
+    except ImportError:
+        print("地形贴图: 需要 Pillow，跳过")
+        return
+    zf = open_remote_zip(f"{DRIVE_ROOT}/{TERRAIN_ZIP}")
+    if zf is None:
+        print("云盘里没有 terraintextures_arrays.zip，地面用单张贴图")
+        return
+    names = {os.path.basename(i.filename): i for i in zf.infolist()}
+    os.makedirs(out_dir, exist_ok=True)
+    index = {}
+
+    def layer(kind, k):
+        return Image.open(io.BytesIO(zf.read(names[f"MicroSplatConfig_{kind}_tarray_{k:03d}.png"])))
+
+    for name, (k, tile) in TERRAIN_LAYERS.items():
+        size = (TERRAIN_TEX, TERRAIN_TEX)
+        layer("diff", k).convert("RGB").resize(size, Image.LANCZOS).save(os.path.join(out_dir, name + ".png"))
+        _unpack_normal(layer("normal", k), TERRAIN_TEX).save(os.path.join(out_dir, name + "_n.png"))
+        # ORM：R=AO，G=粗糙度（1-光滑度），B=金属度 0
+        _, g, _, a = layer("smoothAO", k).convert("RGBA").resize(size, Image.LANCZOS).split()
+        rough = g.point(lambda v: 255 - v)
+        Image.merge("RGB", (a, rough, Image.new("L", size, 0))).save(os.path.join(out_dir, name + "_orm.png"))
+        index[name] = {"albedo": f"terrain/{name}.png", "normal": f"terrain/{name}_n.png",
+                       "orm": f"terrain/{name}_orm.png", "tile": tile}
+    with open(index_out, "w", encoding="utf-8") as f:
+        json.dump(index, f, ensure_ascii=False, indent=1)
+    print(f"地形贴图: {len(index)} 种（颜色+法线+粗糙度）")
+
+
+# 特效贴图：枪口火光、血雾、血迹、火花、烟
+EFFECT_TEXTURES = ["muzzleflash_point", "muzzle_large", "blood_mist02", "blood_mist04", "blood_spray", "blood_splat_1",
+                   "p_blood", "blood_slash", "sparksSheet_A_2x2", "smoke_A_sprite", "p_smoke2"]
+
+
+def fetch_effects(dest):
+    out_dir = os.path.join(dest, "effects")
+    if os.path.isdir(out_dir) and len(os.listdir(out_dir)) >= len(EFFECT_TEXTURES):
+        print("特效贴图: 已有，跳过")
+        return
+    zf = open_remote_zip(f"{DRIVE_ROOT}/小橘素材库/effects_assets_all.zip")
+    if zf is None:
+        print("云盘里没有 effects_assets_all.zip，跳过特效")
+        return
+    _, texs = _zip_members(zf)
+    os.makedirs(out_dir, exist_ok=True)
+    n = 0
+    for name in EFFECT_TEXTURES:
+        if name in texs:
+            _save_png(zf.read(texs[name]), os.path.join(out_dir, name + ".png"), 512)
+            n += 1
+    print(f"特效贴图: {n} 张")
+
+
 # 样例文件夹里的现成素材：(云盘目录, 本地子目录, 文件筛选)
 SAMPLE_SOURCES = [
     ("样例/models/items", "models", lambda n: n.lower().endswith(".glb")),          # 物品模型
@@ -637,98 +805,151 @@ def fetch_music(dest, per_kind):
         print(f"音乐 {kind}: {len(chosen)} 段")
     print(f"音乐新下载 {mb(total)}")
 
+# 音效：组名 → (zip 名, 文件名正则, 最多几个)。存到 assets/sounds/<组名>/，游戏里随机挑一个播
+SOUND_GROUPS = {
+    "fire_pistol": ("weapons", r"pistol_fire\d*\.wav", 3),
+    "fire_magnum": ("weapons", r"(44magnum|desertvulture)_fire\d*\.wav", 3),
+    "fire_smg": ("weapons", r"smg_fire\d+\.wav", 3),
+    "fire_rifle": ("weapons", r"(tacticalar|ak47)_fire\d+\.wav", 4),
+    "fire_mg": ("weapons", r"m60_fire\d+\.wav", 3),
+    "fire_sniper": ("weapons", r"(sniperrifle|lever_action_rifle)_fire\d*\.wav", 3),
+    "fire_shotgun": ("weapons", r"(pump_shotgun|autoshotgun|shotgundb)_fire\d+\.wav", 3),
+    "fire_bow": ("weapons", r"(bow|crossbow2)_fire\d+\.wav", 3),
+    "fire_rocket": ("weapons", r"m136_fire\.wav", 1),
+    "reload_rifle": ("weapons", r"(ak47|mp5|sniperrifle)_reload\.wav", 3),
+    "reload_pistol": ("weapons", r"(pistol|44magnum)_reload\.wav", 2),
+    "reload_shotgun": ("weapons", r"shotgun_reload\.wav", 1),
+    "empty": ("weapons", r"(weapon_empty|dryfire)\d+\.wav", 2),
+    "swing": ("weapons", r"(club|batwood|machete|axe)_swinglight\d*\.wav", 4),
+    "swing_fist": ("weapons", r"fists_swinglight\d+\.wav", 3),
+    "hit_flesh": ("impactsurface", r"(metalhitorganic|organichitorganic)\d*\.wav", 4),
+    "bullet_flesh": ("impactsurface", r"bullethitorganic\d*\.wav", 3),
+    "bullet_wall": ("impactsurface", r"bullethit(stone|metal)\d*\.wav", 4),
+    "explosion": ("explosions", r"explosion\d\.wav", 3),
+    "zm_roam": ("enemies", r"zombiemale2?roam\d+\.wav", 5),
+    "zm_alert": ("enemies", r"zombiemale2?alert\d+\.wav", 4),
+    "zm_attack": ("enemies", r"zombiemale2?attack\d+\.wav", 4),
+    "zm_pain": ("enemies", r"zombiemale2?pain\d+\.wav", 4),
+    "zm_death": ("enemies", r"zombiemale2?death\d+\.wav", 4),
+    "zf_roam": ("enemies", r"zombiefemale2?roam\d+\.wav", 4),
+    "zf_alert": ("enemies", r"zombiefemale2?alert\d+\.wav", 3),
+    "zf_attack": ("enemies", r"zombiefemale2?attack\d+\.wav", 4),
+    "zf_pain": ("enemies", r"zombiefemale2?pain\d+\.wav", 3),
+    "zf_death": ("enemies", r"zombiefemale2?death\d+\.wav", 3),
+    "scream": ("enemies", r"zombiefemalescoutalert\d+\.wav", 3),
+    "step": ("step", r"stepstone\d+\.wav", 6),
+    "pain": ("player_male", r"player1pain(sm|lg)\d*\.wav", 4),
+    "death": ("player_male", r"player1death\d*\.wav", 1),
+    "jump": ("player_male", r"player1jump\d*\.wav", 2),
+    "land": ("player_male", r"player1landSoft\d*\.wav", 2),
+    "eat": ("useactions", r"player_eating\.wav", 1),
+    "drink": ("useactions", r"player_drinking\.wav", 1),
+    "bandage": ("useactions", r"player_bandage\.wav", 1),
+    "search": ("useactions", r"open_(cardboard|garbage|fridge|cupboard|trashcan|dumpster|backpack)\.wav", 7),
+    "loot": ("ui", r"ui_loot_success\.wav", 1),
+    "amb_day": ("ambient_loops", r"a_windlight_lp\.wav", 1),
+    "amb_night": ("ambient_loops", r"a_crickets_lp\.wav", 1),
+    "amb_flies": ("ambient_loops", r"flies_lp\.wav", 1),
+}
 
-# 游戏里的音效：(游戏用的名字, 源文件名里要同时出现的关键字组合…)。云盘里找不到就用游戏自己合成的声音
-SOUND_WANT = [
-    ("gun_pistol", ["pistol", "fire"], ["9mm", "fire"]),
-    ("gun_rifle", ["ak47", "fire"], ["rifle", "fire"], ["m60", "fire"]),
-    ("gun_shotgun", ["shotgun", "fire"]),
-    ("gun_bow", ["bow", "fire"], ["bow", "release"]),
-    ("reload", ["reload"]),
-    ("dry_fire", ["dryfire"], ["dry", "fire"], ["empty", "click"]),
-    ("groan", ["zombie", "roam"], ["zombie", "groan"], ["zombie", "idle"]),
-    ("attack", ["zombie", "attack"]),
-    ("death", ["zombie", "death"], ["zombie", "die"]),
-    ("scream", ["screamer", "scream"], ["scream"]),
-    ("spit", ["vomit"], ["spit"]),
-    ("player_hurt", ["player", "pain"], ["player", "hurt"]),
-    ("footstep", ["footstep"], ["step", "concrete"]),
-    ("hit_flesh", ["flesh", "hit"], ["impact", "flesh"]),
-    ("swing", ["swing"], ["whoosh"]),
-    ("explosion", ["explosion"]),
-]
-SOUND_EXT = (".wav", ".ogg", ".mp3")
 
-
-def _sound_match(name):
-    low = os.path.basename(name).lower()
-    if not low.endswith(SOUND_EXT):
-        return None
-    for want, *combos in SOUND_WANT:
-        if any(all(k in low for k in combo) for combo in combos):
-            return want
-    return None
-
-
-def fetch_sounds(dest, per_kind=3):
-    """在云盘 /7day 和 /7day/小橘素材库 下找名字含 sound/audio/音效 的 zip 或文件夹，按关键字挑音效。"""
+def fetch_sounds(dest):
     out_dir = os.path.join(dest, "sounds")
-    if os.path.isdir(out_dir) and os.listdir(out_dir):
-        print("音效: 已有，跳过")
+    index_out = os.path.join(out_dir, "index.json")
+    if os.path.exists(index_out):
+        print("音效: 已有，跳过（删掉 assets/sounds/index.json 可重新取）")
         return
-    picked = {}
+    zips, index, total = {}, {}, 0
+    for group, (pack, pattern, limit) in SOUND_GROUPS.items():
+        if pack not in zips:
+            zf = open_remote_zip(f"{DRIVE_ROOT}/小橘素材库/automatic_assets_sounds/{pack}.zip")
+            zips[pack] = (zf, zf.infolist() if zf else [])
+        zf, infos = zips[pack]
+        rx = re.compile(pattern, re.I)
+        hits = sorted((i for i in infos if rx.fullmatch(os.path.basename(i.filename))), key=lambda i: i.filename)
+        step = max(1, len(hits) // limit)
+        chosen = hits[::step][:limit]
+        os.makedirs(os.path.join(out_dir, group), exist_ok=True)
+        for i in chosen:
+            base = os.path.basename(i.filename)
+            with zf.open(i) as src, open(os.path.join(out_dir, group, base), "wb") as dst:
+                shutil.copyfileobj(src, dst)
+            index.setdefault(group, []).append(f"sounds/{group}/{base}")
+            total += i.file_size
+        if not chosen:
+            print(f"  音效 {group}: 没找到")
+    with open(index_out, "w", encoding="utf-8") as f:
+        json.dump(index, f, ensure_ascii=False, indent=1)
+    print(f"音效: {sum(len(v) for v in index.values())} 个，{mb(total)}")
 
-    def keep(want, size):
-        lst = picked.setdefault(want, [])
-        # 每类留几个，优先挑小文件（短促的单个音效）
-        return len(lst) < per_kind and 2_000 < size < 3_000_000
+SKY_CUBES = ["WhispyClouds", "FluffyClouds", "ThickOvercastClouds", "MilkyWay_V_Cross_1024"]
+FONTS = ["NotoSansCJKjp-Medium.otf", "AGENCYB.ttf", "opinionproextracondensed-bold.otf"]
 
-    def is_sound_place(name):
-        low = name.lower()
-        return any(k in low for k in ("sound", "audio", "音效", "声音"))
 
-    places = []
-    for folder in (DRIVE_ROOT, f"{DRIVE_ROOT}/小橘素材库"):
-        try:
-            for it in list_dir(folder):
-                if is_sound_place(it["name"]):
-                    places.append((folder, it))
-        except Exception as e:  # noqa: BLE001
-            print(f"读取 {folder} 失败: {e}")
-    if not places:
-        print("云盘里没有音效包，游戏用合成的音效")
+def _cube_to_pano(folder, w=2048):
+    """六面立方体贴图（Unity 左手坐标）→ 全景图 pano.png，游戏里按经纬度查。"""
+    try:
+        import numpy as np
+        from PIL import Image
+    except ImportError:
+        print("  没有 numpy/Pillow，跳过全景图", folder)
         return
-    os.makedirs(out_dir, exist_ok=True)
-    for folder, it in places:
-        path = f"{folder}/{it['name']}"
-        if it["type"] == "file" and it["name"].lower().endswith(".zip"):
-            zf = open_remote_zip(path)
-            if zf is None:
-                continue
-            infos = sorted(zf.infolist(), key=lambda i: i.file_size)
-            for i in infos:
-                want = _sound_match(i.filename)
-                if want and keep(want, i.file_size):
-                    ext = os.path.splitext(i.filename)[1].lower()
-                    out = os.path.join(out_dir, f"{want}_{len(picked[want]) + 1}{ext}")
-                    with zf.open(i) as src, open(out, "wb") as dst:
-                        shutil.copyfileobj(src, dst)
-                    picked[want].append(out)
-        elif it["type"] != "file":
-            try:
-                files = list_dir(path)
-            except Exception as e:  # noqa: BLE001
-                print(f"读取 {path} 失败: {e}")
-                continue
-            for f in sorted(files, key=lambda f: f.get("size", 0)):
-                want = _sound_match(f["name"]) if f["type"] == "file" else None
-                if want and keep(want, f.get("size", 0)):
-                    ext = os.path.splitext(f["name"])[1].lower()
-                    out = os.path.join(out_dir, f"{want}_{len(picked[want]) + 1}{ext}")
-                    download(f, out)
-                    picked[want].append(out)
-    got = {k: len(v) for k, v in picked.items() if v}
-    print(f"音效: {sum(got.values())} 个 {got}；没找到的用合成音效")
+    faces = {}
+    for f in ["px", "nx", "py", "ny", "pz", "nz"]:
+        path = os.path.join(folder, f + ".png")
+        if not os.path.exists(path):
+            return
+        faces[f] = np.asarray(Image.open(path).convert("RGB"), dtype=np.uint8)
+    n = faces["px"].shape[0]
+    h = w // 2
+    lon = (np.arange(w) + 0.5) / w * 2 * np.pi - np.pi
+    lat = np.pi / 2 - (np.arange(h) + 0.5) / h * np.pi
+    lon, lat = np.meshgrid(lon, lat)
+    x, y, z = np.cos(lat) * np.sin(lon), np.sin(lat), np.cos(lat) * np.cos(lon)
+    ax, ay, az = np.abs(x), np.abs(y), np.abs(z)
+    out = np.zeros((h, w, 3), dtype=np.uint8)
+    # 每个方向看哪个轴最大，落在哪一面；面内坐标按 OpenGL/Unity 立方体贴图的约定
+    rules = [
+        ("px", (ax >= ay) & (ax >= az) & (x > 0), -z, -y, ax),
+        ("nx", (ax >= ay) & (ax >= az) & (x <= 0), z, -y, ax),
+        ("py", (ay > ax) & (ay >= az) & (y > 0), x, z, ay),
+        ("ny", (ay > ax) & (ay >= az) & (y <= 0), x, -z, ay),
+        ("pz", (az > ax) & (az > ay) & (z > 0), x, -y, az),
+        ("nz", (az > ax) & (az > ay) & (z <= 0), -x, -y, az),
+    ]
+    for f, m, sc, tc, ma in rules:
+        u = ((sc[m] / ma[m] + 1) / 2 * (n - 1)).round().astype(int)
+        v = ((tc[m] / ma[m] + 1) / 2 * (n - 1)).round().astype(int)
+        out[m] = faces[f][v, u]
+    Image.fromarray(out).save(os.path.join(folder, "pano.png"))
+
+
+def fetch_sky_fonts(dest):
+    """天空盒（云层、银河，六面立方体贴图）和游戏字体。"""
+    sky_dir, font_dir = os.path.join(dest, "sky"), os.path.join(dest, "fonts")
+    if os.path.isdir(sky_dir) and os.path.isdir(font_dir):
+        print("天空和字体: 已有，跳过")
+        return
+    zf = open_remote_zip(f"{DRIVE_ROOT}/小橘素材库/其他/天空盒与反射贴图.zip")
+    if zf:
+        for i in zf.infolist():
+            parts = i.filename.split("/")
+            if len(parts) == 3 and parts[1] in SKY_CUBES and parts[2].endswith(".png"):
+                os.makedirs(os.path.join(sky_dir, parts[1]), exist_ok=True)
+                _save_png(zf.read(i), os.path.join(sky_dir, parts[1], parts[2]), 1024)
+    for name in SKY_CUBES:
+        _cube_to_pano(os.path.join(sky_dir, name))
+    zf = open_remote_zip(f"{DRIVE_ROOT}/小橘素材库/其他/字体.zip")
+    if zf:
+        os.makedirs(font_dir, exist_ok=True)
+        done = set()
+        for i in zf.infolist():
+            base = os.path.basename(i.filename)
+            if base in FONTS and base not in done:
+                done.add(base)
+                with zf.open(i) as src, open(os.path.join(font_dir, base), "wb") as dst:
+                    shutil.copyfileobj(src, dst)
+    print("天空和字体: 完成")
 
 
 def main():
@@ -737,7 +958,7 @@ def main():
     ap.add_argument("--zombies", default=",".join(DEFAULT_ZOMBIES), help="逗号分隔的僵尸名，或 all")
     ap.add_argument("--music", type=int, default=6, help="每类音乐取几段")
     ap.add_argument("--all-icons", action="store_true", help="取全部图标（默认只取游戏会用到的）")
-    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,poi,music,sounds")
+    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,poi,blocks,terrain,effects,music,sounds,sky")
     args = ap.parse_args()
     skip = set(filter(None, args.skip.split(",")))
     dest = os.path.abspath(args.dest)
@@ -757,13 +978,18 @@ def main():
         fetch_world(dest)
     if "poi" not in skip:
         fetch_poi(dest)
+    if "blocks" not in skip:
+        fetch_blocks(dest)
+    if "terrain" not in skip:
+        fetch_terrain(dest)
+    if "effects" not in skip:
+        fetch_effects(dest)
     if "music" not in skip:
         fetch_music(dest, args.music)
     if "sounds" not in skip:
-        try:
-            fetch_sounds(dest)
-        except Exception as e:  # noqa: BLE001  音效是可选的，出错不影响编译
-            print(f"取音效失败（{e}），游戏用合成的音效")
+        fetch_sounds(dest)
+    if "sky" not in skip:
+        fetch_sky_fonts(dest)
     print("完成。用 Godot 打开项目即可（第一次打开会导入素材，需要几分钟）。")
 
 
