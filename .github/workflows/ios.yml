@@ -1,4 +1,4 @@
- # 在 GitHub 的云端 Mac 上把游戏编译成 iPhone 安装包。
+# 在 GitHub 的云端 Mac 上把游戏编译成 iPhone 安装包。
 # 素材在编译时从小桔云盘下载（需要在仓库 Settings → Secrets → Actions 里添加 XIAOJU_TOKEN），
 # 放进安装包，提交进仓库。产物在这个仓库的 Actions 页面里能下载，保留 7 天。
 name: iOS 安装包
@@ -43,7 +43,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: assets
-          key: assets-${{ github.event.inputs.zombies || 'default' }}-${{ github.event.inputs.music || '6' }}-v1
+          key: assets-v1
 
       - name: 从小桔云盘下载素材
         env:
