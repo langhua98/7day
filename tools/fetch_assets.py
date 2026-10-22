@@ -27,6 +27,7 @@
 只用 Python 自带库（装了 Pillow 会把场景贴图缩到 1024，省手机内存）。已存在且大小一致的文件会跳过，可以反复运行。
 """
 import argparse
+import http.client
 import io
 import json
 import os
@@ -34,6 +35,7 @@ import re
 import shutil
 import sys
 import tempfile
+import time
 import urllib.parse
 import urllib.request
 import zipfile
@@ -83,7 +85,7 @@ def download(item, dest):
         try:
             with request(f"/items/{item['id']}/content") as r, open(tmp, "wb") as f:
                 shutil.copyfileobj(r, f, 1 << 20)
-        except OSError as e:
+        except (OSError, http.client.HTTPException) as e:
             print(f"  下载中断（{e}），重试 …")
             continue
         got = os.path.getsize(tmp)
@@ -216,8 +218,9 @@ class RemoteFile(io.RawIOBase):
                 with urllib.request.urlopen(req, timeout=300) as r:
                     data = r.read()
                 break
-            except OSError as e:
+            except (OSError, http.client.HTTPException) as e:
                 print(f"  读取中断（{e}），重试 …")
+                time.sleep(2 ** attempt)
         else:
             sys.exit("读取云盘文件失败，请稍后再试")
         buf[:len(data)] = data

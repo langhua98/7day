@@ -44,14 +44,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: assets
-          key: assets-v2
+          key: assets-v3
 
       - name: 从小桔云盘下载素材
         env:
           XIAOJU_TOKEN: ${{ secrets.XIAOJU_TOKEN }}
         run: |
-          # Pillow 用来把场景贴图缩小（省手机内存），装不上也能继续
-          python3 -m pip install --quiet --user --break-system-packages pillow || python3 -m pip install --quiet --user pillow || true
+          # Pillow 用来缩小贴图（省手机内存），numpy 用来拼天空全景图；装不上也能继续
+          python3 -m pip install --quiet --user --break-system-packages pillow numpy || python3 -m pip install --quiet --user pillow numpy || true
           python3 tools/fetch_assets.py \
             --zombies "${{ github.event.inputs.zombies || 'soldier,nurse,cop,biker,lumberjack,joe,arlene,screamer' }}" \
             --music "${{ github.event.inputs.music || '6' }}"
