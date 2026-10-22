@@ -6,6 +6,8 @@ signal start_pressed
 signal restart_pressed
 signal item_used(id: String)
 signal action_pressed
+signal reload_pressed
+signal jump_pressed
 
 var move := Vector2.ZERO          # 摇杆输出，x 右 y 前
 var look_delta := Vector2.ZERO    # 本帧视角拖动量（像素）
@@ -15,6 +17,10 @@ var _root := Control.new()
 var _status := Label.new()
 var _hp_bar := ProgressBar.new()
 var _food_bar := ProgressBar.new()
+var _stamina_bar := ProgressBar.new()
+var _reload_btn := Button.new()
+var _jump_btn := Button.new()
+var _ammo := Label.new()
 var _kills := Label.new()
 var _toast := Label.new()
 var _banner := Label.new()
@@ -62,9 +68,9 @@ func _ready() -> void:
 	_root.add_child(tl)
 	_status.add_theme_font_size_override("font_size", 30)
 	tl.add_child(_status)
-	for pair in [[_hp_bar, Color(0.75, 0.12, 0.1)], [_food_bar, Color(0.8, 0.6, 0.15)]]:
+	for pair in [[_hp_bar, Color(0.75, 0.12, 0.1)], [_food_bar, Color(0.8, 0.6, 0.15)], [_stamina_bar, Color(0.3, 0.7, 0.45)]]:
 		var bar: ProgressBar = pair[0]
-		bar.custom_minimum_size = Vector2(260, 16)
+		bar.custom_minimum_size = Vector2(260, 16 if bar != _stamina_bar else 8)
 		bar.show_percentage = false
 		bar.max_value = 100
 		var fill := StyleBoxFlat.new()
@@ -131,6 +137,26 @@ func _ready() -> void:
 	_action_btn.clip_text = true
 	_action_btn.visible = false
 	_root.add_child(_action_btn)
+
+	# 换弹、跳：按钮也在 _input 里按触点处理
+	for pair in [[_reload_btn, "换弹", Vector2(-420, -400), Vector2(160, 100)], [_jump_btn, "跳", Vector2(-190, -380), Vector2(130, 110)]]:
+		var b: Button = pair[0]
+		b.text = pair[1]
+		b.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+		b.position = pair[2]
+		b.size = pair[3]
+		b.add_theme_font_size_override("font_size", 28)
+		b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_root.add_child(b)
+	_reload_btn.visible = false
+	# 子弹数：弹匣里 / 背包里
+	_ammo.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_ammo.position = Vector2(-230, -280)
+	_ammo.size = Vector2(210, 44)
+	_ammo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_ammo.add_theme_font_size_override("font_size", 30)
+	_ammo.visible = false
+	_root.add_child(_ammo)
 
 	# 翻找进度条（屏幕中间偏下）
 	_progress.set_anchors_preset(Control.PRESET_CENTER)
@@ -307,6 +333,17 @@ func show_end(text: String) -> void:
 	_end_panel.visible = true
 
 
+## 拿着枪时显示「弹匣 / 背包」子弹数和换弹键；text 为空就隐藏
+func set_ammo(text: String) -> void:
+	_ammo.visible = text != ""
+	_ammo.text = text
+	_reload_btn.visible = text != ""
+
+
+func set_stamina(v: float) -> void:
+	_stamina_bar.value = v
+
+
 func set_status(day: int, hour: float, hp: float, food: float, kills: int, zombies: int, night: bool) -> void:
 	var h := int(hour)
 	var m := int((hour - h) * 60.0)
@@ -429,6 +466,12 @@ func _touch_down(index: int, pos: Vector2) -> void:
 	if _attack_btn.get_global_rect().grow(20).has_point(pos):
 		_attack_id = index
 		_press_attack(true)
+		return
+	if _reload_btn.visible and _reload_btn.get_global_rect().grow(10).has_point(pos):
+		reload_pressed.emit()
+		return
+	if _jump_btn.get_global_rect().grow(10).has_point(pos):
+		jump_pressed.emit()
 		return
 	if _action_btn.visible and _action_btn.get_global_rect().grow(12).has_point(pos):
 		action_pressed.emit()

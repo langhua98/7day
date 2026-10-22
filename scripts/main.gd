@@ -35,6 +35,14 @@ var _search_t := 0.0
 var _search_from := Vector3.ZERO
 var _label_font: SystemFont
 var _e_down := false
+## 枪：每把枪弹匣里还剩几发；正在换弹的剩余时间
+var mags := {}
+var _reload_left := 0.0
+## 体力、跳跃
+var stamina := 100.0
+var _vy := 0.0
+var _flow_t := 0.0
+var _recoil := 0.0
 var _night_announced := -1
 
 
@@ -50,6 +58,8 @@ func _ready() -> void:
 	hud.restart_pressed.connect(_start)
 	hud.item_used.connect(_use_item)
 	hud.action_pressed.connect(_action)
+	hud.reload_pressed.connect(_reload)
+	hud.jump_pressed.connect(_jump)
 	var info := "素材：物品 %d 个（武器、食物、药品等 %d 个可拾取），僵尸 %d 种，音乐 %d 段" % [
 		Assets.items.size(), _count_loot(), Assets.zombie_models.size(),
 		Assets.music.values().reduce(func(a, l): return a + l.size(), 0)]
@@ -131,6 +141,10 @@ func _start() -> void:
 		c.searched = false
 	_search = {}
 	hud.set_progress(-1.0)
+	mags.clear()
+	_reload_left = 0.0
+	stamina = 100.0
+	_vy = 0.0
 	for i in C.LOOT_COUNT / 2:
 		_spawn_loot(world.free_point(Vector3.ZERO, 4.0, 60.0))
 	# 开局在面前放一件近战武器，马上就能看到手里的模型
@@ -203,13 +217,41 @@ func _update_player(delta: float) -> void:
 	if Input.is_physical_key_pressed(KEY_UP): pitch = min(pitch + delta * 1.5, 1.3)
 	if Input.is_physical_key_pressed(KEY_DOWN): pitch = max(pitch - delta * 1.5, -1.3)
 	mv = mv.limit_length(1.0)
+	# 冲刺：摇杆推到底往前，或者按 Shift；耗体力
+	var sprint := (mv.length() > 0.92 and mv.y > 0.6) or Input.is_physical_key_pressed(KEY_SHIFT)
+	sprint = sprint and stamina > 1.0 and mv.y > 0.3
+	if sprint:
+		stamina = max(0.0, stamina - C.SPRINT_DRAIN * delta)
+	else:
+		stamina = min(100.0, stamina + C.STAMINA_REGEN * delta * (0.5 if mv.length() > 0.1 else 1.0))
+	hud.set_stamina(stamina)
+	# 跳：简单的竖直速度和重力
+	if Input.is_physical_key_pressed(KEY_C):
+		_jump()
+	_vy -= C.GRAVITY * delta
+	player.position.y = max(0.0, player.position.y + _vy * delta)
+	if player.position.y <= 0.0:
+		_vy = 0.0
+	# 后坐力：镜头往上一跳，慢慢回落
+	if _recoil > 0.0:
+		var r := minf(_recoil, delta * 1.6)
+		_recoil -= r
+		pitch = clamp(pitch + r, -1.3, 1.3)
 	player.rotation.y = yaw
 	camera.rotation.x = pitch
 	var fwd := -player.global_basis.z
 	var right := player.global_basis.x
-	var vel := (fwd * mv.y + right * mv.x) * C.PLAYER_SPEED
+	var vel := (fwd * mv.y + right * mv.x) * C.PLAYER_SPEED * (C.SPRINT_MULT if sprint else 1.0)
 	player.position = world.push_out(player.position + vel * delta, 0.35)
-	arms.set_meta("walking", mv.length())
+	arms.set_meta("walking", mv.length() * (1.6 if sprint else 1.0))
+	# 换弹
+	if _reload_left > 0.0:
+		_reload_left -= delta
+		if _reload_left <= 0.0:
+			_finish_reload()
+	if Input.is_physical_key_pressed(KEY_R):
+		_reload()
+	_update_ammo_hud()
 
 	attack_cd = max(0.0, attack_cd - delta)
 	if Input.is_physical_key_pressed(KEY_E) and not _e_down:
@@ -223,13 +265,12 @@ func _update_player(delta: float) -> void:
 func _attack() -> void:
 	var row: Dictionary = Assets.items_by_id.get(equipped, {})
 	var kind: int = row.get("kind", -1)
-	var is_gun := kind == Assets.Kind.GUN
-	attack_cd = C.GUN_COOLDOWN if is_gun else C.MELEE_COOLDOWN
-	arms.swing(7.0 if is_gun else 1.0 / C.MELEE_COOLDOWN * 0.9)
-	var dmg: float = row.get("power", C.FIST_DAMAGE) if kind in [Assets.Kind.MELEE, Assets.Kind.GUN] else C.FIST_DAMAGE
-	var reach := C.GUN_RANGE if is_gun else C.MELEE_RANGE
-	var cone := 0.97 if is_gun else 0.6
-	var eye := camera.global_position
+	if kind == Assets.Kind.GUN:
+		_fire(row)
+		return
+	attack_cd = C.MELEE_COOLDOWN
+	arms.swing(1.0 / C.MELEE_COOLDOWN * 0.9)
+	var dmg: float = row.get("power", C.FIST_DAMAGE) if kind == Assets.Kind.MELEE else C.FIST_DAMAGE
 	var aim := -camera.global_basis.z
 	var flat_aim := Vector3(aim.x, 0, aim.z).normalized()
 	var best: Zombie = null
@@ -240,20 +281,165 @@ func _attack() -> void:
 		var to: Vector3 = z.global_position - player.global_position
 		to.y = 0
 		var d := to.length()
-		if d > reach or d < 0.001:
+		if d > C.MELEE_RANGE or d < 0.001:
 			continue
-		if flat_aim.dot(to / d) < cone and d > 0.9:
-			continue
-		if d > 1.5 and world.line_blocked(eye, z.global_position + Vector3.UP):
+		if flat_aim.dot(to / d) < 0.6 and d > 0.9:
 			continue
 		if d < best_d:
 			best_d = d
 			best = z
 	if best:
-		best.take_hit(dmg, player.global_position)
+		# 近战往上瞄着打算爆头
+		var head := pitch > 0.12
+		_hit_zombie(best, dmg * (C.HEADSHOT_MULT if head else 1.0), head,
+			best.global_position + Vector3.UP * (best.height() * (0.88 if head else 0.6)), flat_aim)
+
+
+## 开枪：每颗弹丸从镜头沿准星方向射出，先打中的是僵尸还是墙
+func _fire(row: Dictionary) -> void:
+	var st := Weapons.stats(equipped)
+	if _reload_left > 0.0:
+		return
+	var left: int = mags.get(equipped, 0)
+	if left <= 0:
+		attack_cd = 0.35
+		if Weapons.ammo_count(inventory, equipped) > 0:
+			_reload()
+		else:
+			hud.toast("没子弹了，翻翻警车和武器包")
+		return
+	mags[equipped] = left - 1
+	attack_cd = st.rate
+	arms.swing(7.0)
+	Fx.muzzle(arms, arms.muzzle_position())
+	_recoil += 0.012 + st.damage * 0.0004 * st.pellets
+	var eye := camera.global_position
+	var aim := -camera.global_basis.z
+	for p in st.pellets:
+		var dir := (aim + camera.global_basis.x * rng.randfn(0.0, st.spread) + camera.global_basis.y * rng.randfn(0.0, st.spread)).normalized()
+		_shoot_ray(eye, dir, st)
+
+
+func _shoot_ray(eye: Vector3, dir: Vector3, st: Dictionary) -> void:
+	var reach: float = st.range
+	# 墙：沿射线每 0.25 米查一次楼的占地图；地面：y < 0
+	var wall_t := reach
+	var t := 0.5
+	while t < reach:
+		var p := eye + dir * t
+		if p.y < 0.0 or (p.y < 30.0 and world.line_blocked(p, p)):
+			wall_t = t
+			break
+		if world.blocked(Vector3(p.x, 0, p.z), 0.0) and p.y < 1.4:
+			wall_t = t   # 车、箱子这种矮的东西
+			break
+		t += 0.25
+	# 僵尸：当成竖着的胶囊
+	var best: Zombie = null
+	var best_t := wall_t
+	var best_y := 0.0
+	for z in zombie_root.get_children():
+		if z.dead:
+			continue
+		var zp: Vector3 = z.global_position
+		var oc := Vector2(zp.x - eye.x, zp.z - eye.z)
+		var d2 := Vector2(dir.x, dir.z)
+		var dd := d2.length_squared()
+		if dd < 1e-6:
+			continue
+		var tt := oc.dot(d2) / dd
+		if tt <= 0.0 or tt >= best_t:
+			continue
+		var miss := (Vector2(eye.x, eye.z) + d2 * tt - Vector2(zp.x, zp.z)).length()
+		var y := eye.y + dir.y * tt
+		if miss < 0.38 and y > zp.y + 0.1 and y < zp.y + z.height() * 1.02:
+			best = z
+			best_t = tt
+			best_y = y
+	var hit := eye + dir * best_t
+	if st.blast > 0.0:
+		_explode(hit, st)
+		return
+	if best:
+		var head := best_y > best.head_height() - 0.12
+		_hit_zombie(best, st.damage * (C.HEADSHOT_MULT if head else 1.0), head, hit, dir)
+	elif best_t < reach:
+		Fx.impact(self, hit - dir * 0.05, -dir)
+
+
+func _explode(at: Vector3, st: Dictionary) -> void:
+	Fx.impact(self, at, Vector3.UP)
+	Fx.blood(self, at, Vector3.UP, true)
+	for z in zombie_root.get_children():
+		if z.dead:
+			continue
+		var d: float = z.global_position.distance_to(Vector3(at.x, 0, at.z))
+		if d < st.blast:
+			_hit_zombie(z, st.damage * (1.0 - d / st.blast * 0.6), false, z.global_position + Vector3.UP, (z.global_position - at).normalized())
+	if player.position.distance_to(Vector3(at.x, 0, at.z)) < st.blast * 0.6:
+		hp -= 25.0
+		hud.hurt()
+
+
+func _hit_zombie(z: Zombie, dmg: float, head: bool, at: Vector3, dir: Vector3) -> void:
+	z.take_hit(dmg, player.global_position, head)
+	Fx.blood(self, at, dir.normalized() + Vector3.UP * 0.2, head)
+	if head:
+		hud.toast("爆头！")
+
+
+func _reload() -> void:
+	var row: Dictionary = Assets.items_by_id.get(equipped, {})
+	if row.get("kind", -1) != Assets.Kind.GUN or _reload_left > 0.0:
+		return
+	var st := Weapons.stats(equipped)
+	if mags.get(equipped, 0) >= st.mag:
+		return
+	if Weapons.ammo_count(inventory, equipped) <= 0:
+		hud.toast("没有这把枪的子弹")
+		return
+	_reload_left = st.reload
+	arms.reload(st.reload)
+
+
+func _finish_reload() -> void:
+	var st := Weapons.stats(equipped)
+	var need: int = st.mag - mags.get(equipped, 0)
+	for id in Weapons.ammo_in(inventory, equipped):
+		if need <= 0:
+			break
+		var take: int = min(need, inventory[id])
+		inventory[id] -= take
+		need -= take
+		mags[equipped] = mags.get(equipped, 0) + take
+		if inventory[id] <= 0:
+			inventory.erase(id)
+			pickup_order.erase(id)
+	_refresh_inventory()
+
+
+func _update_ammo_hud() -> void:
+	var row: Dictionary = Assets.items_by_id.get(equipped, {})
+	if row.get("kind", -1) != Assets.Kind.GUN:
+		hud.set_ammo("")
+		return
+	var text := "%d / %d" % [mags.get(equipped, 0), Weapons.ammo_count(inventory, equipped)]
+	if _reload_left > 0.0:
+		text = "换弹中…"
+	hud.set_ammo(text)
+
+
+func _jump() -> void:
+	if player.position.y <= 0.01 and stamina > 8.0:
+		_vy = C.JUMP_SPEED
+		stamina -= 8.0
 
 
 func _update_zombies(delta: float, day: int, night: bool, horde: bool) -> void:
+	_flow_t -= delta
+	if _flow_t <= 0.0:
+		_flow_t = 0.5
+		world.update_flow(player.position)
 	var alive := 0
 	for z in zombie_root.get_children():
 		if z.dead:
@@ -280,7 +466,7 @@ func _update_zombies(delta: float, day: int, night: bool, horde: bool) -> void:
 		_spawn_zombie(day, night, horde)
 
 
-func _spawn_zombie(day: int, night: bool, horde: bool) -> void:
+func _spawn_zombie(day: int, night: bool, horde: bool, near := Vector3.INF) -> void:
 	var z := Zombie.new()
 	var model: String = Assets.zombie_models[rng.randi_range(0, Assets.zombie_models.size() - 1)]
 	var spd := C.ZOMBIE_HORDE_SPEED if horde else (C.ZOMBIE_NIGHT_SPEED if night else C.ZOMBIE_WALK_SPEED)
@@ -288,15 +474,29 @@ func _spawn_zombie(day: int, night: bool, horde: bool) -> void:
 		z.free()
 		return
 	z.world = world
-	z.position = world.free_point(player.position, 18.0, 32.0) if not horde else world.free_point(player.position, 14.0, 24.0)
+	if near != Vector3.INF:
+		z.position = world.free_point(near, 4.0, 10.0)
+	else:
+		z.position = world.free_point(player.position, 18.0, 32.0) if not horde else world.free_point(player.position, 14.0, 24.0)
 	z.died.connect(_on_zombie_died)
+	z.screamed.connect(_on_scream)
 	zombie_root.add_child(z)
 
 
 func _on_zombie_died(z: Zombie) -> void:
 	kills += 1
+	Fx.blood_pool(self, z.global_position)
 	if rng.randf() < C.ZOMBIE_DROP_CHANCE:
 		_spawn_loot(z.global_position + Vector3(rng.randf_range(-0.5, 0.5), 0, rng.randf_range(-0.5, 0.5)))
+
+
+## 尖叫者叫一声，附近再冒出几只僵尸
+func _on_scream(z: Zombie) -> void:
+	hud.toast("尖叫者在叫，附近的僵尸被引过来了！")
+	var day := int(game_hours / 24.0) + 1
+	for i in 3:
+		if zombie_root.get_child_count() < C.ZOMBIE_MAX:
+			_spawn_zombie(day, true, false, z.global_position)
 
 
 # —— 物品 ——
@@ -451,11 +651,12 @@ func _finish_search(c: Dictionary) -> void:
 
 
 func _pickup(id: String) -> void:
-	inventory[id] = inventory.get(id, 0) + 1
+	var n := Weapons.pickup_count(id, rng) if Weapons.is_ammo(id) else 1
+	inventory[id] = inventory.get(id, 0) + n
 	if not pickup_order.has(id):
 		pickup_order.append(id)
 	var row: Dictionary = Assets.items_by_id[id]
-	hud.toast("捡到：%s" % Assets.display_name(id))
+	hud.toast("捡到：%s" % Assets.display_name(id) + (" ×%d" % n if n > 1 else ""))
 	# 捡到更好的武器自动换上
 	if row.kind in [Assets.Kind.MELEE, Assets.Kind.GUN]:
 		var cur: Dictionary = Assets.items_by_id.get(equipped, {})
@@ -496,6 +697,10 @@ func _consume(id: String, msg: String) -> void:
 
 func _equip(id: String) -> void:
 	equipped = id
+	_reload_left = 0.0
+	if id != "" and Assets.items_by_id[id].kind == Assets.Kind.GUN and not mags.has(id):
+		# 捡到的枪里还剩点子弹
+		mags[id] = int(ceil(Weapons.stats(id).mag * rng.randf_range(0.3, 1.0)))
 	arms.hold(id)
 	if id != "":
 		hud.toast("装备：%s" % Assets.display_name(id))

@@ -31,6 +31,8 @@ var _weapon_mount := Node3D.new()
 var _weapon: Node3D
 var _grip := Grip.NONE
 var _weapon_len := 0.3
+var _reload_t := 0.0
+var _reload_total := 1.0
 var _swing := 0.0
 var _swing_speed := 3.0
 var _bob := 0.0
@@ -240,10 +242,15 @@ func _update_pose(delta: float) -> void:
 	var kick := 0.0
 	match _grip:
 		Grip.PISTOL, Grip.RIFLE:
-			# 枪：手腕放平，握把略向后倾；开枪时往后上方一顿
+			# 枪：手腕放平，握把略向后倾；开枪时往后上方一顿；换弹时往下压
 			kick = sin(t * PI) if t > 0.0 else 0.0
-			hand = (PISTOL_HAND if _grip == Grip.PISTOL else RIFLE_HAND) + bob + Vector3(0, 0.015, 0.06) * kick
-			tilt = -0.25 + 0.25 * kick
+			var rl := 0.0
+			if _reload_t > 0.0:
+				_reload_t = max(0.0, _reload_t - delta)
+				rl = sin((1.0 - _reload_t / _reload_total) * PI)
+			hand = (PISTOL_HAND if _grip == Grip.PISTOL else RIFLE_HAND) + bob + Vector3(0, 0.015, 0.06) * kick \
+				+ Vector3(-0.05, -0.12, 0.06) * rl
+			tilt = -0.25 + 0.25 * kick - 0.5 * rl
 			finger = Vector3(0, -0.25, -1)
 		Grip.SPEAR:
 			# 矛：举在身侧，向前捅
@@ -355,6 +362,22 @@ func hold(item_id: String) -> void:
 	_weapon = holder
 	for m in holder.find_children("*", "GeometryInstance3D", true, false):
 		(m as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
+## 换弹：枪往下压、往里收，再抬回来
+func reload(seconds: float) -> void:
+	_reload_total = max(seconds, 0.1)
+	_reload_t = _reload_total
+
+
+func is_reloading() -> bool:
+	return _reload_t > 0.0
+
+
+## 枪口在 FpArms 空间里的位置（放枪口火光用）
+func muzzle_position() -> Vector3:
+	var fwd := -_weapon_mount.basis.z
+	return _weapon_mount.position + fwd * _weapon_len * 0.8 + Vector3(0, 0.03, 0)
 
 
 func swing(speed := 3.0) -> void:

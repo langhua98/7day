@@ -179,6 +179,84 @@ func set_block_atlas(atlas: Texture2DArray) -> void:
 		_poi_mat.set_shader_parameter("use_atlas", true)
 
 
+# —— 僵尸寻路：以玩家为中心的距离场，僵尸沿着距离变小的方向走就能绕开楼 ——
+
+const FLOW_R := 48
+var _flow := PackedInt32Array()
+var _flow_center := Vector2i(1 << 20, 0)
+
+
+## 每隔一会儿以 target 为中心重算一次（BFS，8 方向，不能斜着穿墙角）
+func update_flow(target: Vector3) -> void:
+	var size := FLOW_R * 2 + 1
+	if _flow.size() != size * size:
+		_flow.resize(size * size)
+	_flow.fill(-1)
+	_flow_center = Vector2i(floori(target.x), floori(target.z))
+	var queue := PackedInt32Array()
+	queue.resize(size * size)
+	var head := 0
+	var tail := 0
+	var start := FLOW_R * size + FLOW_R
+	_flow[start] = 0
+	queue[tail] = start
+	tail += 1
+	var dirs := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
+		Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]
+	while head < tail:
+		var i := queue[head]
+		head += 1
+		var x := i % size
+		var z := i / size
+		var d := _flow[i]
+		for k in 8:
+			var dv: Vector2i = dirs[k]
+			var nx := x + dv.x
+			var nz := z + dv.y
+			if nx < 0 or nz < 0 or nx >= size or nz >= size:
+				continue
+			var ni := nz * size + nx
+			if _flow[ni] != -1:
+				continue
+			var wx := _flow_center.x - FLOW_R + nx
+			var wz := _flow_center.y - FLOW_R + nz
+			if _cell(wx, wz):
+				_flow[ni] = -2
+				continue
+			if k >= 4 and (_cell(_flow_center.x - FLOW_R + x + dv.x, _flow_center.y - FLOW_R + z) or _cell(_flow_center.x - FLOW_R + x, _flow_center.y - FLOW_R + z + dv.y)):
+				continue
+			_flow[ni] = d + 1
+			queue[tail] = ni
+			tail += 1
+
+
+## 从 p 出发往目标走的方向（不在距离场里返回 ZERO，调用方直接朝目标走）
+func flow_dir(p: Vector3) -> Vector3:
+	var size := FLOW_R * 2 + 1
+	var x := floori(p.x) - _flow_center.x + FLOW_R
+	var z := floori(p.z) - _flow_center.y + FLOW_R
+	if x < 1 or z < 1 or x >= size - 1 or z >= size - 1:
+		return Vector3.ZERO
+	var here := _flow[z * size + x]
+	var best := here if here >= 0 else 1 << 30
+	var best_v := Vector2i.ZERO
+	for dz in range(-1, 2):
+		for dx in range(-1, 2):
+			if dx == 0 and dz == 0:
+				continue
+			var v := _flow[(z + dz) * size + x + dx]
+			if v >= 0 and v < best:
+				best = v
+				best_v = Vector2i(dx, dz)
+	if best_v == Vector2i.ZERO:
+		return Vector3.ZERO
+	# 朝相邻格子的中心走，避免贴着墙角卡住
+	var c := Vector3(floori(p.x) + best_v.x + 0.5, p.y, floori(p.z) + best_v.y + 0.5)
+	var d := c - p
+	d.y = 0.0
+	return d.normalized() if d.length() > 0.01 else Vector3.ZERO
+
+
 func _cell(gx: int, gz: int) -> bool:
 	var x := gx + MAP
 	var z := gz + MAP

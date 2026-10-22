@@ -18,6 +18,7 @@
     assets/index/world_models.json     （场景模型的类别、中文名、战利品类型）
     assets/poi/*.poimesh/.xml          （市中心建筑，再用 tools/build_poi.gd 转成 .res）
     assets/textures/*.png              （地面贴图）
+    assets/effects/*.png               （枪口火光、血雾、火花）
     assets/music/*.wav                 （文件名里 Exp=探索 Cbt=战斗 Sus=紧张 Bld=血月）
 
 只用 Python 自带库（装了 Pillow 会把场景贴图缩到 1024，省手机内存）。已存在且大小一致的文件会跳过，可以反复运行。
@@ -588,6 +589,30 @@ def fetch_poi(dest):
     print(f"市中心建筑: {n} 栋")
 
 
+# 特效贴图：枪口火光、血雾、血迹、火花、烟
+EFFECT_TEXTURES = ["muzzleflash_point", "muzzle_large", "blood_mist02", "blood_mist04", "blood_spray", "blood_splat_1",
+                   "p_blood", "blood_slash", "sparksSheet_A_2x2", "smoke_A_sprite", "p_smoke2"]
+
+
+def fetch_effects(dest):
+    out_dir = os.path.join(dest, "effects")
+    if os.path.isdir(out_dir) and len(os.listdir(out_dir)) >= len(EFFECT_TEXTURES):
+        print("特效贴图: 已有，跳过")
+        return
+    zf = open_remote_zip(f"{DRIVE_ROOT}/小橘素材库/effects_assets_all.zip")
+    if zf is None:
+        print("云盘里没有 effects_assets_all.zip，跳过特效")
+        return
+    _, texs = _zip_members(zf)
+    os.makedirs(out_dir, exist_ok=True)
+    n = 0
+    for name in EFFECT_TEXTURES:
+        if name in texs:
+            _save_png(zf.read(texs[name]), os.path.join(out_dir, name + ".png"), 512)
+            n += 1
+    print(f"特效贴图: {n} 张")
+
+
 # 样例文件夹里的现成素材：(云盘目录, 本地子目录, 文件筛选)
 SAMPLE_SOURCES = [
     ("样例/models/items", "models", lambda n: n.lower().endswith(".glb")),          # 物品模型
@@ -644,7 +669,7 @@ def main():
     ap.add_argument("--zombies", default=",".join(DEFAULT_ZOMBIES), help="逗号分隔的僵尸名，或 all")
     ap.add_argument("--music", type=int, default=6, help="每类音乐取几段")
     ap.add_argument("--all-icons", action="store_true", help="取全部图标（默认只取游戏会用到的）")
-    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,poi,music")
+    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,poi,effects,music")
     args = ap.parse_args()
     skip = set(filter(None, args.skip.split(",")))
     dest = os.path.abspath(args.dest)
@@ -664,6 +689,8 @@ def main():
         fetch_world(dest)
     if "poi" not in skip:
         fetch_poi(dest)
+    if "effects" not in skip:
+        fetch_effects(dest)
     if "music" not in skip:
         fetch_music(dest, args.music)
     print("完成。用 Godot 打开项目即可（第一次打开会导入素材，需要几分钟）。")

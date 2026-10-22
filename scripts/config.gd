@@ -23,6 +23,13 @@ const NIGHT_AMBIENT_ENERGY := 0.75
 const ZOMBIE_DESPAWN := 110.0
 
 const PLAYER_SPEED := 4.2
+## 跑步：速度倍数、每秒耗体力、每秒回体力
+const SPRINT_MULT := 1.6
+const SPRINT_DRAIN := 18.0
+const STAMINA_REGEN := 12.0
+## 跳跃：重力（米/秒²）和起跳速度
+const GRAVITY := 12.0
+const JUMP_SPEED := 4.5
 const PLAYER_EYE_HEIGHT := 1.65
 const LOOK_SENSITIVITY := 0.0045
 const MAX_HP := 100.0
@@ -53,6 +60,25 @@ const ZOMBIE_MAX := 28
 ## 僵尸模型正面朝 +Z；如果倒着走过来，把它改成 PI
 const ZOMBIE_FACING_OFFSET := 0.0
 const ZOMBIE_DROP_CHANCE := 0.35
+## 僵尸出手到打中要多久（秒），这段时间里躲开就不掉血
+const ZOMBIE_WINDUP := 0.45
+## 被打中后硬直多久（秒），爆头更久
+const ZOMBIE_STAGGER := 0.25
+const ZOMBIE_HEADSHOT_STAGGER := 0.6
+## 爆头伤害倍数
+const HEADSHOT_MULT := 2.2
+
+## 8 种僵尸（按模型文件名 zombie_<名字>），血量、速度、伤害是基础值的倍数
+const ZOMBIE_TYPES := {
+	"soldier": {"name": "士兵僵尸", "hp": 1.5, "speed": 0.9, "damage": 1.2},
+	"cop": {"name": "胖警察", "hp": 1.9, "speed": 0.8, "damage": 1.3},
+	"nurse": {"name": "护士僵尸", "hp": 0.8, "speed": 1.15, "damage": 0.9},
+	"biker": {"name": "飞车党僵尸", "hp": 1.3, "speed": 1.0, "damage": 1.3},
+	"lumberjack": {"name": "伐木工僵尸", "hp": 1.7, "speed": 0.9, "damage": 1.5},
+	"joe": {"name": "乔", "hp": 1.0, "speed": 1.0, "damage": 1.0},
+	"arlene": {"name": "阿琳", "hp": 0.9, "speed": 1.1, "damage": 0.9},
+	"screamer": {"name": "尖叫者", "hp": 0.7, "speed": 1.2, "damage": 0.8, "screams": true},
+}
 
 ## 地上零散物品的数量（主要的东西要翻容器找）
 const LOOT_COUNT := 24

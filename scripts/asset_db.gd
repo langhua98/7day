@@ -241,7 +241,11 @@ func _classify(row: Dictionary) -> void:
 	for w in SKIP_WORDS:
 		if id.contains(w):
 			return
-	if id.begins_with("gun"):
+	if id.ends_with("parts"):
+		row.kind = Kind.RESOURCE   # 枪的零件
+	elif id.begins_with("gunbot"):
+		return                      # 机器人炮台，不是拿在手上的枪
+	elif id.begins_with("gun"):
 		row.kind = Kind.GUN
 		row.power = GameConfig.GUN_DAMAGE
 	elif id.begins_with("melee"):

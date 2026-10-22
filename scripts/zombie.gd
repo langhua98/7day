@@ -3,10 +3,16 @@ extends Node3D
 ## 僵尸：用导出的带骨骼 glb，走路动作由代码驱动骨骼（导出的包里没有动画）。
 
 signal died(zombie: Zombie)
+## 尖叫者看见玩家时叫一声，会把附近的僵尸引过来
+signal screamed(zombie: Zombie)
 
 var hp := 60.0
 var max_hp := 60.0
 var speed := 1.0
+var damage := GameConfig.ZOMBIE_DAMAGE
+var type := ""
+var type_name := "僵尸"
+var can_scream := false
 var target: Node3D
 ## 市中心（用来绕开楼和车）
 var world: World
@@ -19,9 +25,18 @@ var _attack_cd := 0.0
 var _lunge := 0.0
 var _hit_flash := 0.0
 var _death_t := 0.0
+var _stagger := 0.0
+var _windup := -1.0
+var _pending_damage := 0.0
+var _path_t := 0.0
+var _dir := Vector3.ZERO
+var _fall_dir := -1.0
+var _screamed := false
+var _scream_t := 0.0
 var _bones := {}
 var _rng := RandomNumberGenerator.new()
 var _meshes: Array[MeshInstance3D] = []
+var _height := GameConfig.ZOMBIE_HEIGHT
 # 骨骼空间里的「前」和「右」，从脚尖方向推出来（不同僵尸的导出朝向不一样）
 var _fwd := Vector3.BACK
 var _side := Vector3.RIGHT
@@ -36,11 +51,19 @@ func setup(model_name: String, hp_value: float, speed_value: float, player: Node
 	if h < 1.2 or h > 3.5:
 		_model.free()
 		_model = Assets.make_model(model_name, GameConfig.ZOMBIE_HEIGHT, true)
+		h = GameConfig.ZOMBIE_HEIGHT
+	_height = h
 	add_child(_model)
 	_model.rotation.y = GameConfig.ZOMBIE_FACING_OFFSET
-	hp = hp_value
-	max_hp = hp_value
-	speed = speed_value * _rng.randf_range(0.85, 1.15)
+	type = model_name.trim_prefix("zombie_")
+	var t: Dictionary = GameConfig.ZOMBIE_TYPES.get(type, {})
+	type_name = t.get("name", "僵尸")
+	can_scream = t.get("screams", false)
+	hp = hp_value * t.get("hp", 1.0)
+	max_hp = hp
+	speed = speed_value * t.get("speed", 1.0) * _rng.randf_range(0.85, 1.15)
+	damage = GameConfig.ZOMBIE_DAMAGE * t.get("damage", 1.0)
+	_fall_dir = -1.0 if _rng.randf() < 0.6 else 1.0
 	target = player
 	_phase = _rng.randf() * TAU
 	var found := _model.find_children("*", "Skeleton3D", true, false)
@@ -86,9 +109,13 @@ func _detect_facing() -> void:
 func _process(delta: float) -> void:
 	if dead:
 		_death_t += delta
-		rotation.x = lerp(rotation.x, -PI / 2.0, min(1.0, delta * 4.0))
+		if _death_t < 0.3:
+			_animate()
+		# 倒地：向后或向前倒，倒下后停一会儿沉到地下
+		rotation.x = lerp(rotation.x, _fall_dir * PI / 2.0, min(1.0, delta * 5.0))
+		position.y = lerp(position.y, 0.15, min(1.0, delta * 5.0)) if _death_t < 2.5 else position.y
 		if _death_t > 2.5:
-			position.y -= delta * 0.6
+			position.y -= delta * 0.5
 		if _death_t > 4.0:
 			queue_free()
 		return
@@ -103,11 +130,38 @@ func _process(delta: float) -> void:
 	var to := target.global_position - global_position
 	to.y = 0.0
 	var dist := to.length()
+	# 出手：抬手 → 砸下来，砸下来那一刻还在够得着的距离才算打中
+	if _windup >= 0.0:
+		_windup -= delta
+		if _windup < 0.0:
+			_lunge = 1.0
+			_attack_cd = GameConfig.ZOMBIE_ATTACK_COOLDOWN
+			if dist <= GameConfig.ZOMBIE_REACH * 1.25:
+				_pending_damage = damage
+	if can_scream and not _screamed and dist < 22.0:
+		_screamed = true
+		_scream_t = 1.2
+		screamed.emit(self)
+	if _scream_t > 0.0:
+		_scream_t -= delta
+	if _stagger > 0.0:
+		_stagger -= delta
+		_animate()
+		return
+	# 寻路：直接看得见就直走，被楼挡住就沿距离场绕
+	_path_t -= delta
+	if _path_t <= 0.0 or _dir == Vector3.ZERO:
+		_path_t = 0.3
+		_dir = to / dist if dist > 0.05 else Vector3.ZERO
+		if world and dist > 2.0 and world.line_blocked(global_position + Vector3.UP, target.global_position + Vector3.UP):
+			var f := world.flow_dir(global_position)
+			if f != Vector3.ZERO:
+				_dir = f
 	if dist > 0.05:
-		var dir := to / dist
-		rotation.y = lerp_angle(rotation.y, atan2(dir.x, dir.z), min(1.0, delta * 6.0))
-		if dist > GameConfig.ZOMBIE_REACH * 0.8:
-			position += dir * speed * delta
+		var face := to / dist if dist < 3.0 else _dir
+		rotation.y = lerp_angle(rotation.y, atan2(face.x, face.z), min(1.0, delta * 6.0))
+		if dist > GameConfig.ZOMBIE_REACH * 0.8 and _windup < 0.0 and _scream_t <= 0.0:
+			position += _dir * speed * delta
 			if world:
 				position = world.push_out(position, 0.35)
 			_phase += delta * (2.0 + speed * 2.2)
@@ -122,21 +176,37 @@ func distance_to_target() -> float:
 	return d.length()
 
 
-## 返回这一帧造成的伤害（0 表示没打）
+## 返回这一帧造成的伤害（0 表示没打中）。够得着就开始抬手，过一会儿才真正打中
 func try_attack() -> float:
-	if dead or _attack_cd > 0.0 or distance_to_target() > GameConfig.ZOMBIE_REACH:
+	if dead:
 		return 0.0
-	_attack_cd = GameConfig.ZOMBIE_ATTACK_COOLDOWN
-	_lunge = 1.0
-	return GameConfig.ZOMBIE_DAMAGE
+	if _pending_damage > 0.0:
+		var d := _pending_damage
+		_pending_damage = 0.0
+		return d
+	if _attack_cd <= 0.0 and _windup < 0.0 and _stagger <= 0.0 and distance_to_target() <= GameConfig.ZOMBIE_REACH:
+		_windup = GameConfig.ZOMBIE_WINDUP
+	return 0.0
 
 
-func take_hit(amount: float, from: Vector3) -> void:
+## 被打中的位置（世界坐标）：用来判断爆头、喷血
+func head_height() -> float:
+	return global_position.y + _height * 0.86
+
+
+func height() -> float:
+	return _height
+
+
+func take_hit(amount: float, from: Vector3, headshot := false) -> void:
 	if dead:
 		return
 	hp -= amount
 	_hit_flash = 0.15
 	_set_tint(Color(1.0, 0.45, 0.45))
+	# 受击硬直：打断出手
+	_stagger = GameConfig.ZOMBIE_HEADSHOT_STAGGER if headshot else GameConfig.ZOMBIE_STAGGER
+	_windup = -1.0
 	var push := global_position - from
 	push.y = 0.0
 	if push.length() > 0.01:
@@ -146,6 +216,11 @@ func take_hit(amount: float, from: Vector3) -> void:
 	if hp <= 0.0:
 		dead = true
 		_set_tint(Color.WHITE)
+		# 打的方向决定往哪边倒
+		var back := (global_position - from)
+		back.y = 0.0
+		if back.length() > 0.01:
+			rotation.y = atan2(-back.x, -back.z) if _fall_dir < 0.0 else atan2(back.x, back.z)
 		died.emit(self)
 
 
@@ -172,21 +247,34 @@ func _animate() -> void:
 	var s := sin(_phase)
 	var swing := 0.45 * s
 	var reach := 0.15 + _lunge * 0.5
+	if dead:
+		# 倒地时手脚摊开
+		_aim("LeftArm", "LeftForeArm", Vector3(0.8, 0.2, 0.3))
+		_aim("RightArm", "RightForeArm", Vector3(-0.8, 0.2, 0.3))
+		return
+	var raise := 0.0
+	if _windup >= 0.0:
+		# 抬手准备砸
+		raise = 1.0 - _windup / GameConfig.ZOMBIE_WINDUP
+	elif _scream_t > 0.0:
+		raise = 0.6
 	# 腿：大腿前后摆，小腿跟着弯
 	_aim("LeftUpLeg", "LeftLeg", Vector3(0, -cos(swing), sin(swing)))
 	_aim("RightUpLeg", "RightLeg", Vector3(0, -cos(-swing), sin(-swing)))
 	_aim("LeftLeg", "LeftFoot", Vector3(0, -1.0, sin(swing) * 0.3 - max(0.0, -s) * 0.6))
 	_aim("RightLeg", "RightFoot", Vector3(0, -1.0, -sin(swing) * 0.3 - max(0.0, s) * 0.6))
 	# 胳膊：经典僵尸姿势，向前伸
-	_aim("LeftArm", "LeftForeArm", Vector3(0.12, -0.25 + reach * 0.3 + s * 0.05, 1.0))
-	_aim("RightArm", "RightForeArm", Vector3(-0.12, -0.25 + reach * 0.3 - s * 0.05, 1.0))
+	_aim("LeftArm", "LeftForeArm", Vector3(0.12 + raise * 0.15, -0.25 + reach * 0.3 + s * 0.05 + raise * 1.6 - _lunge * 0.6, 1.0))
+	_aim("RightArm", "RightForeArm", Vector3(-0.12 - raise * 0.15, -0.25 + reach * 0.3 - s * 0.05 + raise * 1.6 - _lunge * 0.6, 1.0))
 	_aim("LeftForeArm", "LeftHand", Vector3(0.05, -0.15 + reach * 0.4, 1.0))
 	_aim("RightForeArm", "RightHand", Vector3(-0.05, -0.15 + reach * 0.4, 1.0))
 	if _bones.has("Hips"):
 		var hips: int = _bones["Hips"]
 		var rest := _skel.get_bone_rest(hips)
 		_skel.set_bone_pose_position(hips, rest.origin + Vector3(0, -abs(s) * 0.04, 0))
-		_skel.set_bone_pose_rotation(hips, Quaternion(_fwd, s * 0.05) * rest.basis.get_rotation_quaternion())
+		# 受击时上身往后仰
+		var lean := Quaternion(_side, -_stagger * 1.2 + raise * 0.15 - _lunge * 0.2)
+		_skel.set_bone_pose_rotation(hips, lean * Quaternion(_fwd, s * 0.05) * rest.basis.get_rotation_quaternion())
 
 
 ## 旋转 bone，使它指向 child 的方向变成 dir（x 右、y 上、z 前，按这只僵尸的朝向换算）
