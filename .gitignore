@@ -1,0 +1,12 @@
+# 游戏素材来自个人的《七日杀》客户端，只放在本地，绝不进仓库
+/assets/
+
+# Godot 生成的缓存和导出产物
+.godot/
+*.import
+/build/
+*.ipa
+*.xcarchive
+export_credentials.cfg
+
+.DS_Store

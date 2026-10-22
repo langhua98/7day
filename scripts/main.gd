@@ -1,0 +1,515 @@
+extends Node3D
+## 游戏主逻辑：世界、昼夜、玩家、僵尸、物品、背包、音乐。
+
+const C = preload("res://scripts/config.gd")
+
+var player := Node3D.new()
+var camera := Camera3D.new()
+var arms: FpArms
+var hud: Hud
+var music: MusicDirector
+var sun := DirectionalLight3D.new()
+var env := Environment.new()
+var sky_mat := ProceduralSkyMaterial.new()
+var zombie_root := Node3D.new()
+var loot_root := Node3D.new()
+var rng := RandomNumberGenerator.new()
+
+var running := false
+var game_hours := C.START_HOUR   # 从第 1 天 0 点起算的小时数
+var hp := C.MAX_HP
+var food := C.MAX_FOOD
+var kills := 0
+var yaw := 0.0
+var pitch := 0.0
+var attack_cd := 0.0
+var spawn_cd := 0.0
+var inventory := {}          # id -> 数量
+var pickup_order: Array[String] = []
+var equipped := ""
+var _horde_announced := false
+var _night_announced := -1
+
+
+func _ready() -> void:
+	rng.randomize()
+	_build_world()
+	_build_player()
+	music = MusicDirector.new()
+	add_child(music)
+	hud = Hud.new()
+	add_child(hud)
+	hud.start_pressed.connect(_start)
+	hud.restart_pressed.connect(_start)
+	hud.item_used.connect(_use_item)
+	var info := "素材：物品 %d 个（武器、食物、药品等 %d 个可拾取），僵尸 %d 种，音乐 %d 段" % [
+		Assets.items.size(), _count_loot(), Assets.zombie_models.size(),
+		Assets.music.values().reduce(func(a, l): return a + l.size(), 0)]
+	if not Assets.errors.is_empty():
+		info += "\n注意：" + "；".join(Assets.errors)
+	hud.set_start_info(info)
+	_update_sky()
+
+
+func _count_loot() -> int:
+	var n := 0
+	for k in Assets.loot_pool:
+		n += Assets.loot_pool[k].size()
+	return n
+
+
+# —— 世界 ——
+
+func _build_world() -> void:
+	var we := WorldEnvironment.new()
+	var sky := Sky.new()
+	sky.sky_material = sky_mat
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.fog_enabled = true
+	env.fog_density = 0.018
+	env.fog_sky_affect = 0.6
+	we.environment = env
+	add_child(we)
+
+	sun.shadow_enabled = true
+	sun.directional_shadow_max_distance = 40.0
+	add_child(sun)
+
+	var ground := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(C.WORLD_RADIUS * 2.6, C.WORLD_RADIUS * 2.6)
+	ground.mesh = plane
+	var gm := StandardMaterial3D.new()
+	gm.albedo_color = Color(0.36, 0.33, 0.27)
+	gm.roughness = 1.0
+	for t in C.GROUND_TEXTURES:
+		var path := "res://assets/textures/%s" % t
+		if ResourceLoader.exists(path):
+			gm.albedo_texture = load(path)
+			gm.albedo_color = Color(0.85, 0.85, 0.85)
+			gm.uv1_scale = Vector3.ONE * (plane.size.x / C.GROUND_TILE)
+			gm.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+			break
+	ground.material_override = gm
+	add_child(ground)
+	add_child(zombie_root)
+	add_child(loot_root)
+	_scatter_props()
+
+
+func _scatter_props() -> void:
+	var dir := "res://assets/props"
+	if not DirAccess.dir_exists_absolute(dir):
+		return
+	var names := PackedStringArray()
+	for f in DirAccess.get_files_at(dir):
+		var n := f.trim_suffix(".remap").trim_suffix(".import")
+		if n.get_extension().to_lower() == "glb" and not names.has(n):
+			names.append(n)
+	if names.is_empty():
+		return
+	var cache := {}
+	for i in C.PROP_COUNT:
+		var n := names[i % names.size()]
+		if not cache.has(n):
+			cache[n] = load("%s/%s" % [dir, n])
+		var scene = cache[n]
+		if not (scene is PackedScene):
+			continue
+		var inst: Node3D = scene.instantiate()
+		var holder := Node3D.new()
+		holder.add_child(inst)
+		var ang := rng.randf() * TAU
+		var r := rng.randf_range(8.0, C.WORLD_RADIUS * 0.95)
+		holder.position = Vector3(cos(ang) * r, 0, sin(ang) * r)
+		holder.rotation.y = rng.randf() * TAU
+		add_child(holder)
+		# 让模型底部贴地
+		var aabb := Assets._bounds(inst, Transform3D.IDENTITY)
+		inst.position.y = -aabb.position.y
+
+
+func _build_player() -> void:
+	player.name = "Player"
+	add_child(player)
+	camera.position.y = C.PLAYER_EYE_HEIGHT
+	camera.near = 0.03
+	camera.far = 160.0
+	camera.fov = 70.0
+	player.add_child(camera)
+	arms = FpArms.new()
+	camera.add_child(arms)
+
+
+# —— 开局 / 结束 ——
+
+func _start() -> void:
+	for z in zombie_root.get_children():
+		z.queue_free()
+	for l in loot_root.get_children():
+		l.queue_free()
+	game_hours = C.START_HOUR
+	hp = C.MAX_HP
+	food = C.MAX_FOOD
+	kills = 0
+	inventory.clear()
+	pickup_order.clear()
+	equipped = ""
+	arms.hold("")
+	_horde_announced = false
+	_night_announced = -1
+	player.position = Vector3.ZERO
+	yaw = 0.0
+	pitch = 0.0
+	spawn_cd = 6.0
+	for i in C.LOOT_COUNT:
+		_spawn_loot(_random_point(4.0, C.WORLD_RADIUS * 0.9))
+	# 开局在面前放一件近战武器，马上就能看到手里的模型
+	var weapons: Array = Assets.loot_pool.get(Assets.Kind.MELEE, [])
+	if not weapons.is_empty():
+		var with_model := weapons.filter(func(id): return Assets.items_by_id[id].model != "")
+		var pick: String = (with_model if not with_model.is_empty() else weapons).pick_random()
+		_spawn_loot(Vector3(0, 0, -3.0), pick)
+	running = true
+	hud.set_banner("")
+	_refresh_inventory()
+	hud.toast("第 1 天。找武器、找吃的，天黑前做好准备。")
+
+
+func _end(win: bool) -> void:
+	running = false
+	music.request("Exp" if win else "Sus", 99.0)
+	var day := int(game_hours / 24.0) + 1
+	if win:
+		hud.show_end("你活过了第七天的血月！\n击杀 %d 只僵尸" % kills)
+	else:
+		hud.show_end("你死在了第 %d 天\n击杀 %d 只僵尸" % [day, kills])
+
+
+# —— 每帧 ——
+
+func _process(delta: float) -> void:
+	if not running:
+		_update_sky()
+		return
+	game_hours += delta * 24.0 / C.DAY_SECONDS
+	var day := int(game_hours / 24.0) + 1
+	var hour := fmod(game_hours, 24.0)
+	var night := hour >= C.NIGHT_START or hour < C.NIGHT_END
+	var horde := (day == C.HORDE_DAY and hour >= C.NIGHT_START) or (day == C.HORDE_DAY + 1 and hour < C.NIGHT_END)
+	if day > C.HORDE_DAY and hour >= C.NIGHT_END:
+		_end(true)
+		return
+
+	_update_player(delta)
+	_update_sky()
+	_update_zombies(delta, day, night, horde)
+	_update_loot(delta)
+	_update_survival(delta)
+	_update_music(delta, night, horde)
+	_update_banner(day, hour, night, horde)
+
+	var near := 0
+	for z in zombie_root.get_children():
+		if not z.dead and z.distance_to_target() < C.TENSION_DISTANCE:
+			near += 1
+	hud.set_status(day, hour, hp, food, kills, near, night)
+	if hp <= 0.0:
+		_end(false)
+
+
+func _update_player(delta: float) -> void:
+	var look := hud.consume_look()
+	yaw -= look.x * C.LOOK_SENSITIVITY
+	pitch = clamp(pitch - look.y * C.LOOK_SENSITIVITY, -1.3, 1.3)
+	# 电脑上调试：WASD 移动、方向键看、空格攻击
+	var mv := hud.move
+	if Input.is_physical_key_pressed(KEY_W): mv.y += 1
+	if Input.is_physical_key_pressed(KEY_S): mv.y -= 1
+	if Input.is_physical_key_pressed(KEY_A): mv.x -= 1
+	if Input.is_physical_key_pressed(KEY_D): mv.x += 1
+	if Input.is_physical_key_pressed(KEY_LEFT): yaw += delta * 2.0
+	if Input.is_physical_key_pressed(KEY_RIGHT): yaw -= delta * 2.0
+	if Input.is_physical_key_pressed(KEY_UP): pitch = min(pitch + delta * 1.5, 1.3)
+	if Input.is_physical_key_pressed(KEY_DOWN): pitch = max(pitch - delta * 1.5, -1.3)
+	mv = mv.limit_length(1.0)
+	player.rotation.y = yaw
+	camera.rotation.x = pitch
+	var fwd := -player.global_basis.z
+	var right := player.global_basis.x
+	var vel := (fwd * mv.y + right * mv.x) * C.PLAYER_SPEED
+	player.position += vel * delta
+	var flat := Vector2(player.position.x, player.position.z)
+	if flat.length() > C.WORLD_RADIUS:
+		flat = flat.normalized() * C.WORLD_RADIUS
+		player.position = Vector3(flat.x, 0, flat.y)
+	arms.set_meta("walking", mv.length())
+
+	attack_cd = max(0.0, attack_cd - delta)
+	var attacking := hud.attack_held or Input.is_physical_key_pressed(KEY_SPACE)
+	if attacking and attack_cd <= 0.0:
+		_attack()
+
+
+func _attack() -> void:
+	var row: Dictionary = Assets.items_by_id.get(equipped, {})
+	var kind: int = row.get("kind", -1)
+	var is_gun := kind == Assets.Kind.GUN
+	attack_cd = C.GUN_COOLDOWN if is_gun else C.MELEE_COOLDOWN
+	arms.swing(7.0 if is_gun else 1.0 / C.MELEE_COOLDOWN * 0.9)
+	var dmg: float = row.get("power", C.FIST_DAMAGE) if kind in [Assets.Kind.MELEE, Assets.Kind.GUN] else C.FIST_DAMAGE
+	var reach := C.GUN_RANGE if is_gun else C.MELEE_RANGE
+	var cone := 0.97 if is_gun else 0.6
+	var eye := camera.global_position
+	var aim := -camera.global_basis.z
+	var flat_aim := Vector3(aim.x, 0, aim.z).normalized()
+	var best: Zombie = null
+	var best_d := INF
+	for z in zombie_root.get_children():
+		if z.dead:
+			continue
+		var to: Vector3 = z.global_position - player.global_position
+		to.y = 0
+		var d := to.length()
+		if d > reach or d < 0.001:
+			continue
+		if flat_aim.dot(to / d) < cone and d > 0.9:
+			continue
+		if d < best_d:
+			best_d = d
+			best = z
+	if best:
+		best.take_hit(dmg, player.global_position)
+
+
+func _update_zombies(delta: float, day: int, night: bool, horde: bool) -> void:
+	var alive := 0
+	for z in zombie_root.get_children():
+		if z.dead:
+			continue
+		alive += 1
+		var dmg: float = z.try_attack()
+		if dmg > 0.0:
+			hp -= dmg
+			hud.hurt()
+		# 离太远的僵尸回收掉，在身边重新刷
+		if z.distance_to_target() > C.WORLD_RADIUS * 1.2:
+			z.queue_free()
+		elif night or horde:
+			z.speed = max(z.speed, (C.ZOMBIE_HORDE_SPEED if horde else C.ZOMBIE_NIGHT_SPEED) * 0.9)
+	var target := 2 + day
+	if night:
+		target = 5 + day * 2
+	if horde:
+		target = C.ZOMBIE_MAX
+	target = min(target, C.ZOMBIE_MAX)
+	spawn_cd -= delta
+	if alive < target and spawn_cd <= 0.0 and not Assets.zombie_models.is_empty():
+		spawn_cd = 0.6 if horde else (2.0 if night else 5.0)
+		_spawn_zombie(day, night, horde)
+
+
+func _spawn_zombie(day: int, night: bool, horde: bool) -> void:
+	var z := Zombie.new()
+	var model: String = Assets.zombie_models[rng.randi_range(0, Assets.zombie_models.size() - 1)]
+	var spd := C.ZOMBIE_HORDE_SPEED if horde else (C.ZOMBIE_NIGHT_SPEED if night else C.ZOMBIE_WALK_SPEED)
+	if not z.setup(model, C.ZOMBIE_BASE_HP + C.ZOMBIE_HP_PER_DAY * (day - 1), spd, player):
+		z.free()
+		return
+	var ang := rng.randf() * TAU
+	var r := rng.randf_range(18.0, 32.0) if not horde else rng.randf_range(14.0, 24.0)
+	z.position = player.position + Vector3(cos(ang) * r, 0, sin(ang) * r)
+	z.died.connect(_on_zombie_died)
+	zombie_root.add_child(z)
+
+
+func _on_zombie_died(z: Zombie) -> void:
+	kills += 1
+	if rng.randf() < C.ZOMBIE_DROP_CHANCE:
+		_spawn_loot(z.global_position + Vector3(rng.randf_range(-0.5, 0.5), 0, rng.randf_range(-0.5, 0.5)))
+
+
+# —— 物品 ——
+
+func _random_point(min_r: float, max_r: float) -> Vector3:
+	var ang := rng.randf() * TAU
+	var r := sqrt(rng.randf_range(min_r * min_r, max_r * max_r))
+	return Vector3(cos(ang) * r, 0, sin(ang) * r)
+
+
+func _spawn_loot(pos: Vector3, id := "") -> void:
+	if id == "":
+		id = Assets.random_loot(rng)
+	if id == "":
+		return
+	var vis := Assets.make_item_visual(id, C.LOOT_SIZE)
+	if vis == null:
+		return
+	var holder := Node3D.new()
+	holder.set_meta("item", id)
+	holder.position = pos
+	var spin := Node3D.new()
+	spin.name = "Spin"
+	spin.position.y = 0.15
+	spin.add_child(vis)
+	holder.add_child(spin)
+	# 地上一圈淡淡的光，远处也能看到
+	var glow := OmniLight3D.new()
+	glow.light_color = Color(1.0, 0.8, 0.4)
+	glow.light_energy = 0.6
+	glow.omni_range = 1.4
+	glow.position.y = 0.5
+	holder.add_child(glow)
+	loot_root.add_child(holder)
+
+
+func _update_loot(delta: float) -> void:
+	var count := 0
+	for l in loot_root.get_children():
+		if l.is_queued_for_deletion():
+			continue
+		count += 1
+		var spin: Node3D = l.get_node("Spin")
+		spin.rotation.y += delta * 1.2
+		spin.position.y = 0.15 + sin(Time.get_ticks_msec() / 400.0 + l.position.x) * 0.05
+		var d := Vector2(l.position.x - player.position.x, l.position.z - player.position.z).length()
+		if d < C.PICKUP_RADIUS:
+			_pickup(l.get_meta("item"))
+			l.queue_free()
+	if count < C.LOOT_COUNT and rng.randf() < delta * 0.2:
+		_spawn_loot(player.position + _random_point(15.0, 45.0))
+
+
+func _pickup(id: String) -> void:
+	inventory[id] = inventory.get(id, 0) + 1
+	if not pickup_order.has(id):
+		pickup_order.append(id)
+	var row: Dictionary = Assets.items_by_id[id]
+	hud.toast("捡到：%s" % Assets.display_name(id))
+	# 捡到更好的武器自动换上
+	if row.kind in [Assets.Kind.MELEE, Assets.Kind.GUN]:
+		var cur: Dictionary = Assets.items_by_id.get(equipped, {})
+		if cur.is_empty() or row.power > cur.get("power", 0.0):
+			_equip(id)
+	_refresh_inventory()
+
+
+func _use_item(id: String) -> void:
+	if not inventory.has(id):
+		return
+	var row: Dictionary = Assets.items_by_id[id]
+	match row.kind:
+		Assets.Kind.MELEE, Assets.Kind.GUN:
+			_equip("" if equipped == id else id)
+		Assets.Kind.FOOD:
+			food = min(C.MAX_FOOD, food + row.power)
+			_consume(id, "吃了%s" % Assets.display_name(id))
+		Assets.Kind.DRINK:
+			food = min(C.MAX_FOOD, food + row.power * 0.6)
+			hp = min(C.MAX_HP, hp + 5.0)
+			_consume(id, "喝了%s" % Assets.display_name(id))
+		Assets.Kind.MEDICAL:
+			hp = min(C.MAX_HP, hp + row.power)
+			_consume(id, "用了%s" % Assets.display_name(id))
+		_:
+			hud.toast("%s：材料，留着吧" % Assets.display_name(id))
+	_refresh_inventory()
+
+
+func _consume(id: String, msg: String) -> void:
+	inventory[id] -= 1
+	if inventory[id] <= 0:
+		inventory.erase(id)
+		pickup_order.erase(id)
+	hud.toast(msg)
+
+
+func _equip(id: String) -> void:
+	equipped = id
+	arms.hold(id)
+	if id != "":
+		hud.toast("装备：%s" % Assets.display_name(id))
+
+
+func _refresh_inventory() -> void:
+	var list := []
+	for id in pickup_order:
+		list.append({"id": id, "count": inventory.get(id, 0), "equipped": id == equipped})
+	# 快捷栏：当前武器 + 能吃能用的，最多 6 格
+	var bar: Array[String] = []
+	if equipped != "":
+		bar.append(equipped)
+	for id in pickup_order:
+		if bar.size() >= 6:
+			break
+		var k: int = Assets.items_by_id[id].kind
+		if id != equipped and k in [Assets.Kind.FOOD, Assets.Kind.DRINK, Assets.Kind.MEDICAL, Assets.Kind.MELEE, Assets.Kind.GUN]:
+			bar.append(id)
+	hud.set_inventory(list, bar)
+
+
+# —— 生存、昼夜、音乐 ——
+
+func _update_survival(delta: float) -> void:
+	food = max(0.0, food - C.FOOD_DRAIN * delta)
+	if food <= 0.0:
+		hp -= C.STARVE_DAMAGE * delta
+	elif food > 60.0:
+		hp = min(C.MAX_HP, hp + delta * 0.4)
+
+
+func _update_sky() -> void:
+	var hour := fmod(game_hours, 24.0)
+	var day_t: float = clamp(sin((hour - 6.0) / 24.0 * TAU), -1.0, 1.0)  # 中午 1，午夜 -1
+	var light: float = clamp(day_t * 1.4 + 0.25, 0.0, 1.0)
+	sun.rotation = Vector3(-PI / 2.0 * max(day_t, 0.08) - 0.1, deg_to_rad(35.0), 0)
+	sun.light_energy = lerp(0.22, 1.15, light)  # 夜里留一点月光，手机屏幕上才看得清
+	sun.light_color = Color(1.0, 0.95, 0.85).lerp(Color(1.0, 0.55, 0.35), clamp(1.0 - abs(day_t) * 3.0, 0.0, 1.0) * float(day_t > -0.1))
+	if light < 0.05:
+		sun.light_color = Color(0.55, 0.65, 0.95)
+	var day_sky := Color(0.38, 0.55, 0.78)
+	var night_sky := Color(0.05, 0.07, 0.13)
+	var horde := int(game_hours / 24.0) + 1 == C.HORDE_DAY and hour >= C.NIGHT_START or int(game_hours / 24.0) == C.HORDE_DAY and hour < C.NIGHT_END
+	if horde:
+		night_sky = Color(0.32, 0.04, 0.03)
+	sky_mat.sky_top_color = night_sky.lerp(day_sky, light)
+	sky_mat.sky_horizon_color = night_sky.lerp(Color(0.72, 0.68, 0.6), light)
+	sky_mat.ground_horizon_color = sky_mat.sky_horizon_color
+	sky_mat.ground_bottom_color = Color(0.1, 0.09, 0.08).lerp(Color(0.25, 0.22, 0.18), light)
+	env.fog_light_color = sky_mat.sky_horizon_color
+	env.ambient_light_energy = lerp(0.55, 1.0, light)
+	env.fog_density = lerp(0.026, 0.014, light)
+
+
+func _update_music(delta: float, night: bool, horde: bool) -> void:
+	var nearest := INF
+	for z in zombie_root.get_children():
+		if not z.dead:
+			nearest = min(nearest, z.distance_to_target())
+	var want := "Exp"
+	if horde and not Assets.music["Bld"].is_empty():
+		want = "Bld"
+	elif nearest < C.COMBAT_DISTANCE:
+		want = "Cbt"
+	elif night or nearest < C.TENSION_DISTANCE:
+		want = "Sus"
+	music.request(want, delta)
+
+
+func _update_banner(day: int, hour: float, night: bool, horde: bool) -> void:
+	if horde:
+		hud.set_banner("血月尸潮！撑到天亮！")
+		if not _horde_announced:
+			_horde_announced = true
+	elif day == C.HORDE_DAY and hour >= 18.0:
+		hud.set_banner("今晚是血月……")
+	elif night:
+		if _night_announced != day:
+			_night_announced = day
+			hud.toast("天黑了，僵尸会跑起来")
+		hud.set_banner("")
+	else:
+		hud.set_banner("")
