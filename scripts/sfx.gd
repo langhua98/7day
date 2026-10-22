@@ -16,6 +16,8 @@ var _pool3d: Array[AudioStreamPlayer3D] = []
 var _next2d := 0
 var _next3d := 0
 var _rng := RandomNumberGenerator.new()
+var _makers := {}
+var _todo: Array = []
 
 
 func _ready() -> void:
@@ -34,7 +36,13 @@ func _ready() -> void:
 		add_child(p)
 		_pool3d.append(p)
 	_load_files()
-	_synth_all()
+	_prepare()
+
+
+## 合成要一点时间（手机上约 1 秒），所以开局界面时每帧合成一个；还没合成的声音第一次用时当场合成
+func _process(_delta: float) -> void:
+	if not _todo.is_empty():
+		_synth(_todo.pop_back())
 
 
 func play(name: String, vol_db := 0.0, pitch := 1.0) -> void:
@@ -71,6 +79,9 @@ func play_at(name: String, pos: Vector3, vol_db := 0.0, pitch := 1.0) -> void:
 
 
 func _pick(name: String) -> AudioStream:
+	if not _streams.has(name) and _makers.has(name):
+		_synth(name)
+		_todo.erase(name)
 	var list: Array = _streams.get(name, [])
 	if list.is_empty():
 		return null
@@ -99,7 +110,22 @@ func _load_files() -> void:
 # —— 合成 ——
 
 func _synth_all() -> void:
-	var makers := {
+	_prepare()
+	while not _todo.is_empty():
+		_synth(_todo.pop_back())
+
+
+func _synth(name: String) -> void:
+	if _streams.has(name):
+		return   # 有真实音效文件就不合成
+	var list := []
+	for v in VARIANTS.get(name, 1):
+		list.append(_to_stream(_makers[name].call()))
+	_streams[name] = list
+
+
+func _prepare() -> void:
+	_makers = {
 		"gun_pistol": _gun.bind(0.45, 130.0, 0.9),
 		"gun_rifle": _gun.bind(0.75, 85.0, 1.0),
 		"gun_shotgun": _gun.bind(0.95, 60.0, 0.6),
@@ -125,13 +151,7 @@ func _synth_all() -> void:
 		"eat": _eat,
 		"drink": _drink,
 	}
-	for name in makers:
-		if _streams.has(name):
-			continue   # 有真实音效文件就不合成
-		var list := []
-		for v in VARIANTS.get(name, 1):
-			list.append(_to_stream(makers[name].call()))
-		_streams[name] = list
+	_todo = _makers.keys().filter(func(n): return not _streams.has(n))
 
 
 func _to_stream(samples: PackedFloat32Array) -> AudioStreamWAV:

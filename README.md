@@ -4,12 +4,17 @@
 
 ## 玩法
 
-- 第一人称。左半屏拖动移动，右半屏拖动转视角，按住「攻击」挥武器。
-- 走近地上的物品自动捡起。捡到更好的武器会自动换上；食物、饮料、药品在底部快捷栏或「背包」里点一下使用。
-- 一天 5 分钟。夜里（22:00–06:00）僵尸会跑；第 7 天夜里是血月尸潮，撑到第 8 天早上 6 点就赢。
-- 音乐跟着局势切换：探索 Exp、紧张 Sus、战斗 Cbt、血月 Bld。
+- 第一人称，开局站在市中心十字路口。地图是 4×4 个街区，楼会挡路也会挡子弹。
+- 左半屏拖动移动，**推到底再往外拖是冲刺**（耗体力）；右半屏拖动转视角；按住「攻击 / 开火」；「跳」能跳上路障、垃圾桶这种矮东西，僵尸上不来。
+- 走近垃圾桶、车、箱子按「搜索」，地上的东西按「拾取」。捡到更好的武器会自动换上；吃的、喝的、药在快捷栏或「背包」里点一下用。子弹走过去自动捡。
+- 枪有弹匣和备弹，不同枪用不同口径（9mm、.44、7.62、霰弹、箭、弩箭、火箭弹）。打空了自动换弹，也可以按「换弹」。**打头伤害 2.5 倍**。枪声会把附近的僵尸引过来。
+- 8 种僵尸：士兵（有护甲）、护士、胖警察（会远远吐酸）、飞车党、伐木工（血厚、下手重）、乔、阿琳、尖叫者（看到你就叫，会叫来别的僵尸）。白天在附近闲逛，看见或听见你才追；夜里一直追，而且会跑。会绕着楼和车走。
+- 僵尸先抬手再砍，看到抬手赶紧退开就能躲过去。被抓到可能流血（任何药都能止血）或者感染（抗生素、急救包、蜂蜜能治）。
+- 要吃也要喝：饿了、渴了都会掉血；吃饱喝足会慢慢回血。
+- 一天 5 分钟。第 7 天夜里是血月尸潮，撑到第 8 天早上 6 点就赢。
+- 音乐跟着局势切换：探索 Exp、紧张 Sus、战斗 Cbt、血月 Bld。右上角「暂停」里能调视角灵敏度、音乐和音效音量。
 
-数值（一天多长、僵尸血量、伤害等）都在 `scripts/config.gd`，第一人称手臂的摆放在 `scripts/fp_arms.gd` 顶部。
+数值（一天多长、僵尸血量、每把枪的弹匣和伤害、每种僵尸的能力等）都在 `scripts/config.gd`，第一人称手臂的摆放在 `scripts/fp_arms.gd` 顶部。
 
 ## 素材从哪来
 
@@ -24,6 +29,7 @@
 | `assets/props/*.glb` | 场景里摆的车辆、家具 |
 | `assets/textures/*.png` | 地面贴图、手臂贴图 |
 | `assets/music/*.wav` | 文件名含 Exp / Cbt / Sus / Bld |
+| `assets/sounds/<名字>_<序号>.wav/.ogg` | 音效（可选）。名字是 gun_pistol、gun_rifle、gun_shotgun、groan、scream、footstep 等，见 `scripts/sfx.gd`；没有的用代码合成的声音 |
 
 物品表里的模型名是 prefab 名（如 `chainsawPrefab`），导出的文件名是网格名（如 `Chainsaw_LOD0.glb`），游戏会去掉 `Prefab`、`_LOD0`、`Mesh` 后再比对。
 
@@ -45,7 +51,7 @@ python3 tools/fetch_assets.py --zombies all --music 12   # 想要更多
 
 1. 安装 [Godot 4.4.1](https://godotengine.org/download/archive/4.4.1-stable/)（标准版，不是 .NET 版）和 Xcode。
 2. 按上一节把素材同步到 `assets/`。
-3. 用 Godot 打开本项目（第一次会导入素材，几分钟）。可以先按 F5 在电脑上试玩：WASD 移动、方向键看、空格攻击，鼠标点拖模拟触屏。
+3. 用 Godot 打开本项目（第一次会导入素材，几分钟）。可以先按 F5 在电脑上试玩：WASD 移动、方向键看、F 攻击、空格跳、Shift 冲刺、R 换弹、E 搜索/拾取，鼠标点拖模拟触屏。
 4. 菜单「编辑器 → 管理导出模板」，下载 4.4.1 的导出模板。
 5. 菜单「项目 → 导出」，选 iOS：
    - `App Store Team ID` 填你的 Apple 开发者 Team ID（免费 Apple ID 也行，在 Xcode → Settings → Accounts 里能看到）。
@@ -60,12 +66,15 @@ python3 tools/fetch_assets.py --zombies all --music 12   # 想要更多
 ```
 project.godot          Godot 项目
 scenes/main.tscn       主场景
-scripts/asset_db.gd    读取素材、物品分类（自动加载为 Assets）
-scripts/main.gd        世界、昼夜、刷怪、战斗、背包
-scripts/zombie.gd      僵尸（代码驱动骨骼走路）
+scripts/asset_db.gd    读取素材、物品分类、枪和僵尸的数值（自动加载为 Assets）
+scripts/main.gd        昼夜、刷怪、走跑跳、战斗、背包、生存
+scripts/world.gd       市中心：街道、楼、车和杂物、碰撞、僵尸寻路
+scripts/zombie.gd      僵尸（代码驱动骨骼的走、跑、抬手、踉跄、倒地）
+scripts/sfx.gd         音效（有文件用文件，没有就合成）
 scripts/fp_arms.gd     第一人称手臂和手持武器
 scripts/hud.gd         界面和触屏操作
 scripts/music.gd       音乐切换
 scripts/config.gd      数值
 tools/fetch_assets.py  从云盘同步素材
+tools/build_poi.gd     把游戏的楼（远景网格）转成 Godot 网格
 ```

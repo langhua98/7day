@@ -147,8 +147,8 @@ func _build_world() -> void:
 	add_child(fx_root)
 
 	_blood_mesh = SphereMesh.new()
-	_blood_mesh.radius = 0.035
-	_blood_mesh.height = 0.07
+	_blood_mesh.radius = 0.025
+	_blood_mesh.height = 0.05
 	_blood_mesh.radial_segments = 6
 	_blood_mesh.rings = 3
 	_blood_mat = StandardMaterial3D.new()
@@ -595,14 +595,15 @@ func _blood(at: Vector3, toward: Vector3, amount: int) -> void:
 	p.one_shot = true
 	p.emitting = false
 	p.amount = amount
-	p.lifetime = 0.7
+	p.lifetime = 0.6
 	p.explosiveness = 0.95
 	p.mesh = _blood_mesh
 	p.material_override = _blood_mat
-	p.direction = (toward + Vector3.UP * 0.6).normalized()
-	p.spread = 45.0
-	p.initial_velocity_min = 1.5
-	p.initial_velocity_max = 4.0
+	# 大部分从背后喷出去，少量溅向打来的方向
+	p.direction = (-toward * 0.6 + Vector3.UP * 0.5).normalized()
+	p.spread = 70.0
+	p.initial_velocity_min = 0.8
+	p.initial_velocity_max = 2.6
 	p.gravity = Vector3(0, -12.0, 0)
 	p.scale_amount_min = 0.5
 	p.scale_amount_max = 1.4
@@ -943,6 +944,12 @@ func _update_loot(delta: float) -> void:
 		if l.is_queued_for_deletion():
 			continue
 		count += 1
+		# 子弹走过去就自动捡
+		if Assets.items_by_id[l.get_meta("item")].kind == Assets.Kind.AMMO:
+			if Vector2(l.position.x - player.position.x, l.position.z - player.position.z).length() < 1.2:
+				_pickup(l.get_meta("item"))
+				l.queue_free()
+				continue
 		var spin: Node3D = l.get_node("Spin")
 		spin.rotation.y += delta * 1.2
 		spin.position.y = 0.15 + sin(Time.get_ticks_msec() / 400.0 + l.position.x) * 0.05

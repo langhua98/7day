@@ -210,12 +210,8 @@ func _ready() -> void:
 	_progress_label.visible = false
 	_root.add_child(_progress_label)
 
-	_add_button(_bag_btn, "背包", Vector2(-300, 66), Vector2(130, 64), 24)
-	_bag_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_bag_btn.position = Vector2(-300, 66)
-	_add_button(_pause_btn, "暂停", Vector2(-156, 66), Vector2(126, 64), 24)
-	_pause_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_pause_btn.position = Vector2(-156, 66)
+	_add_button(_bag_btn, "背包", Vector2(-300, 66), Vector2(130, 64), 24, Control.PRESET_TOP_RIGHT)
+	_add_button(_pause_btn, "暂停", Vector2(-156, 66), Vector2(126, 64), 24, Control.PRESET_TOP_RIGHT)
 
 	_build_bag_panel()
 
@@ -247,11 +243,13 @@ func _ready() -> void:
 	_apply_safe_area()
 
 
-func _add_button(b: Button, text: String, pos: Vector2, size: Vector2, font: int) -> void:
+func _add_button(b: Button, text: String, pos: Vector2, size: Vector2, font: int, preset := Control.PRESET_BOTTOM_RIGHT) -> void:
 	b.text = text
-	b.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	b.position = pos
-	b.size = size
+	b.set_anchors_preset(preset)
+	b.offset_left = pos.x
+	b.offset_top = pos.y
+	b.offset_right = pos.x + size.x
+	b.offset_bottom = pos.y + size.y
 	b.add_theme_font_size_override("font_size", font)
 	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(b)
@@ -463,6 +461,13 @@ func show_end(text: String) -> void:
 	attack_held = false
 	_end_label.text = text
 	_end_panel.visible = true
+
+
+## 切到后台（来电话、回桌面）自动暂停
+func _notification(what: int) -> void:
+	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT]:
+		if is_inside_tree() and not (_start_panel.visible or _end_panel.visible or _pause_panel.visible):
+			set_paused(true)
 
 
 func set_paused(on: bool) -> void:

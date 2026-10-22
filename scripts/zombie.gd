@@ -53,6 +53,8 @@ var _direct := false
 var _groan_t := 0.0
 var _special_cd := 0.0
 var _moving := 0.0
+var _anim_acc := 0.0
+var _anim_frame := 0
 var _bones := {}
 var _rng := RandomNumberGenerator.new()
 var _meshes: Array[MeshInstance3D] = []
@@ -205,7 +207,13 @@ func _process(delta: float) -> void:
 			if _state_t >= 1.8:
 				_set_state(State.CHASE)
 	rotation.y = _yaw
-	_animate(delta)
+	# 远处的僵尸每 3 帧摆一次骨骼，省手机的性能
+	_anim_acc += delta
+	_anim_frame += 1
+	if dist > 25.0 and _anim_frame % 3 != 0:
+		return
+	_animate(_anim_acc)
+	_anim_acc = 0.0
 
 
 func _set_state(s: int) -> void:
