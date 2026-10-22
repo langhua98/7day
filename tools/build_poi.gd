@@ -102,7 +102,8 @@ func _convert(name: String) -> Dictionary:
 			for k in 3:
 				normals[idx[t + k]] += n
 		for i in nv:
-			normals[i] = normals[i].normalized() if normals[i].length() > 0.0 else Vector3.UP
+			# 翻转 x 后三角形绕向反了，叉乘出来的法线朝里，取反让它朝外（否则阴影会出条纹）
+			normals[i] = -normals[i].normalized() if normals[i].length() > 0.0 else Vector3.UP
 		var arrays := []
 		arrays.resize(Mesh.ARRAY_MAX)
 		arrays[Mesh.ARRAY_VERTEX] = verts

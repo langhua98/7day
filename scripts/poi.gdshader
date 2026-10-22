@@ -58,7 +58,10 @@ void fragment() {
 		vec2 dy = dFdy(uvm);
 		ALBEDO = textureGrad(atlas, vec3(uv, layer), dx, dy).rgb;
 		// 法线图压缩后只剩 x、y 两个通道，z 自己算
-		vec2 nxy = (textureGrad(atlas_normal, vec3(uv, layer), dx, dy).rg * 2.0 - 1.0) * normal_strength;
+		// 远处一个像素盖住好几厘米时，法线凹凸只会变成闪烁的噪点，逐渐压平
+		float px = max(length(dx), length(dy));
+		float fade = 1.0 - smoothstep(0.03, 0.12, px);
+		vec2 nxy = (textureGrad(atlas_normal, vec3(uv, layer), dx, dy).rg * 2.0 - 1.0) * normal_strength * fade;
 		float nz = sqrt(max(1.0 - dot(nxy, nxy), 0.05));
 		vec3 nm = normalize(t_axis * nxy.x + b_axis * nxy.y + gn * nz);
 		NORMAL = normalize(mat3(VIEW_MATRIX) * mat3(MODEL_MATRIX) * nm);
