@@ -19,8 +19,8 @@ const MOON_LIGHT := 0.55
 const NIGHT_AMBIENT := Color(0.42, 0.48, 0.66)
 const NIGHT_AMBIENT_ENERGY := 0.75
 
-## 地图半径（米）
-const WORLD_RADIUS := 90.0
+## 僵尸离玩家超过这个距离（米）就回收，在附近重新刷
+const ZOMBIE_DESPAWN := 110.0
 
 const PLAYER_SPEED := 4.2
 const PLAYER_EYE_HEIGHT := 1.65
@@ -54,9 +54,18 @@ const ZOMBIE_MAX := 28
 const ZOMBIE_FACING_OFFSET := 0.0
 const ZOMBIE_DROP_CHANCE := 0.35
 
-const LOOT_COUNT := 45
+## 地上零散物品的数量（主要的东西要翻容器找）
+const LOOT_COUNT := 24
 const LOOT_SIZE := 0.55
-const PICKUP_RADIUS := 1.7
+## 离物品多近能拾取
+const PICKUP_RADIUS := 2.0
+## 翻一次容器要几秒（车要久一点）
+const SEARCH_TIME := 1.6
+const SEARCH_TIME_CAR := 2.6
+## 翻容器掉几件东西，翻到空的概率
+const SEARCH_MIN := 1
+const SEARCH_MAX := 3
+const SEARCH_EMPTY_CHANCE := 0.15
 
 ## 音乐判定距离
 const COMBAT_DISTANCE := 11.0
@@ -74,9 +83,3 @@ const FP_ARMS_TEXTURES := ["fp_arms_skin.png", "HD_Hands_Male.png"]
 ## 贴图 alpha 当成镂空（头发、树叶）。如果模型出现奇怪的洞，改成 false
 const ALPHA_CUTOUT := false
 
-## 地面贴图（assets/textures/ 里按顺序找第一个存在的）
-const GROUND_TEXTURES := ["desert_debris.png", "rubble.png"]
-## 地面贴图每块多少米
-const GROUND_TILE := 6.0
-## 场景摆设（assets/props/ 里的车辆、家具）数量
-const PROP_COUNT := 26

@@ -14,11 +14,13 @@
     assets/models/fp_arms.glb          （带骨骼和手指的第一人称手臂）
     assets/items/<模型名>.obj/.png      （物品网格和真贴图，从 items.zip 里按需取）
     assets/index/item_models.json      （物品模型名 → 网格、贴图）
-    assets/props/*.glb                 （场景里摆的车辆、家具）
+    assets/world/*.obj/.png            （市中心场景：车辆、可翻找的容器、杂物、地面和楼的贴图）
+    assets/index/world_models.json     （场景模型的类别、中文名、战利品类型）
+    assets/poi/*.poimesh/.xml          （市中心建筑，再用 tools/build_poi.gd 转成 .res）
     assets/textures/*.png              （地面贴图）
     assets/music/*.wav                 （文件名里 Exp=探索 Cbt=战斗 Sus=紧张 Bld=血月）
 
-只用 Python 自带库。已存在且大小一致的文件会跳过，可以反复运行。
+只用 Python 自带库（装了 Pillow 会把场景贴图缩到 1024，省手机内存）。已存在且大小一致的文件会跳过，可以反复运行。
 """
 import argparse
 import io
@@ -403,13 +405,193 @@ def fetch_items(dest, rows):
     print(f"物品模型: {len(index)} 个（带贴图 {sum(1 for e in index.values() if 'texture' in e)} 个）")
 
 
+# —— 场景：市中心街道上的车辆、容器、杂物，地面贴图 ——
+# (资源包, 网格名, 贴图名, 类别, 中文名, 战利品类型)
+# 类别：loot=能翻找的容器  car=车（能翻找、挡路）  prop=摆设（挡路）  small=小摆设（不挡路）
+# 战利品类型：trash 垃圾 food 食物 drink 饮料 medical 药品 weapon 武器 tool 工具 any 随便
+WORLD_ENT = "小橘素材库/automatic_assets_entities"
+WORLD_MODELS = [
+    ("lootcontainers", "bruteStyleTrashCanFull_1", "bruteStyleTrashCan_d", "loot", "垃圾桶", "trash"),
+    ("lootcontainers", "domedTrashCanFull_1", "domedTrashCan_d", "loot", "垃圾桶", "trash"),
+    ("lootcontainers", "fancyGarbageCan_1", "fancyGarbageCan_d", "loot", "垃圾桶", "trash"),
+    ("lootcontainers", "Dumpster_LOD0", "dumpster_d", "loot", "大垃圾箱", "trash"),
+    ("lootcontainers", "trashPileA_1", "trashPile", "loot", "垃圾堆", "trash"),
+    ("lootcontainers", "trashPileC_1", "trashPile", "loot", "垃圾堆", "trash"),
+    ("lootcontainers", "trashPileE_LOD0", "trashPile", "loot", "垃圾堆", "trash"),
+    ("lootcontainers", "backPack_LOD0", "backpack_dropped_green", "loot", "背包", "any"),
+    ("lootcontainers", "duffle_LOD0", "duffleBag_d", "loot", "旅行袋", "any"),
+    ("lootcontainers", "sportsBag_LOD0", "sportsBag_d", "loot", "运动包", "any"),
+    ("lootcontainers", "purse_LOD0", "purse_d", "loot", "手提包", "medical"),
+    ("lootcontainers", "weaponBag_sm_1", "weaponBags_d", "loot", "武器包", "weapon"),
+    ("lootcontainers", "tier1LootChest_LOD0", "tier1LootChest_d", "loot", "木箱", "any"),
+    ("lootcontainers", "superChest_1", "superChest_d", "loot", "大箱子", "weapon"),
+    ("lootcontainers", "shippingCrate_LOD0", "shippingCrate", "loot", "货箱", "tool"),
+    ("lootcontainers", "gasGrillFull_1", "GasGrill_d", "loot", "烤架", "food"),
+    ("lootcontainers", "groceryCartFull_LOD0", "groceryCart_d", "loot", "购物车", "food"),
+    ("lootcontainers", "foodClutterPileMedium_01_LOD0", "foodClutterPile_d", "loot", "食物堆", "food"),
+    ("lootcontainers", "tiltTruckFull_1", "tiltTruck_d", "loot", "手推车", "tool"),
+    ("lootcontainers", "utilityCartFull_1", "utilityCart_d", "loot", "工具车", "tool"),
+    ("lootcontainers", "waterCoolerFull_1", "waterCooler_d", "loot", "饮水机", "drink"),
+    ("lootcontainers", "mailBox_01_LOD0", "mailBox_01", "loot", "邮箱", "any"),
+    ("lootcontainers", "mailBox_03_LOD0", "mailBox_03", "loot", "邮箱", "any"),
+    ("lootcontainers", "cashRegisterClosed_LOD0", "cashRegister_d", "loot", "收银机", "any"),
+    ("commercial", "vendingMachinePlayer_LOD0", "vendingMachinePlayer", "loot", "自动售货机", "drink"),
+    ("commercial", "janitorCart_1", "janitorCart", "loot", "清洁车", "tool"),
+    ("commercial", "trashBinCommercial_LOD0", "trashBinCommercial_d", "loot", "垃圾桶", "trash"),
+    ("industrial", "gasPumpFull_LOD0", "GasPump_d", "loot", "加油机", "tool"),
+    ("vehicles", "sedan_LOD1", "sedan", "car", "轿车", "any"),
+    ("vehicles", "suv_LOD1", "suv", "car", "越野车", "any"),
+    ("vehicles", "policeCar_LOD1", "policeCar", "car", "警车", "weapon"),
+    ("vehicles", "burntSedan_LOD0", "burntSedan", "car", "烧毁的车", "trash"),
+    ("vehicles", "miniVan_LOD0", "miniVan", "car", "面包车", "any"),
+    ("vehicles", "pickUpTruck._LOD0", "pickupTruck", "car", "皮卡", "tool"),
+    ("vehicles", "frontCrumpledSedan_LOD0", "frontCrumpledSedan", "car", "撞毁的车", "any"),
+    ("vehicles", "abandonedSUV_LOD0", "suv", "car", "废弃越野车", "any"),
+    ("vehicles", "bus_city_LOD0", "bus_city", "car", "公交车", "any"),
+    ("industrial", "barrierConcrete_LOD0", "barrierConcrete", "prop", "水泥路障", ""),
+    ("industrial", "barrierPlastic_LOD0", "barrierPlastic", "prop", "路障", ""),
+    ("industrial", "palletsWoodStack", "palletsWood", "prop", "木托盘", ""),
+    ("industrial", "boxesCardboardPallet_LOD0", "boxesCardboard", "prop", "纸箱", ""),
+    ("industrial", "palletBagSandBaseFull_LOD0", "palletBag_d", "prop", "沙袋", ""),
+    ("industrial", "plasticBin_LOD0", "plasticBin_01_d", "small", "塑料箱", ""),
+    ("outdoordecor", "brickStack_LOD0", "brickStack_d", "prop", "砖堆", ""),
+    ("outdoordecor", "cinderBlock02_LOD0", "cinderBlock_d", "small", "空心砖", ""),
+    ("outdoordecor", "plywoodStack_LOD0", "plyWoodStack_d", "prop", "胶合板", ""),
+    ("outdoordecor", "cardboardRecycledPallet_LOD0", "cardboardRecycled_d", "prop", "废纸板", ""),
+    ("outdoordecor", "campingTentAngularDamaged_LOD0", "campingTentAngular_d", "prop", "破帐篷", ""),
+    ("outdoordecor", "guardRailLong_LOD0", "guardRail", "prop", "护栏", ""),
+    ("commercial", "umbrellaTableDown_LOD0", "umbrellaTableDown", "prop", "遮阳伞桌", ""),
+    ("commercial", "handTruck_1", "handTruck", "small", "手推车", ""),
+    ("furniture", "couchUglySmall_LOD0", "couchUglySmall_d", "prop", "沙发", ""),
+    ("furniture", "picnicTable_1", "picnicTable", "prop", "野餐桌", ""),
+    ("furniture", "wheelChair_LOD0", "wheelChair", "small", "轮椅", ""),
+    ("furniture", "chairFoldingMetalFoldedFallen_LOD0", "chairFoldingMetal", "small", "折叠椅", ""),
+    ("debris", "trashGround02_LOD0", "groundTrash_d", "small", "垃圾", ""),
+    ("debris", "trashGround03_LOD0", "groundTrash_d", "small", "垃圾", ""),
+    ("gore", "corpseHangingLog1_LOD0", "corpseHangingLog1", "prop", "吊着的尸体", ""),
+    ("buildings", "awningStraight_LOD0", "awning", "deco", "遮阳棚", ""),
+]
+# 地上的贴花（血迹、垃圾、报纸）
+WORLD_DECALS = ("debris", ["decal_blood", "decal_blood02", "decal_blood05", "decal_blood06", "decal_rubbish01",
+                           "decal_rubbish03", "decal_rubbish05", "decal_rubbish08", "decal_rubbish12",
+                           "decal_newspaper", "decal_newspaper02", "BurntPaperDebris_d", "tornPaperDebris_d"])
+# 地面和楼的贴图
+TERRAIN_TEXTURES = ["asphalt", "concrete", "sidewalk_terrain", "gravel", "dirt", "rubble", "forest_ground",
+                    "burnt_forest_ground", "desert_debris"]
+BUILDING_TEXTURES = [("prefabs_assets_all.zip", "Concrete_Diffuse"), ("debris", "concreteRubbleTile_d"),
+                     ("commercial", "windowGrunge_d"), ("buildings", "window_store"),
+                     ("buildings", "windowStoreFrame_d"), ("debris", "rubbleConcreteSlab_d")]
+WORLD_TEX_MAX = 1024
+
+
+def _save_png(data, out, max_size=WORLD_TEX_MAX):
+    """贴图缩到 max_size 以内（手机内存有限）；没装 Pillow 就原样保存。"""
+    try:
+        from PIL import Image
+        im = Image.open(io.BytesIO(data))
+        if max(im.size) > max_size:
+            im.thumbnail((max_size, max_size), Image.LANCZOS)
+        im.save(out, optimize=False)
+    except ImportError:
+        with open(out, "wb") as f:
+            f.write(data)
+
+
+def _zip_members(zf):
+    meshes, texs = {}, {}
+    for i in zf.infolist():
+        base = os.path.basename(i.filename)
+        if i.filename.startswith("meshes/") and base.endswith(".obj"):
+            meshes[base[:-4]] = i
+        elif i.filename.startswith("textures/") and base.endswith(".png"):
+            texs[base[:-4]] = i
+    return meshes, texs
+
+
+def fetch_world(dest):
+    index_out = os.path.join(dest, "index", "world_models.json")
+    if os.path.exists(index_out):
+        print("市中心场景: 已有，跳过（删掉 assets/index/world_models.json 可重新取）")
+        return
+    out_dir = os.path.join(dest, "world")
+    os.makedirs(os.path.join(out_dir, "decals"), exist_ok=True)
+    os.makedirs(os.path.join(dest, "index"), exist_ok=True)
+    zips, members = {}, {}
+
+    def open_zip(name):
+        if name not in zips:
+            path = f"{DRIVE_ROOT}/小橘素材库/{name}" if name.endswith(".zip") else f"{DRIVE_ROOT}/{WORLD_ENT}/{name}.zip"
+            zips[name] = open_remote_zip(path)
+            members[name] = _zip_members(zips[name]) if zips[name] else ({}, {})
+        return zips[name], members[name]
+
+    index, done_tex = {"models": {}, "decals": [], "textures": {}}, {}
+    for pack, mesh, tex, kind, cn, loot in WORLD_MODELS:
+        zf, (meshes, texs) = open_zip(pack)
+        if zf is None or mesh not in meshes:
+            print(f"  没找到 {pack}/{mesh}，跳过")
+            continue
+        stem = re.sub(r"[^A-Za-z0-9_]", "_", mesh)
+        with open(os.path.join(out_dir, stem + ".obj"), "wb") as f:
+            f.write(zf.read(meshes[mesh]))
+        entry = {"mesh": f"world/{stem}.obj", "kind": kind, "name": cn, "loot": loot}
+        if tex in texs:
+            if tex not in done_tex:
+                _save_png(zf.read(texs[tex]), os.path.join(out_dir, tex + ".png"))
+                done_tex[tex] = f"world/{tex}.png"
+            entry["texture"] = done_tex[tex]
+        index["models"][stem] = entry
+    pack, names = WORLD_DECALS
+    zf, (_, texs) = open_zip(pack)
+    for n in names:
+        if zf and n in texs:
+            _save_png(zf.read(texs[n]), os.path.join(out_dir, "decals", n + ".png"), 512)
+            index["decals"].append(f"world/decals/{n}.png")
+    zf = open_remote_zip(f"{DRIVE_ROOT}/小橘素材库/terraintextures_assets_all.zip")
+    if zf:
+        _, texs = _zip_members(zf)
+        for n in TERRAIN_TEXTURES:
+            if n in texs:
+                _save_png(zf.read(texs[n]), os.path.join(out_dir, n + ".png"))
+                index["textures"][n] = f"world/{n}.png"
+    for pack, n in BUILDING_TEXTURES:
+        zf, (_, texs) = open_zip(pack)
+        if zf and n in texs:
+            _save_png(zf.read(texs[n]), os.path.join(out_dir, n + ".png"))
+            index["textures"][n] = f"world/{n}.png"
+    with open(index_out, "w", encoding="utf-8") as f:
+        json.dump(index, f, ensure_ascii=False, indent=1)
+    print(f"市中心场景: 模型 {len(index['models'])} 个，贴花 {len(index['decals'])} 张，贴图 {len(index['textures'])} 张")
+
+
+def fetch_poi(dest):
+    """市中心建筑（七日杀的 POI 预制体）：取远景网格 .mesh 和属性 .xml。
+    .mesh（存成 .poimesh）之后由 tools/build_poi.gd 在 Godot 里转成 assets/poi/*.res。"""
+    out_dir = os.path.join(dest, "poi")
+    if os.path.isdir(out_dir) and any(f.endswith(".poimesh") for f in os.listdir(out_dir)):
+        print("市中心建筑: 已有，跳过")
+        return
+    zf = open_remote_zip(f"{DRIVE_ROOT}/建筑POI/POIs_downtown_67.zip")
+    if zf is None:
+        print("云盘里没有 建筑POI/POIs_downtown_67.zip，市中心只有街道")
+        return
+    os.makedirs(out_dir, exist_ok=True)
+    n = 0
+    for i in zf.infolist():
+        base = os.path.basename(i.filename)
+        if re.fullmatch(r"[A-Za-z0-9_]+\.(mesh|xml)", base):
+            # .mesh 和 Godot 自己的网格格式重名，改个扩展名免得 Godot 误读
+            out = os.path.join(out_dir, base[:-5] + ".poimesh" if base.endswith(".mesh") else base)
+            with zf.open(i) as src, open(out, "wb") as dst:
+                shutil.copyfileobj(src, dst)
+            n += base.endswith(".mesh")
+    print(f"市中心建筑: {n} 栋")
+
+
 # 样例文件夹里的现成素材：(云盘目录, 本地子目录, 文件筛选)
 SAMPLE_SOURCES = [
     ("样例/models/items", "models", lambda n: n.lower().endswith(".glb")),          # 物品模型
     ("样例/models/common", "models", lambda n: n.startswith("FP_ARM") and n.endswith(".glb")),  # 第一人称手臂
-    ("样例/models/vehicles", "props", lambda n: n.lower().endswith(".glb")),        # 场景摆设
-    ("样例/models/furniture", "props", lambda n: n.lower().endswith(".glb")),
-    ("样例/textures/terraintextures", "textures", lambda n: n in ("desert_debris.png", "rubble.png")),  # 地面贴图
     ("样例/textures/common", "textures", lambda n: n in ("HD_Hands_Male.png", "playerMale_Hand.png")),  # 手臂贴图
 ]
 
@@ -462,7 +644,7 @@ def main():
     ap.add_argument("--zombies", default=",".join(DEFAULT_ZOMBIES), help="逗号分隔的僵尸名，或 all")
     ap.add_argument("--music", type=int, default=6, help="每类音乐取几段")
     ap.add_argument("--all-icons", action="store_true", help="取全部图标（默认只取游戏会用到的）")
-    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,music")
+    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,poi,music")
     args = ap.parse_args()
     skip = set(filter(None, args.skip.split(",")))
     dest = os.path.abspath(args.dest)
@@ -478,6 +660,10 @@ def main():
         fetch_items(dest, rows)
     if "arms" not in skip:
         fetch_fp_arms(dest)
+    if "world" not in skip:
+        fetch_world(dest)
+    if "poi" not in skip:
+        fetch_poi(dest)
     if "music" not in skip:
         fetch_music(dest, args.music)
     print("完成。用 Godot 打开项目即可（第一次打开会导入素材，需要几分钟）。")

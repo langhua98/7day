@@ -274,16 +274,30 @@ func display_name(id: String) -> String:
 	return row.en if row.en != "" else row.id
 
 
-func random_loot(rng: RandomNumberGenerator) -> String:
+## 不同容器掉的东西不一样：垃圾桶多是材料，购物车多是吃的，警车里有枪
+const LOOT_WEIGHTS := {
+	"any": {Kind.MELEE: 18, Kind.GUN: 8, Kind.FOOD: 22, Kind.DRINK: 16, Kind.MEDICAL: 14, Kind.RESOURCE: 22},
+	"trash": {Kind.MELEE: 6, Kind.FOOD: 20, Kind.DRINK: 12, Kind.MEDICAL: 4, Kind.RESOURCE: 58},
+	"food": {Kind.FOOD: 70, Kind.DRINK: 25, Kind.RESOURCE: 5},
+	"drink": {Kind.DRINK: 80, Kind.FOOD: 20},
+	"medical": {Kind.MEDICAL: 70, Kind.FOOD: 10, Kind.DRINK: 10, Kind.RESOURCE: 10},
+	"weapon": {Kind.MELEE: 35, Kind.GUN: 30, Kind.RESOURCE: 35},
+	"tool": {Kind.MELEE: 45, Kind.RESOURCE: 55},
+}
+
+
+func random_loot(rng: RandomNumberGenerator, tag := "any") -> String:
 	if loot_pool.is_empty():
 		return ""
-	var weights := {Kind.MELEE: 18, Kind.GUN: 8, Kind.FOOD: 22, Kind.DRINK: 16, Kind.MEDICAL: 14, Kind.RESOURCE: 22}
+	var weights: Dictionary = LOOT_WEIGHTS.get(tag, LOOT_WEIGHTS["any"])
 	var total := 0
 	for k in loot_pool:
-		total += weights.get(k, 10)
+		total += weights.get(k, 0)
+	if total <= 0:
+		return random_loot(rng) if tag != "any" else ""
 	var r := rng.randi_range(0, total - 1)
 	for k in loot_pool:
-		r -= weights.get(k, 10)
+		r -= weights.get(k, 0)
 		if r < 0:
 			var list: Array = loot_pool[k]
 			return list[rng.randi_range(0, list.size() - 1)]

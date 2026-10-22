@@ -7,6 +7,7 @@ var player := Node3D.new()
 var camera := Camera3D.new()
 var arms: FpArms
 var hud: Hud
+var world: World
 var music: MusicDirector
 var sun := DirectionalLight3D.new()
 var env := Environment.new()
@@ -28,6 +29,12 @@ var inventory := {}          # id -> 数量
 var pickup_order: Array[String] = []
 var equipped := ""
 var _horde_announced := false
+## 正在翻的容器（空字典表示没在翻）、翻了多久、开始翻时站的位置
+var _search := {}
+var _search_t := 0.0
+var _search_from := Vector3.ZERO
+var _label_font: SystemFont
+var _e_down := false
 var _night_announced := -1
 
 
@@ -42,6 +49,7 @@ func _ready() -> void:
 	hud.start_pressed.connect(_start)
 	hud.restart_pressed.connect(_start)
 	hud.item_used.connect(_use_item)
+	hud.action_pressed.connect(_action)
 	var info := "素材：物品 %d 个（武器、食物、药品等 %d 个可拾取），僵尸 %d 种，音乐 %d 段" % [
 		Assets.items.size(), _count_loot(), Assets.zombie_models.size(),
 		Assets.music.values().reduce(func(a, l): return a + l.size(), 0)]
@@ -79,58 +87,11 @@ func _build_world() -> void:
 	sun.directional_shadow_max_distance = 40.0
 	add_child(sun)
 
-	var ground := MeshInstance3D.new()
-	var plane := PlaneMesh.new()
-	plane.size = Vector2(C.WORLD_RADIUS * 2.6, C.WORLD_RADIUS * 2.6)
-	ground.mesh = plane
-	var gm := StandardMaterial3D.new()
-	gm.albedo_color = Color(0.36, 0.33, 0.27)
-	gm.roughness = 1.0
-	for t in C.GROUND_TEXTURES:
-		var path := "res://assets/textures/%s" % t
-		if ResourceLoader.exists(path):
-			gm.albedo_texture = load(path)
-			gm.albedo_color = Color(0.72, 0.70, 0.68)
-			gm.uv1_scale = Vector3.ONE * (plane.size.x / C.GROUND_TILE)
-			gm.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-			break
-	ground.material_override = gm
-	add_child(ground)
+	world = World.new()
+	add_child(world)
+	world.build(rng.randi())
 	add_child(zombie_root)
 	add_child(loot_root)
-	_scatter_props()
-
-
-func _scatter_props() -> void:
-	var dir := "res://assets/props"
-	if not DirAccess.dir_exists_absolute(dir):
-		return
-	var names := PackedStringArray()
-	for f in DirAccess.get_files_at(dir):
-		var n := f.trim_suffix(".remap").trim_suffix(".import")
-		if n.get_extension().to_lower() == "glb" and not names.has(n):
-			names.append(n)
-	if names.is_empty():
-		return
-	var cache := {}
-	for i in C.PROP_COUNT:
-		var n := names[i % names.size()]
-		if not cache.has(n):
-			cache[n] = load("%s/%s" % [dir, n])
-		var scene = cache[n]
-		if not (scene is PackedScene):
-			continue
-		var inst: Node3D = scene.instantiate()
-		var holder := Node3D.new()
-		holder.add_child(inst)
-		var ang := rng.randf() * TAU
-		var r := rng.randf_range(8.0, C.WORLD_RADIUS * 0.95)
-		holder.position = Vector3(cos(ang) * r, 0, sin(ang) * r)
-		holder.rotation.y = rng.randf() * TAU
-		add_child(holder)
-		# 让模型底部贴地
-		var aabb := Assets._bounds(inst, Transform3D.IDENTITY)
-		inst.position.y = -aabb.position.y
 
 
 func _build_player() -> void:
@@ -138,7 +99,7 @@ func _build_player() -> void:
 	add_child(player)
 	camera.position.y = C.PLAYER_EYE_HEIGHT
 	camera.near = 0.03
-	camera.far = 160.0
+	camera.far = 260.0
 	camera.fov = 70.0
 	player.add_child(camera)
 	arms = FpArms.new()
@@ -166,8 +127,12 @@ func _start() -> void:
 	yaw = 0.0
 	pitch = 0.0
 	spawn_cd = 6.0
-	for i in C.LOOT_COUNT:
-		_spawn_loot(_random_point(4.0, C.WORLD_RADIUS * 0.9))
+	for c in world.containers:
+		c.searched = false
+	_search = {}
+	hud.set_progress(-1.0)
+	for i in C.LOOT_COUNT / 2:
+		_spawn_loot(world.free_point(Vector3.ZERO, 4.0, 60.0))
 	# 开局在面前放一件近战武器，马上就能看到手里的模型
 	var weapons: Array = Assets.loot_pool.get(Assets.Kind.MELEE, [])
 	if not weapons.is_empty():
@@ -209,6 +174,7 @@ func _process(delta: float) -> void:
 	_update_sky()
 	_update_zombies(delta, day, night, horde)
 	_update_loot(delta)
+	_update_action(delta)
 	_update_survival(delta)
 	_update_music(delta, night, horde)
 	_update_banner(day, hour, night, horde)
@@ -242,14 +208,13 @@ func _update_player(delta: float) -> void:
 	var fwd := -player.global_basis.z
 	var right := player.global_basis.x
 	var vel := (fwd * mv.y + right * mv.x) * C.PLAYER_SPEED
-	player.position += vel * delta
-	var flat := Vector2(player.position.x, player.position.z)
-	if flat.length() > C.WORLD_RADIUS:
-		flat = flat.normalized() * C.WORLD_RADIUS
-		player.position = Vector3(flat.x, 0, flat.y)
+	player.position = world.push_out(player.position + vel * delta, 0.35)
 	arms.set_meta("walking", mv.length())
 
 	attack_cd = max(0.0, attack_cd - delta)
+	if Input.is_physical_key_pressed(KEY_E) and not _e_down:
+		_action()
+	_e_down = Input.is_physical_key_pressed(KEY_E)
 	var attacking := hud.attack_held or Input.is_physical_key_pressed(KEY_SPACE)
 	if attacking and attack_cd <= 0.0:
 		_attack()
@@ -279,6 +244,8 @@ func _attack() -> void:
 			continue
 		if flat_aim.dot(to / d) < cone and d > 0.9:
 			continue
+		if d > 1.5 and world.line_blocked(eye, z.global_position + Vector3.UP):
+			continue
 		if d < best_d:
 			best_d = d
 			best = z
@@ -297,7 +264,7 @@ func _update_zombies(delta: float, day: int, night: bool, horde: bool) -> void:
 			hp -= dmg
 			hud.hurt()
 		# 离太远的僵尸回收掉，在身边重新刷
-		if z.distance_to_target() > C.WORLD_RADIUS * 1.2:
+		if z.distance_to_target() > C.ZOMBIE_DESPAWN:
 			z.queue_free()
 		elif night or horde:
 			z.speed = max(z.speed, (C.ZOMBIE_HORDE_SPEED if horde else C.ZOMBIE_NIGHT_SPEED) * 0.9)
@@ -320,9 +287,8 @@ func _spawn_zombie(day: int, night: bool, horde: bool) -> void:
 	if not z.setup(model, C.ZOMBIE_BASE_HP + C.ZOMBIE_HP_PER_DAY * (day - 1), spd, player):
 		z.free()
 		return
-	var ang := rng.randf() * TAU
-	var r := rng.randf_range(18.0, 32.0) if not horde else rng.randf_range(14.0, 24.0)
-	z.position = player.position + Vector3(cos(ang) * r, 0, sin(ang) * r)
+	z.world = world
+	z.position = world.free_point(player.position, 18.0, 32.0) if not horde else world.free_point(player.position, 14.0, 24.0)
 	z.died.connect(_on_zombie_died)
 	zombie_root.add_child(z)
 
@@ -334,12 +300,6 @@ func _on_zombie_died(z: Zombie) -> void:
 
 
 # —— 物品 ——
-
-func _random_point(min_r: float, max_r: float) -> Vector3:
-	var ang := rng.randf() * TAU
-	var r := sqrt(rng.randf_range(min_r * min_r, max_r * max_r))
-	return Vector3(cos(ang) * r, 0, sin(ang) * r)
-
 
 func _spawn_loot(pos: Vector3, id := "") -> void:
 	if id == "":
@@ -357,6 +317,21 @@ func _spawn_loot(pos: Vector3, id := "") -> void:
 	spin.position.y = 0.15
 	spin.add_child(vis)
 	holder.add_child(spin)
+	# 物品名字，走近才显示
+	var label := Label3D.new()
+	label.text = Assets.display_name(id)
+	label.font = _cjk_font()
+	label.font_size = 36
+	label.outline_size = 10
+	# 固定在屏幕上的大小，走近不会变得很大
+	label.fixed_size = true
+	label.pixel_size = 0.0011
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.no_depth_test = true
+	label.position.y = 0.95
+	label.visibility_range_end = 7.0
+	label.modulate = Color(1, 0.95, 0.8)
+	holder.add_child(label)
 	# 地上一圈淡淡的光，远处也能看到
 	var glow := OmniLight3D.new()
 	glow.light_color = Color(1.0, 0.8, 0.4)
@@ -376,12 +351,103 @@ func _update_loot(delta: float) -> void:
 		var spin: Node3D = l.get_node("Spin")
 		spin.rotation.y += delta * 1.2
 		spin.position.y = 0.15 + sin(Time.get_ticks_msec() / 400.0 + l.position.x) * 0.05
-		var d := Vector2(l.position.x - player.position.x, l.position.z - player.position.z).length()
-		if d < C.PICKUP_RADIUS:
-			_pickup(l.get_meta("item"))
-			l.queue_free()
 	if count < C.LOOT_COUNT and rng.randf() < delta * 0.2:
-		_spawn_loot(player.position + _random_point(15.0, 45.0))
+		_spawn_loot(world.free_point(player.position, 15.0, 45.0))
+
+
+func _cjk_font() -> SystemFont:
+	if _label_font == null:
+		_label_font = SystemFont.new()
+		_label_font.font_names = PackedStringArray(["PingFang SC", "Hiragino Sans GB", "Heiti SC", "Noto Sans CJK SC", "Microsoft YaHei", "sans-serif"])
+	return _label_font
+
+
+## 离玩家最近、能拾取的地上物品（优先看准星对着的）
+func _nearest_loot() -> Node3D:
+	var best: Node3D = null
+	var best_score := INF
+	var aim := -player.global_basis.z
+	for l in loot_root.get_children():
+		if l.is_queued_for_deletion():
+			continue
+		var to: Vector3 = l.position - player.position
+		to.y = 0.0
+		var d := to.length()
+		if d > C.PICKUP_RADIUS:
+			continue
+		var score := d - (aim.dot(to / d) if d > 0.01 else 1.0) * 0.8
+		if score < best_score:
+			best_score = score
+			best = l
+	return best
+
+
+## 每帧决定「搜索 / 拾取」按钮显示什么，推进翻找进度
+func _update_action(delta: float) -> void:
+	if not _search.is_empty():
+		var c: Dictionary = _search
+		var need: float = C.SEARCH_TIME_CAR if c.kind == "car" else C.SEARCH_TIME
+		if player.position.distance_to(_search_from) > 0.8:
+			_search = {}
+			hud.set_progress(-1.0)
+			hud.toast("走开了，没翻完")
+		else:
+			_search_t += delta
+			hud.set_progress(_search_t / need, "正在翻%s…" % c.name)
+			hud.set_action("")
+			if _search_t >= need:
+				_finish_search(c)
+			return
+	var loot := _nearest_loot()
+	if loot:
+		hud.set_action("拾取\n%s" % Assets.display_name(loot.get_meta("item")))
+		return
+	var c := world.nearest_container(player.position)
+	if c.is_empty():
+		hud.set_action("")
+	elif c.searched:
+		hud.set_action("%s\n已翻过" % c.name, false)
+	else:
+		hud.set_action("搜索\n%s" % c.name)
+
+
+func _action() -> void:
+	if not running or not _search.is_empty():
+		return
+	var loot := _nearest_loot()
+	if loot:
+		_pickup(loot.get_meta("item"))
+		loot.queue_free()
+		return
+	var c := world.nearest_container(player.position)
+	if c.is_empty() or c.searched:
+		return
+	_search = c
+	_search_t = 0.0
+	_search_from = player.position
+
+
+func _finish_search(c: Dictionary) -> void:
+	_search = {}
+	hud.set_progress(-1.0)
+	c.searched = true
+	if rng.randf() < C.SEARCH_EMPTY_CHANCE:
+		hud.toast("%s里什么也没有" % c.name)
+		return
+	var n := rng.randi_range(C.SEARCH_MIN, C.SEARCH_MAX)
+	var names := []
+	for i in n:
+		var id := Assets.random_loot(rng, c.loot)
+		if id == "":
+			continue
+		# 掉在容器和玩家之间的地上
+		var dir: Vector3 = player.position - c.pos
+		dir.y = 0.0
+		dir = dir.normalized() if dir.length() > 0.01 else Vector3.FORWARD
+		var p: Vector3 = c.pos + dir * (c.r + 0.5) + Vector3(rng.randf_range(-0.6, 0.6), 0, rng.randf_range(-0.6, 0.6))
+		_spawn_loot(world.push_out(p, 0.2), id)
+		names.append(Assets.display_name(id))
+	hud.toast("翻到：" + "、".join(names) if not names.is_empty() else "%s里什么也没有" % c.name)
 
 
 func _pickup(id: String) -> void:

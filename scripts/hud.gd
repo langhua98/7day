@@ -5,6 +5,7 @@ extends CanvasLayer
 signal start_pressed
 signal restart_pressed
 signal item_used(id: String)
+signal action_pressed
 
 var move := Vector2.ZERO          # 摇杆输出，x 右 y 前
 var look_delta := Vector2.ZERO    # 本帧视角拖动量（像素）
@@ -19,6 +20,9 @@ var _toast := Label.new()
 var _banner := Label.new()
 var _hotbar := HBoxContainer.new()
 var _attack_btn := Button.new()
+var _action_btn := Button.new()
+var _progress := ProgressBar.new()
+var _progress_label := Label.new()
 var _bag_btn := Button.new()
 var _bag_panel := PanelContainer.new()
 var _bag_grid := GridContainer.new()
@@ -117,6 +121,39 @@ func _ready() -> void:
 	# 系统自带的按钮只认第一根手指，一边走路一边按攻击会没反应
 	_attack_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_attack_btn)
+
+	# 搜索 / 拾取：走近容器或地上的东西才出现
+	_action_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_action_btn.position = Vector2(-420, -280)
+	_action_btn.size = Vector2(190, 110)
+	_action_btn.add_theme_font_size_override("font_size", 26)
+	_action_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_action_btn.clip_text = true
+	_action_btn.visible = false
+	_root.add_child(_action_btn)
+
+	# 翻找进度条（屏幕中间偏下）
+	_progress.set_anchors_preset(Control.PRESET_CENTER)
+	_progress.position = Vector2(-180, 70)
+	_progress.size = Vector2(360, 22)
+	_progress.show_percentage = false
+	_progress.max_value = 1.0
+	_progress.step = 0.0
+	var pf := StyleBoxFlat.new()
+	pf.bg_color = Color(0.85, 0.7, 0.3)
+	var pb := StyleBoxFlat.new()
+	pb.bg_color = Color(0, 0, 0, 0.55)
+	_progress.add_theme_stylebox_override("fill", pf)
+	_progress.add_theme_stylebox_override("background", pb)
+	_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_progress.visible = false
+	_root.add_child(_progress)
+	_progress_label.set_anchors_preset(Control.PRESET_CENTER)
+	_progress_label.position = Vector2(-180, 30)
+	_progress_label.size = Vector2(360, 36)
+	_progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_progress_label.visible = false
+	_root.add_child(_progress_label)
 
 	_bag_btn.text = "背包"
 	_bag_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
@@ -227,7 +264,7 @@ func _build_start_panel() -> void:
 		start_pressed.emit())
 	v.add_child(btn)
 	var help := Label.new()
-	help.text = "左半屏拖动移动 · 右半屏拖动看 · 按住攻击 · 走近物品自动捡起"
+	help.text = "左半屏拖动移动 · 右半屏拖动看 · 按住攻击 · 走近垃圾桶、车、箱子按「搜索」· 地上的东西按「拾取」"
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	help.modulate = Color(1, 1, 1, 0.6)
 	help.add_theme_font_size_override("font_size", 20)
@@ -281,6 +318,23 @@ func set_status(day: int, hour: float, hp: float, food: float, kills: int, zombi
 
 func set_banner(text: String) -> void:
 	_banner.text = text
+
+
+## 搜索 / 拾取按钮上的字；空字符串就隐藏。enabled=false 时变灰（比如容器已经翻过了）
+func set_action(text: String, enabled := true) -> void:
+	_action_btn.visible = text != ""
+	_action_btn.text = text
+	_action_btn.modulate = Color.WHITE if enabled else Color(1, 1, 1, 0.45)
+
+
+## 翻找进度：value < 0 隐藏
+func set_progress(value: float, text := "") -> void:
+	var show := value >= 0.0
+	_progress.visible = show
+	_progress_label.visible = show
+	if show:
+		_progress.value = value
+		_progress_label.text = text
 
 
 func toast(text: String) -> void:
@@ -375,6 +429,9 @@ func _touch_down(index: int, pos: Vector2) -> void:
 	if _attack_btn.get_global_rect().grow(20).has_point(pos):
 		_attack_id = index
 		_press_attack(true)
+		return
+	if _action_btn.visible and _action_btn.get_global_rect().grow(12).has_point(pos):
+		action_pressed.emit()
 		return
 	if _bag_btn.get_global_rect().has_point(pos):
 		_bag_panel.visible = true

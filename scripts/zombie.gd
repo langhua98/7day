@@ -8,6 +8,8 @@ var hp := 60.0
 var max_hp := 60.0
 var speed := 1.0
 var target: Node3D
+## 市中心（用来绕开楼和车）
+var world: World
 var dead := false
 
 var _model: Node3D
@@ -106,6 +108,8 @@ func _process(delta: float) -> void:
 		rotation.y = lerp_angle(rotation.y, atan2(dir.x, dir.z), min(1.0, delta * 6.0))
 		if dist > GameConfig.ZOMBIE_REACH * 0.8:
 			position += dir * speed * delta
+			if world:
+				position = world.push_out(position, 0.35)
 			_phase += delta * (2.0 + speed * 2.2)
 	_animate()
 
@@ -137,6 +141,8 @@ func take_hit(amount: float, from: Vector3) -> void:
 	push.y = 0.0
 	if push.length() > 0.01:
 		position += push.normalized() * 0.35
+		if world:
+			position = world.push_out(position, 0.35)
 	if hp <= 0.0:
 		dead = true
 		_set_tint(Color.WHITE)
