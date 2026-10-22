@@ -297,6 +297,9 @@ func place(name: String, pos: Vector3, rot := 0.0, solid := true) -> Node3D:
 	add_child(holder)
 	var size: Vector3 = info.size
 	var kind: String = e.get("kind", "prop")
+	# 远了就不画：小件 40 米、道具 70 米、车 110 米（手机上省大量三角面）
+	mi.visibility_range_end = {"small": 40.0, "deco": 40.0, "car": 110.0}.get(kind, 70.0)
+	mi.visibility_range_end_margin = 5.0
 	if solid and kind in ["loot", "car", "prop"] and size.x * size.z > 0.08:
 		_add_obstacle(Vector2(pos.x, pos.z), Vector2(size.x, size.z) * 0.5 * 0.9, rot, size.y > 2.5)
 	if kind in ["loot", "car"]:
