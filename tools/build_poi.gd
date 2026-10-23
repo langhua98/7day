@@ -156,9 +156,12 @@ func _convert_full(name: String) -> int:
 		var nl := data[p + 3]
 		var gname := data.slice(p + 4, p + 4 + nl).get_string_from_utf8()
 		p += 4 + nl
-		if not chunks.has(chunk):
-			chunks[chunk] = ArrayMesh.new()
-		var mesh: ArrayMesh = chunks[chunk]
+		# 方块面单独放一个网格，游戏里整个网格用 material_override 上 POI 着色器（和远景网格完全一样的画法）；
+		# 玻璃、地面放另一个网格，材质存在网格里。iPhone 上用面覆盖材质画方块面时墙整片不显示。
+		var key := chunk * 2 + (0 if kind == 0 else 1)
+		if not chunks.has(key):
+			chunks[key] = ArrayMesh.new()
+		var mesh: ArrayMesh = chunks[key]
 		var nv := data.decode_u32(p)
 		p += 4
 		var pos := data.slice(p, p + nv * 12).to_float32_array()
@@ -177,6 +180,10 @@ func _convert_full(name: String) -> int:
 		normals.resize(nv)
 		var uv2 := PackedVector2Array()
 		uv2.resize(nv)
+		# 着色器不用 UV，但顶点格式要和远景网格一模一样（顶点、法线、UV、UV2、颜色）。
+		# 少了 UV 的网格在 iPhone（Metal）上整块不画，近处换成完整版时楼就没了。
+		var uvs := PackedVector2Array()
+		uvs.resize(nv)
 		var colors := PackedColorArray()
 		colors.resize(nv)
 		for i in nv:
@@ -195,6 +202,7 @@ func _convert_full(name: String) -> int:
 		arrays.resize(Mesh.ARRAY_MAX)
 		arrays[Mesh.ARRAY_VERTEX] = verts
 		arrays[Mesh.ARRAY_NORMAL] = normals
+		arrays[Mesh.ARRAY_TEX_UV] = uvs
 		arrays[Mesh.ARRAY_TEX_UV2] = uv2
 		arrays[Mesh.ARRAY_COLOR] = colors
 		arrays[Mesh.ARRAY_INDEX] = idx
