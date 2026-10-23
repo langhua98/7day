@@ -71,7 +71,8 @@ static func blood_pool(parent: Node, pos: Vector3) -> void:
 		var m := StandardMaterial3D.new()
 		m.albedo_texture = load(DIR + "blood_splat_1.png")
 		m.albedo_color = Color(0.5, 0.05, 0.05)
-		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+		m.alpha_scissor_threshold = 0.35
 		m.roughness = 0.3
 		_mats[key] = m
 	var mi := MeshInstance3D.new()
@@ -86,7 +87,7 @@ static func blood_pool(parent: Node, pos: Vector3) -> void:
 	mi.rotation.y = randf() * TAU
 	mi.add_to_group("blood_pool")
 	var pools := parent.get_tree().get_nodes_in_group("blood_pool")
-	if pools.size() > 40:
+	if pools.size() > GameConfig.BLOOD_POOL_MAX:
 		pools[0].queue_free()
 
 

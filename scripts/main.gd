@@ -15,6 +15,7 @@ var horde: Horde
 var looting: LootingSystem
 var save_game: SaveGame
 var time_sys: TimeOfDay
+var graphics: GraphicsSystem
 var rng := RandomNumberGenerator.new()
 
 var running := false
@@ -69,6 +70,9 @@ func _ready() -> void:
 	combat.build()
 	inventory.combat = combat
 
+	graphics = GraphicsSystem.new()
+	graphics.setup(self, world, atmosphere, player_sys, hud, spawner.zombie_root)
+
 	save_game = SaveGame.new()
 	save_game.setup(self, world, player_sys, inventory, combat, spawner, horde, atmosphere, hud, time_sys)
 
@@ -86,6 +90,7 @@ func _ready() -> void:
 		GameState.running = false
 		combat.running = false
 		looting.running = false
+		graphics.on_stop()
 		Sfx.stop_loops()
 		hud.show_start(true))
 	hud.settings_changed.connect(_apply_settings)
@@ -106,6 +111,7 @@ func _apply_settings(st: Dictionary) -> void:
 	Sfx.set_volume("Sfx", st.volume)
 	Sfx.set_volume("Music", st.music)
 	atmosphere.set_brightness(st.brightness)
+	graphics.apply_settings(st)
 
 
 # —— 存档：切到后台、关窗口时自动存 ——
@@ -135,6 +141,7 @@ func start(fresh := true) -> void:
 	combat.reset()
 	atmosphere.reset()
 	GameState.running = true
+	graphics.on_start()
 
 	for c in world.containers:
 		c.searched = false
@@ -170,6 +177,7 @@ func _end() -> void:
 	GameState.running = false
 	combat.running = false
 	looting.running = false
+	graphics.on_stop()
 	save_game.delete_save()
 	Sfx.stop_loops()
 	Sfx.play("death")
@@ -190,21 +198,21 @@ func _process(delta: float) -> void:
 	var night := time_sys.night
 	var blood_moon := time_sys.blood_moon
 
-	player_sys.aiming = (hud.aim_held or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
-		or Input.is_physical_key_pressed(KEY_F)) \
+	player_sys.aiming = hud.aim_held \
 		and Assets.items_by_id.get(inventory.equipped, {}).get("kind", -1) == Assets.Kind.GUN
 	player_sys.update(delta)
-	looting.update(delta)
 	combat.update(delta)
 	spawner.update(delta, day, night, blood_moon)
 	horde.update(delta, blood_moon, day)
 	looting.update_loot(delta)
 	looting.update_action(delta)
 	player_sys.update_survival(delta)
-	atmosphere.update_sky(time_sys.hours)
+	if graphics.sky_due(delta):
+		atmosphere.update_sky(time_sys.hours)
 	atmosphere.update_music(delta, night, blood_moon, spawner.zombie_root)
 	atmosphere.update_banner(day, hour, night, blood_moon)
 	save_game.update(delta)
+	graphics.update(delta)
 
 	var near := 0
 	for z in spawner.zombie_root.get_children():

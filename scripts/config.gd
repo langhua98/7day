@@ -153,6 +153,40 @@ const FP_ARMS_TEXTURES := ["fp_arms_skin.png", "HD_Hands_Male.png"]
 ## 贴图 alpha 当成镂空（头发、树叶）。如果模型出现奇怪的洞，改成 false
 const ALPHA_CUTOUT := false
 
+## 画质档位：省电 / 均衡 / 高清。暂停菜单里切换。
+## scale_* 是 3D 渲染分辨率比例（UI 始终按屏幕原生分辨率绘制）。
+const QUALITY_PRESETS := [
+	{
+		"name": "省电", "fps": 30, "scale_min": 0.45, "scale_max": 0.6, "scale_start": 0.55,
+		"shadow_distance": 16.0, "shadow_atlas": 1024,
+		"poi_shadow_distance": 0.0, "prop_shadow_distance": 0.0,
+		"poi_range": 170.0, "car_range": 80.0, "prop_range": 45.0, "small_range": 25.0,
+		"deco_range": 35.0, "decal_range": 30.0,
+	},
+	{
+		"name": "均衡", "fps": 60, "scale_min": 0.55, "scale_max": 0.85, "scale_start": 0.7,
+		"shadow_distance": 28.0, "shadow_atlas": 2048,
+		"poi_shadow_distance": 28.0, "prop_shadow_distance": 18.0,
+		"poi_range": 220.0, "car_range": 100.0, "prop_range": 60.0, "small_range": 35.0,
+		"deco_range": 50.0, "decal_range": 45.0,
+	},
+	{
+		"name": "高清", "fps": 60, "scale_min": 0.7, "scale_max": 1.0, "scale_start": 0.9,
+		"shadow_distance": 40.0, "shadow_atlas": 4096,
+		"poi_shadow_distance": 40.0, "prop_shadow_distance": 28.0,
+		"poi_range": 260.0, "car_range": 110.0, "prop_range": 70.0, "small_range": 40.0,
+		"deco_range": 60.0, "decal_range": 60.0,
+	},
+]
+
+## 性能面板和远处阴影的刷新间隔（秒）
+const PERF_UPDATE_INTERVAL := 0.5
+const SKY_UPDATE_INTERVAL := 0.1
+const LOD_UPDATE_INTERVAL := 0.5
+## 地上最多留多少摊血
+const BLOOD_POOL_MAX := 24
+## 地上贴花数量
+const DECAL_COUNT := 140
 
 # —— 僵尸 AI（6a）：感官、噪音、热量、蹲伏、AI 预算 ——
 ## 视野：前方扇形角度，白天/夜里看多远（米）；蹲下时视距乘这个
@@ -183,7 +217,6 @@ const TEST_HEAT_MULT := 1.0
 ## 蹲伏：视角降低多少米、移速倍率
 const CROUCH_DROP := 0.6
 const CROUCH_SPEED_MULT := 0.5
-## AI 预算：每帧最多更新几只的感知；多远开始骨骼隔帧、多远停骨骼
+## AI 预算：每帧最多更新几只的感知；多远停骨骼（近处按距离降帧见 zombie_body.gd）
 const AI_SENSE_PER_FRAME := 6
-const ZOMBIE_ANIM_HALF_DIST := 30.0
 const ZOMBIE_ANIM_OFF_DIST := 50.0

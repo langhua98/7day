@@ -43,6 +43,8 @@ var _height := GameConfig.ZOMBIE_HEIGHT
 var _voice := "zm_"      # 男声 zm_ / 女声 zf_
 var _roam_t := 0.0
 var _alerted := false
+var _anim_t := 0.0
+var _anim_interval := 1.0 / 30.0
 # 骨骼空间里的「前」和「右」，从脚尖方向推出来（不同僵尸的导出朝向不一样）
 var _fwd := Vector3.BACK
 var _side := Vector3.RIGHT
@@ -60,8 +62,6 @@ var _limp_leg := "Right"
 var _arm_style := [0, 0]   # 0 往前伸，1 垂着甩
 var _arm_h := [0.0, 0.0]
 var _lead := 1.0           # 抬哪只手先砍：1 右手，-1 左手
-var _anim_acc := 0.0       # 远处隔帧更新骨骼时累计的时间
-var _anim_slot := 0
 
 
 func setup(model_name: String, hp_value: float, speed_value: float, player: Node3D) -> bool:
@@ -100,7 +100,6 @@ func setup(model_name: String, hp_value: float, speed_value: float, player: Node
 	_arm_h = [_rng.randf_range(-0.25, 0.15), _rng.randf_range(-0.25, 0.15)]
 	_voice = "zf_" if type in ["nurse", "arlene", "screamer"] or type.contains("female") else "zm_"
 	_roam_t = _rng.randf_range(2.0, 9.0)
-	_anim_slot = _rng.randi_range(0, 1)
 	var found := _model.find_children("*", "Skeleton3D", true, false)
 	if found.size() > 0:
 		_skel = found[0]
@@ -112,6 +111,8 @@ func setup(model_name: String, hp_value: float, speed_value: float, player: Node
 				_bones[b] = i
 	for m in _model.find_children("*", "MeshInstance3D", true, false):
 		_meshes.append(m)
+		# 僵尸不投影：阴影里再算一遍骨骼很贵，近处也看不出少了它
+		(m as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_detect_facing()
 	return true
 
@@ -143,10 +144,20 @@ func _detect_facing() -> void:
 
 
 func _process(delta: float) -> void:
+	# 骨骼动画按距离降频：近处 30Hz，中距离 15Hz，远处 10Hz
+	var dist_now := distance_to_target()
+	_anim_interval = 1.0 / 30.0 if dist_now < 30.0 else (1.0 / 15.0 if dist_now < 60.0 else 1.0 / 10.0)
+	_anim_t += delta
+	var anim_delta := _anim_t
+	var do_anim := _anim_t >= _anim_interval
+	# 6a AI 预算：50 米外不更新骨骼
+	if do_anim or dist_now > GameConfig.ZOMBIE_ANIM_OFF_DIST:
+		_anim_t = 0.0
+	do_anim = do_anim and dist_now <= GameConfig.ZOMBIE_ANIM_OFF_DIST
 	if dead:
 		_death_t += delta
-		if _death_t < 0.3:
-			_animate(delta)
+		if do_anim and _death_t < 0.3:
+			_animate(anim_delta)
 		# 倒地：向后或向前倒，倒下后停一会儿沉到地下
 		rotation.x = lerp(rotation.x, _fall_dir * PI / 2.0, min(1.0, delta * 5.0))
 		position.y = lerp(position.y, 0.15, min(1.0, delta * 5.0)) if _death_t < 2.5 else position.y
@@ -196,7 +207,8 @@ func _process(delta: float) -> void:
 			Sfx.play(_voice + "roam", global_position + Vector3.UP * 1.6, -3.0)
 	if _stagger > 0.0:
 		_stagger -= delta
-		_animate_budget(delta, dist)
+		if do_anim:
+			_animate(anim_delta)
 		return
 	var to_goal := Vector3.ZERO
 	var gdist := 0.0
@@ -225,19 +237,8 @@ func _process(delta: float) -> void:
 				position = world.push_out(position, 0.35)
 			_phase += delta * (2.0 + spd * 2.2)
 			_moving = spd
-	_animate_budget(delta, dist)
-
-
-## AI 预算：30 米外骨骼隔帧更新，50 米外不更新骨骼
-func _animate_budget(delta: float, dist: float) -> void:
-	_anim_acc += delta
-	if dist > GameConfig.ZOMBIE_ANIM_OFF_DIST:
-		_anim_acc = 0.0
-		return
-	if dist > GameConfig.ZOMBIE_ANIM_HALF_DIST and (Engine.get_process_frames() + _anim_slot) % 2 == 1:
-		return
-	_animate(_anim_acc)
-	_anim_acc = 0.0
+	if do_anim:
+		_animate(anim_delta)
 
 
 func distance_to_target() -> float:

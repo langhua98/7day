@@ -17,7 +17,6 @@ var running := false
 var _search := {}
 var _search_t := 0.0
 var _search_from := Vector3.ZERO
-var _e_down := false
 
 
 func setup(parent: Node3D, world_ref: World, player_ref: PlayerSystem, inv_ref: InventorySystem,
@@ -41,14 +40,6 @@ func reset() -> void:
 	_search_t = 0.0
 	_search_from = Vector3.ZERO
 	hud.set_progress(-1.0)
-
-
-func update(delta: float) -> void:
-	if not running:
-		return
-	if Input.is_physical_key_pressed(KEY_E) and not _e_down:
-		action()
-	_e_down = Input.is_physical_key_pressed(KEY_E)
 
 
 func spawn_loot(pos: Vector3, id := "", quality := 0, amount := 0) -> void:
