@@ -13,13 +13,18 @@ var player_sys: PlayerSystem
 var combat: CombatSystem
 var rng: RandomNumberGenerator
 
+## 背包格子：每格 {id, count, quality, durability}，空格是 {}。inventory 是「id → 总数」的汇总，只读。
 var inventory := {}
 var pickup_order: Array[String] = []
 var equipped := ""
 var mags := {}
 var mags_type := {}
 var ammo_choice := {}
+## 每种武器的最高品质（汇总，只读；combat 取伤害用）
 var qualities := {}
+var _slots: Array = []
+## 不超重的格子数（测试模式会自动扩）
+var _cap := C.BAG_SLOTS
 
 
 func setup(parent: Node3D, hud_ref: Hud, arms_ref: FpArms, player_ref: PlayerSystem, rng_ref: RandomNumberGenerator) -> void:
@@ -31,6 +36,11 @@ func setup(parent: Node3D, hud_ref: Hud, arms_ref: FpArms, player_ref: PlayerSys
 
 
 func reset() -> void:
+	_cap = C.BAG_SLOTS
+	_slots.clear()
+	_slots.resize(limit())
+	for i in _slots.size():
+		_slots[i] = {}
 	inventory.clear()
 	pickup_order.clear()
 	equipped = ""
@@ -38,8 +48,41 @@ func reset() -> void:
 	mags_type.clear()
 	ammo_choice.clear()
 	qualities.clear()
-	arms.hold("")
+	if arms:
+		arms.hold("")
 	changed.emit()
+
+
+## 一格最多叠几个：官方 Stacknumber，没有就 1
+static func stack_of(id: String) -> int:
+	var info: Dictionary = Data.items.get(id, {})
+	return maxi(1, int(info.get("stack", 1)))
+
+
+## 背包总格数（含超重格）
+func limit() -> int:
+	return _cap + (0 if C.TEST_ALL_ITEMS else C.BAG_OVERLOAD_SLOTS)
+
+
+func base_slots() -> int:
+	return _cap
+
+
+func slots() -> Array:
+	return _slots
+
+
+func used_slots() -> int:
+	var n := 0
+	for s in _slots:
+		if not s.is_empty():
+			n += 1
+	return n
+
+
+## 超重：占用格数超过 45 后每格 −10% 移速，最多 −50%
+func overload() -> float:
+	return clampf((used_slots() - _cap) * C.OVERLOAD_PER_SLOT, 0.0, C.OVERLOAD_MAX)
 
 
 func count(id: String) -> int:
@@ -50,27 +93,126 @@ func has(id: String, amount := 1) -> bool:
 	return count(id) >= amount
 
 
-func add(id: String, amount := 1) -> void:
-	if amount <= 0:
-		return
-	inventory[id] = count(id) + amount
-	if not pickup_order.has(id):
-		pickup_order.append(id)
+## 放进背包，返回放不下的数量。item 可以是物品名，或 {id, count, quality, durability}
+func add(item, amount := 1) -> int:
+	var left := _put(_as_slot(item, amount))
+	_reindex()
 	changed.emit()
+	return left
+
+
+func _as_slot(item, amount := 1) -> Dictionary:
+	if item is Dictionary:
+		return {"id": str(item.id), "count": int(item.get("count", 1)), "quality": int(item.get("quality", 0)),
+			"durability": float(item.get("durability", 0.0))}
+	return {"id": str(item), "count": amount, "quality": 0, "durability": 0.0}
+
+
+## 先叠到同种（同品质）格子上，再放空格；测试模式下格子不够就扩
+func _put(it: Dictionary) -> int:
+	var id: String = it.id
+	var left: int = it.count
+	if left <= 0 or id == "":
+		return 0
+	var stack := stack_of(id)
+	for s in _slots:
+		if left <= 0:
+			break
+		if not s.is_empty() and s.id == id and int(s.quality) == int(it.quality) and s.count < stack:
+			var n := mini(stack - int(s.count), left)
+			s.count += n
+			left -= n
+	while left > 0:
+		var i := _empty_index()
+		if i < 0:
+			if not C.TEST_ALL_ITEMS:
+				break
+			_cap += 9
+			var old := _slots.size()
+			_slots.resize(limit())
+			for k in range(old, _slots.size()):
+				_slots[k] = {}
+			continue
+		var n := mini(stack, left)
+		_slots[i] = {"id": id, "count": n, "quality": int(it.quality), "durability": float(it.durability)}
+		left -= n
+	return left
+
+
+func _empty_index() -> int:
+	for i in _slots.size():
+		if _slots[i].is_empty():
+			return i
+	return -1
+
+
+## 还能放下几个
+func room_for(id: String, quality := 0) -> int:
+	if C.TEST_ALL_ITEMS:
+		return 1 << 30
+	var stack := stack_of(id)
+	var n := 0
+	for s in _slots:
+		if s.is_empty():
+			n += stack
+		elif s.id == id and int(s.quality) == quality:
+			n += maxi(0, stack - int(s.count))
+	return n
 
 
 func remove(id: String, amount := 1) -> int:
 	var take: int = mini(count(id), amount)
 	if take <= 0:
 		return 0
-	inventory[id] = count(id) - take
-	if inventory[id] <= 0:
-		inventory.erase(id)
-		pickup_order.erase(id)
-		if equipped == id:
-			equip("")
+	var need := take
+	# 从后往前扣，先扣零头
+	for i in range(_slots.size() - 1, -1, -1):
+		if need <= 0:
+			break
+		var s: Dictionary = _slots[i]
+		if s.is_empty() or s.id != id:
+			continue
+		var n := mini(int(s.count), need)
+		s.count -= n
+		need -= n
+		if s.count <= 0:
+			_slots[i] = {}
+	_reindex()
+	if not inventory.has(id) and equipped == id:
+		equip("")
 	changed.emit()
 	return take
+
+
+## 取出整格（容器面板、丢弃用）
+func take_slot(i: int) -> Dictionary:
+	if i < 0 or i >= _slots.size() or _slots[i].is_empty():
+		return {}
+	var s: Dictionary = _slots[i]
+	_slots[i] = {}
+	_reindex()
+	if not inventory.has(s.id) and equipped == s.id:
+		equip("")
+	changed.emit()
+	return s
+
+
+## 格子变了以后重算汇总：id → 总数、拾取顺序、武器品质
+func _reindex() -> void:
+	inventory.clear()
+	qualities.clear()
+	for s in _slots:
+		if s.is_empty():
+			continue
+		inventory[s.id] = int(inventory.get(s.id, 0)) + int(s.count)
+		if int(s.quality) > 0:
+			qualities[s.id] = maxi(int(qualities.get(s.id, 0)), int(s.quality))
+	for id in pickup_order.duplicate():
+		if not inventory.has(id):
+			pickup_order.erase(id)
+	for s in _slots:
+		if not s.is_empty() and not pickup_order.has(s.id):
+			pickup_order.append(s.id)
 
 
 func refresh() -> void:
@@ -93,6 +235,7 @@ func refresh() -> void:
 					if pass_ == 0:
 						break
 	hud.set_inventory(list, bar)
+	hud.set_bag(_slots, _cap, used_slots(), equipped)
 
 
 func equip(id: String) -> void:
@@ -111,16 +254,23 @@ func equip(id: String) -> void:
 	changed.emit()
 
 
-func pickup(id: String, quality := 0, amount := 0) -> void:
+## 捡起来，返回放不下的数量（放不下的留在原地）
+func pickup(id: String, quality := 0, amount := 0) -> int:
 	var n: int = amount
 	if n <= 0:
 		n = Weapons.pickup_count(id, rng) if Weapons.is_ammo(id) else 1
-	inventory[id] = inventory.get(id, 0) + n
-	if not pickup_order.has(id):
-		pickup_order.append(id)
 	var row: Dictionary = Assets.items_by_id[id]
-	if quality > 0 and row.kind in [Assets.Kind.GUN, Assets.Kind.MELEE]:
-		qualities[id] = maxi(qualities.get(id, 1), quality)
+	if not row.kind in [Assets.Kind.GUN, Assets.Kind.MELEE]:
+		quality = 0
+	var left := _put({"id": id, "count": n, "quality": quality, "durability": 0.0})
+	_reindex()
+	changed.emit()
+	if left >= n:
+		hud.toast("背包满了（%d 格），放不下%s" % [limit(), Assets.display_name(id)])
+		return left
+	n -= left
+	if overload() > 0.0:
+		hud.toast("背包超重：走得慢了，也不能冲刺")
 	Sfx.play("loot", Vector3.INF, -8.0)
 	var extra := (" ×%d" % n if n > 1 else "")
 	if quality > 1:
@@ -132,6 +282,7 @@ func pickup(id: String, quality := 0, amount := 0) -> void:
 		if cur.is_empty() or row.power > cur.get("power", 0.0):
 			equip(id)
 	refresh()
+	return left
 
 
 func use_item(id: String) -> void:
@@ -198,10 +349,7 @@ func apply_effect(id: String, kind: int) -> void:
 
 
 func consume(id: String, msg: String) -> void:
-	inventory[id] -= 1
-	if inventory[id] <= 0:
-		inventory.erase(id)
-		pickup_order.erase(id)
+	remove(id, 1)
 	hud.toast(msg)
 
 
@@ -221,15 +369,16 @@ func give_all_items(top_up := false) -> void:
 			want = C.TEST_BLOCKS
 		elif Weapons.is_ammo(id):
 			want = C.TEST_AMMO
-		if inventory.get(id, 0) < want:
-			inventory[id] = want
-		if not pickup_order.has(id):
-			pickup_order.append(id)
+		var have := count(id)
+		if have < want:
+			_put({"id": id, "count": want - have, "quality": 0, "durability": 0.0})
 		if kind == Assets.Kind.GUN:
 			if not mags.has(id):
 				mags[id] = Weapons.stats(id).mag
 			if not mags_type.has(id):
 				mags_type[id] = Weapons.default_ammo(id)
+	_reindex()
+	changed.emit()
 	if top_up:
 		return
 	# 快捷栏先放手枪和步枪（不然按字母排第一把是弓）
@@ -284,9 +433,8 @@ func _find_ammo(prefix: String) -> String:
 func _give_starter_gun(id: String) -> void:
 	if id == "":
 		return
-	inventory[id] = maxi(1, inventory.get(id, 0))
-	if not pickup_order.has(id):
-		pickup_order.append(id)
+	if count(id) <= 0:
+		_put({"id": id, "count": 1, "quality": 0, "durability": 0.0})
 	if not mags.has(id):
 		mags[id] = Weapons.stats(id).mag
 	if not mags_type.has(id):
@@ -294,22 +442,45 @@ func _give_starter_gun(id: String) -> void:
 	var ammo := Weapons.default_ammo(id)
 	if not Assets.items_by_id.has(ammo):
 		ammo = _find_ammo(Weapons.stats(id).ammo)
-	if ammo != "":
-		inventory[ammo] = maxi(inventory.get(ammo, 0), C.STARTER_AMMO)
-		if not pickup_order.has(ammo):
-			pickup_order.append(ammo)
+	if ammo != "" and count(ammo) < C.STARTER_AMMO:
+		_put({"id": ammo, "count": C.STARTER_AMMO - count(ammo), "quality": 0, "durability": 0.0})
+	_reindex()
 
 
 func save_data() -> Dictionary:
-	return {"inventory": inventory, "order": pickup_order, "equipped": equipped, "mags": mags, "mags_type": mags_type, "ammo_choice": ammo_choice, "qualities": qualities}
+	var packed := []
+	for sl in _slots:
+		packed.append(sl if not sl.is_empty() else null)
+	return {"bag": packed, "bag_cap": _cap, "inventory": inventory, "order": pickup_order, "equipped": equipped,
+		"mags": mags, "mags_type": mags_type, "ammo_choice": ammo_choice, "qualities": qualities}
 
 
 func load_data(d: Dictionary) -> void:
-	for id in d.get("inventory", {}):
-		if Assets.items_by_id.has(id):
-			inventory[id] = int(d.inventory[id])
+	var bag: Array = d.get("bag", [])
+	if not bag.is_empty():
+		# 新存档：按格子原样恢复
+		_cap = maxi(C.BAG_SLOTS, int(d.get("bag_cap", C.BAG_SLOTS))) if C.TEST_ALL_ITEMS else C.BAG_SLOTS
+		_slots.resize(maxi(limit(), bag.size()))
+		for i in _slots.size():
+			var e = bag[i] if i < bag.size() else null
+			_slots[i] = _as_slot(e) if e is Dictionary and Assets.items_by_id.has(str(e.get("id", ""))) else {}
+	else:
+		# 旧存档「id → 数量」：按拾取顺序转成格子，品质给武器那一格
+		var old_q: Dictionary = d.get("qualities", {})
+		var ids: Array = []
+		for id in d.get("order", []):
+			if d.get("inventory", {}).has(id) and not ids.has(id):
+				ids.append(id)
+		for id in d.get("inventory", {}):
+			if not ids.has(id):
+				ids.append(id)
+		for id in ids:
+			if Assets.items_by_id.has(id):
+				_put({"id": id, "count": int(d.inventory[id]), "quality": int(old_q.get(id, 0)), "durability": 0.0})
+	_reindex()
 	for id in d.get("order", []):
-		if inventory.has(id):
+		if pickup_order.has(id):
+			pickup_order.erase(id)
 			pickup_order.append(id)
 	for id in d.get("mags", {}):
 		mags[id] = int(d.mags[id])
@@ -317,8 +488,6 @@ func load_data(d: Dictionary) -> void:
 		mags_type[id] = str(d.mags_type[id])
 	for id in d.get("ammo_choice", {}):
 		ammo_choice[id] = str(d.ammo_choice[id])
-	for id in d.get("qualities", {}):
-		qualities[id] = int(d.qualities[id])
 	for id in mags:
 		if not mags_type.has(id):
 			mags_type[id] = Weapons.default_ammo(id)

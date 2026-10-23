@@ -65,6 +65,7 @@ func save() -> void:
 	d.merge(player_sys.save_data())
 	d.merge(horde.save_data())
 	d.merge(inventory.save_data())
+	d.merge(main.looting.save_data())
 	d["kills"] = spawner.kills
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:
@@ -88,6 +89,7 @@ func continue_game() -> void:
 		if int(i) < world.containers.size():
 			world.containers[int(i)].searched = true
 	world.voxel_load(d.get("blocks", []))
+	main.looting.load_data(d)
 	player_sys.load_data(d)
 	inventory.load_data(d)
 	spawner.load_data(d)

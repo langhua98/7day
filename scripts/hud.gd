@@ -11,6 +11,7 @@ signal jump_pressed
 signal continue_pressed
 signal settings_changed(settings: Dictionary)
 signal quit_to_title
+signal item_dropped(index: int)
 
 var move := Vector2.ZERO          # 摇杆输出，x 右 y 前
 var look_delta := Vector2.ZERO    # 本帧视角拖动量（像素）
@@ -40,8 +41,8 @@ var _action_btn := Button.new()
 var _progress := ProgressBar.new()
 var _progress_label := Label.new()
 var _bag_btn := Button.new()
-var _bag_panel := PanelContainer.new()
-var _bag_grid := GridContainer.new()
+var _bag_panel := BagPanel.new()
+var container_panel := ContainerPanel.new()
 var _start_panel := PanelContainer.new()
 var _start_info := Label.new()
 var _end_panel := PanelContainer.new()
@@ -246,33 +247,11 @@ func _ready() -> void:
 	_bag_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_bag_btn)
 
-	# 背包
-	_bag_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_bag_panel.offset_left = 140
-	_bag_panel.offset_right = -140
-	_bag_panel.offset_top = 60
-	_bag_panel.offset_bottom = -60
-	_bag_panel.visible = false
-	var bag_v := VBoxContainer.new()
-	_bag_panel.add_child(bag_v)
-	var bag_title := HBoxContainer.new()
-	var bt := Label.new()
-	bt.text = "背包（点物品使用 / 装备，点子弹换上对应的枪，点方块拿来建造）"
-	bt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bag_title.add_child(bt)
-	var close := Button.new()
-	close.text = "关闭"
-	close.pressed.connect(func(): _bag_panel.visible = false)
-	bag_title.add_child(close)
-	bag_v.add_child(bag_title)
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_bag_grid.columns = 7
-	_bag_grid.add_theme_constant_override("h_separation", 8)
-	_bag_grid.add_theme_constant_override("v_separation", 8)
-	scroll.add_child(_bag_grid)
-	bag_v.add_child(scroll)
+	# 背包（scripts/ui/bag_panel.gd）和容器面板（scripts/ui/container_panel.gd）
+	_bag_panel.use_pressed.connect(func(id): item_used.emit(id))
+	_bag_panel.drop_pressed.connect(func(i): item_dropped.emit(i))
 	_root.add_child(_bag_panel)
+	_root.add_child(container_panel)
 
 	# 摇杆：平时停在左下角，手指按在左半屏哪里就移到哪里
 	for p in [_joy_base, _joy_knob]:
@@ -581,16 +560,17 @@ func hurt() -> void:
 	_hurt.color.a = 0.35
 
 
+## 背包格子交给背包面板画
+func set_bag(slots: Array, cap: int, used: int, equipped: String) -> void:
+	_bag_panel.set_slots(slots, cap, used, equipped)
+
+
 ## inventory: [{id, count, equipped}]
 func set_inventory(list: Array, hotbar_ids: Array) -> void:
 	for c in _hotbar.get_children():
 		c.queue_free()
 	for id in hotbar_ids:
 		_hotbar.add_child(_slot(id, list))
-	for c in _bag_grid.get_children():
-		c.queue_free()
-	for e in list:
-		_bag_grid.add_child(_slot(e.id, list, true))
 
 
 func _reset_joystick() -> void:
@@ -681,7 +661,7 @@ func consume_look() -> Vector2:
 
 
 func _panel_open() -> bool:
-	return _bag_panel.visible or _start_panel.visible or _end_panel.visible or _pause_panel.visible
+	return _bag_panel.visible or container_panel.visible or _start_panel.visible or _end_panel.visible or _pause_panel.visible
 
 
 func _press_attack(pressed: bool) -> void:

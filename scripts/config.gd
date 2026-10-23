@@ -124,8 +124,19 @@ const ZOMBIE_TYPES := {
 	"screamer": {"name": "尖叫者", "hp": 0.7, "speed": 1.2, "damage": 0.8, "screams": true},
 }
 
+## 背包 45 格（官方）；超过后每多 1 格移速 −10%，最多 −50%，超重时不能冲刺
+const BAG_SLOTS := 45
+const BAG_OVERLOAD_SLOTS := 5
+const OVERLOAD_PER_SLOT := 0.1
+const OVERLOAD_MAX := 0.5
+## 玩家储物箱 cntWoodWritableCrate 的格数；容器离开多远自动关面板（米）
+const CRATE_SLOTS := 32
+const CONTAINER_CLOSE_DIST := 2.0
+## 路边容器面板最少几格
+const CONTAINER_SLOTS := 9
+
 ## 地上零散物品的数量（主要的东西要翻容器找）
-const LOOT_COUNT := 24
+const LOOT_COUNT := 8
 const LOOT_SIZE := 0.55
 ## 离物品多近能拾取
 const PICKUP_RADIUS := 2.0
