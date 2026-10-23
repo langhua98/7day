@@ -9,6 +9,7 @@ func _ready() -> void:
 	hud = Hud.new()
 	add_child(hud)
 	await get_tree().process_frame
+	hud._start_panel.visible = false  # 当作已经开局
 	hud.set_ammo("12 / 120  9mm 普通")
 	hud.set_action("搜索\n垃圾桶")
 
@@ -28,6 +29,33 @@ func _ready() -> void:
 	check(reload.size.y >= 80 and jump.size.y >= 80, "换弹/跳键至少 80 高")
 	check(aim.get_center().y < attack.get_center().y, "瞄准在攻击上方")
 	check(action.get_center().x < aim.get_center().x, "搜索在瞄准左侧")
+
+	# 吃鸡手游布局：跳在开火右上，开镜在开火左上，换弹在开火左边，左手小开火键在左半屏
+	var fire_left: Rect2 = hud._fire_left.get_global_rect()
+	var half_w := hud.get_viewport().get_visible_rect().size.x * 0.5
+	check(jump.get_center().x > attack.get_center().x and jump.get_center().y < attack.get_center().y, "跳在开火右上")
+	check(aim.get_center().x < attack.get_center().x and aim.get_center().y < attack.get_center().y, "开镜在开火左上")
+	check(reload.get_center().x < attack.get_center().x, "换弹在开火左边")
+	check(fire_left.get_center().x < half_w, "左手开火键在左半屏")
+	check(bag.get_center().x < half_w and bag.get_center().y > attack.get_center().y, "背包在底部偏左")
+	var all_btns := {"开火": attack, "开镜": aim, "换弹": reload, "跳": jump, "搜索": action,
+		"背包": bag, "设置": pause, "左开火": fire_left, "摇杆": hud._joy_base.get_global_rect()}
+	var names := all_btns.keys()
+	for i in names.size():
+		for j in range(i + 1, names.size()):
+			check(not all_btns[names[i]].intersects(all_btns[names[j]]), "%s和%s不能重叠" % [names[i], names[j]])
+	for n in names:
+		var r: Rect2 = all_btns[n]
+		check(r.size.x >= 80 and r.size.y >= 80, "%s至少 80 像素（44pt）" % n)
+
+	# 左手开火 + 右手开火：两根手指都按着，松开一根还在开火
+	hud._touch_down(20, fire_left.get_center())
+	check(hud.attack_held, "按住左手开火应开火")
+	hud._touch_down(21, attack.get_center())
+	hud._touch_up(20)
+	check(hud.attack_held, "松开左手、右手还按着应继续开火")
+	hud._touch_up(21)
+	check(not hud.attack_held, "两只手都松开应停火")
 
 	hud._touch_down(1, aim.get_center())
 	check(hud.aim_held, "按住瞄准应生效")
@@ -77,7 +105,109 @@ func _ready() -> void:
 	hud._touch_up(8)
 	check(hud.move == Vector2.ZERO, "松手摇杆应归零")
 
+	# 摇杆拖出圈外：底座跟着手指走，往回一拖马上反向
+	hud._touch_down(9, left)
+	drag.index = 9
+	drag.position = left + Vector2(200, 0)
+	hud._input(drag)
+	check(hud._joy_origin.distance_to(left + Vector2(110, 0)) < 1.0, "拖出圈外摇杆底座应跟手")
+	drag.position = left + Vector2(60, 0)
+	hud._input(drag)
+	check(hud.move.x < -0.3, "跟手后往回拖应马上反向")
+	hud._touch_up(9)
+
+	# 按住攻击拖动：边打边转视角
+	hud.consume_look()
+	hud._touch_down(10, attack.get_center())
+	drag.index = 10
+	drag.position = attack.get_center() + Vector2(-30, 12)
+	hud._input(drag)
+	check(hud.attack_held, "拖动时攻击应保持按住")
+	check(hud.consume_look().distance_to(Vector2(-30, 12)) < 0.01, "按住攻击拖动应转视角")
+	hud._touch_up(10)
+	check(not hud.attack_held, "松开攻击应取消")
+
+	# 右半屏空白处拖动转视角
+	var right := Vector2(hud.get_viewport().get_visible_rect().size.x * 0.6, 300)
+	hud._touch_down(11, right)
+	drag.index = 11
+	drag.position = right + Vector2(40, -5)
+	hud._input(drag)
+	check(hud.consume_look().distance_to(Vector2(40, -5)) < 0.01, "右半屏拖动应转视角")
+	hud._touch_up(11)
+	drag.position = right + Vector2(80, 0)
+	hud._input(drag)
+	check(hud.consume_look() == Vector2.ZERO, "松手后不应再转视角")
+
+	# 快捷栏居中，不和摇杆、攻击键重叠
+	hud.set_inventory([{"id": "a", "count": 1}, {"id": "b", "count": 2}, {"id": "c", "count": 1}], ["a", "b", "c"])
+	await get_tree().process_frame
+	var bar: Rect2 = hud._hotbar.get_global_rect()
+	var mid := hud.get_viewport().get_visible_rect().size.x * 0.5
+	check(absf(bar.get_center().x - mid) < 2.0, "快捷栏应水平居中")
+	check(not bar.intersects(attack), "快捷栏和攻击不能重叠")
+	check(not bar.intersects(hud._joy_base.get_global_rect()), "快捷栏和摇杆不能重叠")
+	var used: Array[String] = []
+	hud.item_used.connect(func(id): used.append(id))
+	var slot_b: Control = hud._hotbar.get_child(1)
+	hud._touch_down(12, slot_b.get_global_rect().get_center())
+	hud._touch_up(12)
+	check(used == ["b"], "点快捷栏第 2 格应使用 b")
+
+	# 背包：点一下打开物品菜单，滑动不打开；点背包外面关掉
+	hud.set_bag([{"id": "a", "count": 1, "quality": 0, "durability": 0.0}], 45, 1, "")
+	hud.open_bag()
+	await get_tree().process_frame
+	var bp: BagPanel = hud._bag_panel
+	var bag_slot: Button = bp._grid.get_child(0)
+	var at := bag_slot.get_global_rect().get_center()
+	bp._slot_input(bag_slot, 0, _mouse(at, true))
+	bp._slot_input(bag_slot, 0, _mouse(at + Vector2(0, 60), false))
+	check(not bp._menu.visible, "在背包里滑动不应打开物品菜单")
+	bp._slot_input(bag_slot, 0, _mouse(at, true))
+	bp._slot_input(bag_slot, 0, _mouse(at + Vector2(3, 4), false))
+	check(bp._menu.visible and bp._sel == 0, "在背包里点一下应打开物品菜单")
+	bp._menu.visible = false
+	var outside := InputEventScreenTouch.new()
+	outside.index = 13
+	outside.pressed = true
+	outside.position = Vector2(4, 4)
+	hud._input(outside)
+	check(not hud._bag_panel.visible, "点背包外面应关掉背包")
+
+	# 安全区：刘海和底部横条让出来，按钮整体往里收
+	var attack_before := hud._attack_btn.get_global_rect()
+	var stats_before: Vector2 = hud._status.get_global_rect().position
+	hud.apply_safe_insets(Vector4(90, 0, 90, 40))
+	await get_tree().process_frame
+	var vp := hud.get_viewport().get_visible_rect().size
+	check(hud._attack_btn.get_global_rect().end.x <= vp.x - 90, "攻击键应避开右边刘海")
+	check(is_equal_approx(hud._attack_btn.get_global_rect().position.x, attack_before.position.x - 90), "攻击键应左移 90")
+	check(hud._attack_btn.get_global_rect().end.y <= vp.y - 40, "攻击键应避开底部横条")
+	check(hud._status.get_global_rect().position.x >= stats_before.x + 89, "左上状态应避开左边刘海")
+	check(hud._joy_base.get_global_rect().position.x >= 90, "摇杆应避开左边刘海")
+	hud._touch_down(14, hud._attack_btn.get_global_rect().get_center())
+	check(hud.attack_held, "安全区下攻击键仍能按")
+	hud._touch_up(14)
+	hud.apply_safe_insets(Vector4.ZERO)
+
+	# 切后台：松开所有手指并自动暂停
+	hud._touch_down(15, hud._attack_btn.get_global_rect().get_center())
+	hud._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	check(not hud.attack_held, "切后台应松开攻击")
+	check(hud._pause_panel.visible, "游戏中切后台应自动暂停")
+	hud.set_paused(false)
+
 	_finish()
+
+
+func _mouse(pos: Vector2, pressed: bool) -> InputEventMouseButton:
+	var ev := InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = pressed
+	ev.position = pos
+	ev.global_position = pos
+	return ev
 
 
 func check(condition: bool, message: String) -> void:

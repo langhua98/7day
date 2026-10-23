@@ -81,19 +81,10 @@ func update(delta: float) -> void:
 	var look_sens: float = C.LOOK_SENSITIVITY * hud.settings.sensitivity * (C.AIM_SENSITIVITY if aiming else 1.0)
 	yaw -= look.x * look_sens
 	pitch = clamp(pitch - look.y * look_sens, -1.3, 1.3)
-	# 电脑上调试：WASD 移动、方向键看
-	var mv := hud.move
-	if Input.is_physical_key_pressed(KEY_W): mv.y += 1
-	if Input.is_physical_key_pressed(KEY_S): mv.y -= 1
-	if Input.is_physical_key_pressed(KEY_A): mv.x -= 1
-	if Input.is_physical_key_pressed(KEY_D): mv.x += 1
-	if Input.is_physical_key_pressed(KEY_LEFT): yaw += delta * 2.0
-	if Input.is_physical_key_pressed(KEY_RIGHT): yaw -= delta * 2.0
-	if Input.is_physical_key_pressed(KEY_UP): pitch = min(pitch + delta * 1.5, 1.3)
-	if Input.is_physical_key_pressed(KEY_DOWN): pitch = max(pitch - delta * 1.5, -1.3)
-	mv = mv.limit_length(1.0)
-	# 冲刺：摇杆推到底往前，或者按 Shift；耗体力
-	var sprint := (mv.length() > 0.92 and mv.y > 0.6) or Input.is_physical_key_pressed(KEY_SHIFT)
+	# 只做 iPhone 触屏：移动全靠左边摇杆
+	var mv := hud.move.limit_length(1.0)
+	# 冲刺：摇杆推到底往前；耗体力
+	var sprint := mv.length() > 0.92 and mv.y > 0.6
 	sprint = sprint and stamina > 1.0 and mv.y > 0.3 and not Status.blocked("no_sprint")
 	# 背包超重：变慢，不能冲刺
 	var heavy: float = inventory.overload() if inventory else 0.0
@@ -108,9 +99,7 @@ func update(delta: float) -> void:
 		stamina = stamina + C.STAMINA_REGEN * Status.modifier("stamina_regen") * delta * (0.5 if mv.length() > 0.1 else 1.0)
 	stamina = minf(stamina, st_max)
 	hud.set_stamina(stamina)
-	# 跳：简单的竖直速度和重力
-	if Input.is_physical_key_pressed(KEY_C):
-		jump()
+	# 跳（hud 的跳键调 jump()）：简单的竖直速度和重力
 	# 地面是 0；站在自己摆的方块上就是方块顶
 	_vy -= C.GRAVITY * delta
 	player.position.y += _vy * delta

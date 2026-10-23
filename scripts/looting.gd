@@ -17,7 +17,6 @@ var running := false
 var _search := {}
 var _search_t := 0.0
 var _search_from := Vector3.ZERO
-var _e_down := false
 ## 玩家摆的储物箱：格子坐标 → {items, pos, name, r}
 var crates := {}
 ## 容器面板正开着的容器
@@ -56,14 +55,6 @@ func reset() -> void:
 	_open = {}
 	hud.container_panel.close_panel()
 	hud.set_progress(-1.0)
-
-
-func update(delta: float) -> void:
-	if not running:
-		return
-	if Input.is_physical_key_pressed(KEY_E) and not _e_down:
-		action()
-	_e_down = Input.is_physical_key_pressed(KEY_E)
 
 
 func spawn_loot(pos: Vector3, id := "", quality := 0, amount := 0) -> void:
