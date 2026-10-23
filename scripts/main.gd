@@ -329,18 +329,49 @@ func _start(fresh := true) -> void:
 	hud.set_perf_visible(hud.settings.show_perf > 0.5)
 	for i in C.LOOT_COUNT / 2:
 		_spawn_loot(world.free_point(Vector3.ZERO, 4.0, 60.0))
+	if C.TEST_ALL_ITEMS and fresh:
+		_give_all_items()
 	# 开局在面前放一件近战武器，马上就能看到手里的模型
 	var weapons: Array = Assets.loot_pool.get(Assets.Kind.MELEE, [])
-	if not weapons.is_empty():
+	if not weapons.is_empty() and not C.TEST_ALL_ITEMS:
 		var with_model := weapons.filter(func(id): return Assets.items_by_id[id].model != "")
 		var pick: String = (with_model if not with_model.is_empty() else weapons).pick_random()
 		_spawn_loot(Vector3(0, 0, -3.0), pick)
 	running = true
 	hud.set_banner("")
 	_refresh_inventory()
-	if fresh:
+	if fresh and C.TEST_ALL_ITEMS:
+		hud.toast("测试模式：全部物品都在背包里，点背包换着试")
+	elif fresh:
 		hud.toast("第 1 天。找武器、找吃的，天黑前做好准备。")
 		_save()
+
+
+## 测试模式：全部物品直接进背包（零件、机器人这些用不了的除外），枪装满，每种子弹给足
+func _give_all_items() -> void:
+	var kinds := [Assets.Kind.GUN, Assets.Kind.MELEE, Assets.Kind.FOOD, Assets.Kind.DRINK, Assets.Kind.MEDICAL]
+	for k in kinds:
+		for row in Assets.items:
+			var id: String = row.id
+			if row.kind != k or id.ends_with("Parts") or id.begins_with("gunBot"):
+				continue
+			inventory[id] = 1 if k in [Assets.Kind.MELEE, Assets.Kind.GUN] else 5
+			pickup_order.append(id)
+			if k == Assets.Kind.GUN:
+				mags[id] = Weapons.stats(id).mag
+	for row in Assets.items:
+		if Weapons.is_ammo(row.id):
+			inventory[row.id] = C.TEST_AMMO
+			pickup_order.append(row.id)
+	# 快捷栏先放手枪和步枪（不然按字母排第一把是弓）
+	for id in ["gunMGT2TacticalAR", "gunHandgunT0PipePistol"]:
+		if pickup_order.has(id):
+			pickup_order.erase(id)
+			pickup_order.push_front(id)
+	for id in ["meleeWpnClubT1BaseballBat", "meleeToolPickT1IronPickaxe"]:
+		if inventory.has(id):
+			_equip(id)
+			break
 
 
 func _end(win: bool) -> void:
@@ -489,6 +520,11 @@ func _attack() -> void:
 	arms.swing(1.0 / C.MELEE_COOLDOWN * 0.9)
 	Sfx.play("swing" if kind == Assets.Kind.MELEE else "swing_fist", Vector3.INF, -4.0)
 	var dmg: float = row.get("power", C.FIST_DAMAGE) if kind == Assets.Kind.MELEE else C.FIST_DAMAGE
+	# 伤害在武器挥到准星前面时才算（和手臂动作对上，见 fp_arms.gd 的关键帧）
+	var item := equipped
+	await get_tree().create_timer(C.MELEE_COOLDOWN * 0.42).timeout
+	if not running or equipped != item:
+		return
 	var aim := -camera.global_basis.z
 	var flat_aim := Vector3(aim.x, 0, aim.z).normalized()
 	var best: Zombie = null
@@ -968,12 +1004,17 @@ func _refresh_inventory() -> void:
 	var bar: Array[String] = []
 	if equipped != "":
 		bar.append(equipped)
-	for id in pickup_order:
-		if bar.size() >= 6:
-			break
-		var k: int = Assets.items_by_id[id].kind
-		if id != equipped and k in [Assets.Kind.FOOD, Assets.Kind.DRINK, Assets.Kind.MEDICAL, Assets.Kind.MELEE, Assets.Kind.GUN]:
-			bar.append(id)
+	# 先每类放一个（枪、近战、吃的、喝的、药），再按捡到的顺序补满
+	var kinds := [Assets.Kind.GUN, Assets.Kind.MELEE, Assets.Kind.FOOD, Assets.Kind.DRINK, Assets.Kind.MEDICAL]
+	for pass_ in 2:
+		for k in kinds:
+			for id in pickup_order:
+				if bar.size() >= 6:
+					break
+				if id != equipped and not bar.has(id) and Assets.items_by_id[id].kind == k:
+					bar.append(id)
+					if pass_ == 0:
+						break
 	hud.set_inventory(list, bar)
 
 
