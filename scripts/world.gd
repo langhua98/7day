@@ -62,6 +62,16 @@ var _cells := PackedByteArray()   # 楼的占地图，(MAP*2)² 格，1 = 挡路
 var _grid := {}         # 粗网格加速查询：格子 -> 障碍物下标
 const GRID := 8.0
 
+## 画质档位（0 省电 / 1 均衡 / 2 高清）
+var quality := 1
+## 按距离调整可见距离和投影的实例
+var _prop_lod: Array[Dictionary] = []
+var _poi_lod: Array[Dictionary] = []
+var _decal_lod: Array[Dictionary] = []
+## 地面/人行道/马路按贴图合批，减少 draw call
+var _flat_groups := {}
+var _flat_mats := {}
+
 
 func _ready() -> void:
 	_cells.resize(MAP * 2 * MAP * 2)
@@ -89,12 +99,70 @@ func _ready() -> void:
 
 func build(seed_value: int) -> void:
 	rng.seed = seed_value
+	_flat_groups.clear()
 	_build_ground()
 	_build_blocks()
 	_build_streets()
 	_build_border()
 	_scatter_decals()
+	_flush_flats()
 	_rebuild_grid()
+
+
+## 切换画质：只改可见距离，已经建好的模型不重建
+func apply_quality(level: int, preset: Dictionary) -> void:
+	quality = clampi(level, 0, GameConfig.QUALITY_PRESETS.size() - 1)
+	for e in _prop_lod:
+		if not is_instance_valid(e.node):
+			continue
+		var mi: MeshInstance3D = e.node
+		mi.visibility_range_end = _range_for_kind(e.kind, preset)
+		mi.visibility_range_end_margin = 5.0
+	for e in _poi_lod:
+		if e.get("shadow_only", false):
+			continue
+		var mi: MeshInstance3D = e.node
+		mi.visibility_range_end = preset.poi_range
+	for e in _decal_lod:
+		var mi: MeshInstance3D = e.node
+		mi.visibility_range_end = preset.decal_range
+
+
+## 按玩家位置开关近处楼和道具的投影。远处不投影，手机阴影贴图只画身边。
+func update_shadows(player_pos: Vector3, level: int) -> void:
+	var preset: Dictionary = GameConfig.QUALITY_PRESETS[clampi(level, 0, GameConfig.QUALITY_PRESETS.size() - 1)]
+	var p := Vector2(player_pos.x, player_pos.z)
+	var poi_d: float = preset.poi_shadow_distance
+	for e in _poi_lod:
+		if not is_instance_valid(e.node):
+			continue
+		var mi: MeshInstance3D = e.node
+		var on: bool = poi_d > 0.0 and p.distance_to(e.pos) <= poi_d
+		var cast_on: GeometryInstance3D.ShadowCastingSetting = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY if e.get("shadow_only", false) \
+			else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		mi.cast_shadow = cast_on if on else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var prop_d: float = preset.prop_shadow_distance
+	for e in _prop_lod:
+		if not is_instance_valid(e.node):
+			continue
+		var mi: MeshInstance3D = e.node
+		var on: bool = prop_d > 0.0 and (e.kind in ["car", "prop", "loot"])
+		if on:
+			var q := Vector2(mi.global_position.x, mi.global_position.z)
+			on = p.distance_to(q) <= prop_d
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if on else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
+func _range_for_kind(kind: String, preset: Dictionary) -> float:
+	match kind:
+		"car":
+			return preset.car_range
+		"small":
+			return preset.small_range
+		"deco":
+			return preset.deco_range
+		_:
+			return preset.prop_range
 
 
 ## 把一个圆（玩家、僵尸）推出楼和障碍物
@@ -490,9 +558,12 @@ func place(name: String, pos: Vector3, rot := 0.0, solid := true) -> Node3D:
 	add_child(holder)
 	var size: Vector3 = info.size
 	var kind: String = e.get("kind", "prop")
-	# 远了就不画：小件 40 米、道具 70 米、车 110 米（手机上省大量三角面）
-	mi.visibility_range_end = {"small": 40.0, "deco": 40.0, "car": 110.0}.get(kind, 70.0)
+	# 远了就不画：具体距离由画质档位决定，先按均衡档放
+	mi.visibility_range_end = _range_for_kind(kind, GameConfig.QUALITY_PRESETS[1])
 	mi.visibility_range_end_margin = 5.0
+	# 投影在 start 后按玩家距离开关，标题界面不画阴影
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_prop_lod.append({"node": mi, "kind": kind})
 	if solid and kind in ["loot", "car", "prop"] and size.x * size.z > 0.08:
 		_add_obstacle(Vector2(pos.x, pos.z), Vector2(size.x, size.z) * 0.5 * 0.9, rot, size.y > 2.5)
 	if kind in ["loot", "car"]:
@@ -553,38 +624,79 @@ func _tex(name: String) -> Texture2D:
 
 # —— 地面、街道 ——
 
+## 地面、人行道、马路都先攒着，最后按贴图合成一个大网格。
+## 以前每块地一个 PlaneMesh，光地面就上百个 draw call。
 func _flat(rect: Rect2, y: float, tex_name: String, tile: float, tint := Color.WHITE) -> void:
-	var mi := MeshInstance3D.new()
-	var pm := PlaneMesh.new()
-	pm.size = rect.size
-	mi.mesh = pm
-	mi.position = Vector3(rect.get_center().x, y, rect.get_center().y)
-	var key := "flat:%s:%s:%s" % [tex_name, rect.size, tint]
-	if not _mat_cache.has(key) and terrain.has(tex_name):
+	var key := "%s|%s" % [tex_name, tint]
+	if not _flat_groups.has(key):
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		_flat_groups[key] = {"st": st, "tex": tex_name, "tint": tint, "verts": 0}
+	var g: Dictionary = _flat_groups[key]
+	var st: SurfaceTool = g.st
+	var base: int = g.verts
+	var x0 := rect.position.x
+	var z0 := rect.position.y
+	var x1 := rect.end.x
+	var z1 := rect.end.y
+	# 从上往下看是顺时针（Godot 正面绕向），法线朝上
+	var points := [Vector3(x0, y, z0), Vector3(x1, y, z0), Vector3(x1, y, z1), Vector3(x0, y, z1)]
+	var uvs := [Vector2(x0 / tile, z0 / tile), Vector2(x1 / tile, z0 / tile),
+		Vector2(x1 / tile, z1 / tile), Vector2(x0 / tile, z1 / tile)]
+	for i in 4:
+		st.set_normal(Vector3.UP)
+		st.set_uv(uvs[i])
+		st.add_vertex(points[i])
+	g.verts += 4
+	for i in [0, 1, 2, 0, 2, 3]:
+		st.add_index(base + i)
+
+
+func _flush_flats() -> void:
+	for key in _flat_groups:
+		var g: Dictionary = _flat_groups[key]
+		var st: SurfaceTool = g.st
+		st.generate_tangents()
+		var mesh: ArrayMesh = st.commit()
+		if mesh == null:
+			continue
+		var mi := MeshInstance3D.new()
+		mi.mesh = mesh
+		mi.material_override = _flat_material(g.tex, g.tint)
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(mi)
+	_flat_groups.clear()
+
+
+func _flat_material(tex_name: String, tint: Color) -> Material:
+	var key := "%s|%s" % [tex_name, tint]
+	if _flat_mats.has(key):
+		return _flat_mats[key]
+	var m: Material
+	if terrain.has(tex_name):
 		# 游戏的地形贴图：颜色 + 法线 + 粗糙度/AO，路面有凹凸感
 		var t: Dictionary = terrain[tex_name]
-		var m := ORMMaterial3D.new()
-		m.albedo_color = tint
-		m.albedo_texture = load("%s/%s" % [ROOT, t.albedo])
-		m.normal_enabled = true
-		m.normal_texture = load("%s/%s" % [ROOT, t.normal])
-		m.orm_texture = load("%s/%s" % [ROOT, t.orm])
-		m.uv1_scale = Vector3(rect.size.x / tile, rect.size.y / tile, 1)
-		m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-		_mat_cache[key] = m
-	if not _mat_cache.has(key):
-		var m := StandardMaterial3D.new()
-		m.roughness = 0.95
-		m.albedo_color = tint
+		var om := ORMMaterial3D.new()
+		om.albedo_color = tint
+		om.albedo_texture = load("%s/%s" % [ROOT, t.albedo])
+		om.normal_enabled = true
+		om.normal_texture = load("%s/%s" % [ROOT, t.normal])
+		om.orm_texture = load("%s/%s" % [ROOT, t.orm])
+		om.uv1_scale = Vector3.ONE
+		om.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+		m = om
+	else:
+		var sm := StandardMaterial3D.new()
+		sm.roughness = 0.95
+		sm.albedo_color = tint
 		var t := _tex(tex_name)
 		if t:
-			m.albedo_texture = t
-			m.uv1_scale = Vector3(rect.size.x / tile, rect.size.y / tile, 1)
-			m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-		_mat_cache[key] = m
-	mi.material_override = _mat_cache[key]
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(mi)
+			sm.albedo_texture = t
+			sm.uv1_scale = Vector3.ONE
+			sm.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+		m = sm
+	_flat_mats[key] = m
+	return m
 
 
 func _build_ground() -> void:
@@ -752,7 +864,8 @@ func _poi(name: String, c: Vector2) -> void:
 	mi.material_override = _poi_material()
 	mi.position = Vector3(c.x, -float(info.ground) + 0.03, c.y)
 	mi.rotation.y = rot
-	mi.visibility_range_end = 260.0
+	mi.visibility_range_end = GameConfig.QUALITY_PRESETS[1].poi_range
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mi)
 	# 有完整方块数据生成的楼时，近处换成它（有窗户、楼梯、屋檐），远处还用简化的远景网格
 	var full_path := "%s/poi/%s_full.res" % [ROOT, name]
@@ -781,6 +894,10 @@ func _poi(name: String, c: Vector2) -> void:
 		add_child(shadow)
 		mi.visibility_range_begin = FULL_DETAIL_RANGE
 		mi.visibility_range_begin_margin = 10.0
+		# 近处阴影交给只投影的简化网格；远景网格始终不投影
+		_poi_lod.append({"node": shadow, "pos": c, "shadow_only": true})
+	else:
+		_poi_lod.append({"node": mi, "pos": c})
 	buildings.append({"name": name, "pos": Vector3(c.x, 0, c.y)})
 	var w: int = info.grid_w
 	var h: int = info.grid_h
@@ -928,10 +1045,12 @@ func _scatter_decals() -> void:
 	for d in decals:
 		var m := StandardMaterial3D.new()
 		m.albedo_texture = load("%s/%s" % [ROOT, d])
-		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		# 贴花是贴地的，用 alpha 裁剪代替半透明，省掉排序和大量 overdraw
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+		m.alpha_scissor_threshold = 0.35
 		m.roughness = 1.0
 		mats.append(m)
-	for i in 220:
+	for i in GameConfig.DECAL_COUNT:
 		var p := Vector3(rng.randf_range(-EDGE, EDGE), 0.03 + (i % 5) * 0.001, rng.randf_range(-EDGE, EDGE))
 		var mi := MeshInstance3D.new()
 		var pm := PlaneMesh.new()
@@ -942,8 +1061,9 @@ func _scatter_decals() -> void:
 		mi.rotation.y = rng.randf() * TAU
 		mi.material_override = mats[rng.randi_range(0, mats.size() - 1)]
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		mi.visibility_range_end = 60.0
+		mi.visibility_range_end = GameConfig.QUALITY_PRESETS[1].decal_range
 		add_child(mi)
+		_decal_lod.append({"node": mi})
 
 
 # —— 车和杂物的碰撞 ——
