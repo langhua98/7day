@@ -84,6 +84,17 @@ jobs:
       - name: 导入素材
         run: |
           GODOT="$HOME/godot/Godot.app/Contents/MacOS/Godot"
+          # 贴图导入默认值改过（VRAM 压缩 + mipmaps + 最大 1024），缓存里旧的 .import 要删掉才会按新设置重导
+          if [ ! -f assets/.import_v2 ]; then
+            find assets -name '*.import' -delete
+            # 天空全景和图标不限 1024（天空太糊、图标保持无损），其他按项目默认
+            for f in $(find assets/sky assets/icons -name '*.png' 2>/dev/null); do
+              lim=0; mode=2; [ "${f#assets/icons}" != "$f" ] && mode=0
+              printf '[remap]\n\nimporter="texture"\ntype="CompressedTexture2D"\n\n[params]\n\ncompress/mode=%s\nmipmaps/generate=%s\nprocess/size_limit=%s\n' \
+                "$mode" "$([ $mode = 0 ] && echo false || echo true)" "$lim" > "$f.import"
+            done
+            touch assets/.import_v2
+          fi
           "$GODOT" --headless --import || true
           # 市中心建筑：游戏的远景网格转成 Godot 网格
           "$GODOT" --headless -s tools/build_poi.gd
