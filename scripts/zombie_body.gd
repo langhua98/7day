@@ -1,6 +1,6 @@
 class_name Zombie
 extends Node3D
-## 僵尸：用导出的带骨骼 glb，走路动作由代码驱动骨骼（导出的包里没有动画）。
+## 僵尸身体：模型、骨骼程序动画、受击表现（导出的包里没有动画）。往哪走、何时出手由 brain（zombie_brain.gd）决定。
 ## 动作参数都平滑过渡；每只僵尸随机弓背、歪头、瘸腿、手的姿势，看起来不像一个模子。
 
 signal died(zombie: Zombie)
@@ -18,6 +18,8 @@ var target: Node3D
 ## 市中心（用来绕开楼和车）
 var world: World
 var dead := false
+## 大脑：状态机和感官
+var brain := ZombieBrain.new()
 
 var _model: Node3D
 var _skel: Skeleton3D
@@ -148,8 +150,10 @@ func _process(delta: float) -> void:
 	_anim_t += delta
 	var anim_delta := _anim_t
 	var do_anim := _anim_t >= _anim_interval
-	if do_anim:
+	# 6a AI 预算：50 米外不更新骨骼
+	if do_anim or dist_now > GameConfig.ZOMBIE_ANIM_OFF_DIST:
 		_anim_t = 0.0
+	do_anim = do_anim and dist_now <= GameConfig.ZOMBIE_ANIM_OFF_DIST
 	if dead:
 		_death_t += delta
 		if do_anim and _death_t < 0.3:
@@ -173,6 +177,8 @@ func _process(delta: float) -> void:
 	var to := target.global_position - global_position
 	to.y = 0.0
 	var dist := to.length()
+	var goal := brain.tick(delta, self, target, get_meta("horde", false))
+	var chasing := brain.chasing()
 	# 出手：抬手 → 砸下来，砸下来那一刻还在够得着的距离才算打中
 	if _windup >= 0.0:
 		_windup -= delta
@@ -182,15 +188,16 @@ func _process(delta: float) -> void:
 			_attack_cd = GameConfig.ZOMBIE_ATTACK_COOLDOWN
 			if dist <= GameConfig.ZOMBIE_REACH * 1.25:
 				_pending_damage = damage
-	if can_scream and not _screamed and dist < 22.0:
+	# 尖叫者：发现玩家（追击）时叫一声
+	if can_scream and not _screamed and chasing and dist < 22.0:
 		_screamed = true
 		_scream_t = 1.2
 		screamed.emit(self)
 		Sfx.play("scream", global_position + Vector3.UP * 1.6, 6.0)
 	if _scream_t > 0.0:
 		_scream_t -= delta
-	# 叫声：第一次靠近时吼一声，平时隔一阵哼一声
-	if not _alerted and dist < 16.0:
+	# 叫声：第一次发现玩家时吼一声，平时隔一阵哼一声
+	if not _alerted and chasing:
 		_alerted = true
 		Sfx.play(_voice + "alert", global_position + Vector3.UP * 1.6)
 	_roam_t -= delta
@@ -203,25 +210,33 @@ func _process(delta: float) -> void:
 		if do_anim:
 			_animate(anim_delta)
 		return
-	# 寻路：直接看得见就直走，被楼挡住就沿距离场绕
+	var to_goal := Vector3.ZERO
+	var gdist := 0.0
+	if goal != Vector3.INF:
+		to_goal = goal - global_position
+		to_goal.y = 0.0
+		gdist = to_goal.length()
+	# 寻路：直接看得见就直走；追玩家被楼挡住时沿距离场绕
 	_path_t -= delta
 	if _path_t <= 0.0 or _dir == Vector3.ZERO:
 		_path_t = 0.3
-		_dir = to / dist if dist > 0.05 else Vector3.ZERO
-		if world and dist > 2.0 and world.line_blocked(global_position + Vector3.UP, target.global_position + Vector3.UP):
+		_dir = to_goal / gdist if gdist > 0.05 else Vector3.ZERO
+		if chasing and world and dist > 2.0 and world.line_blocked(global_position + Vector3.UP, target.global_position + Vector3.UP):
 			var f := world.flow_dir(global_position)
 			if f != Vector3.ZERO:
 				_dir = f
 	_moving = 0.0
-	if dist > 0.05:
-		var face := to / dist if dist < 3.0 else _dir
+	if gdist > 0.05:
+		var face := to_goal / gdist if gdist < 3.0 else _dir
 		rotation.y = lerp_angle(rotation.y, atan2(face.x, face.z), min(1.0, delta * 6.0))
-		if dist > GameConfig.ZOMBIE_REACH * 0.8 and _windup < 0.0 and _scream_t <= 0.0:
-			position += _dir * speed * delta
+		var stop := GameConfig.ZOMBIE_REACH * 0.8 if chasing else 0.3
+		if gdist > stop and _windup < 0.0 and _scream_t <= 0.0 and _dir != Vector3.ZERO:
+			var spd := speed * brain.speed_mult()
+			position += _dir * spd * delta
 			if world:
 				position = world.push_out(position, 0.35)
-			_phase += delta * (2.0 + speed * 2.2)
-			_moving = speed
+			_phase += delta * (2.0 + spd * 2.2)
+			_moving = spd
 	if do_anim:
 		_animate(anim_delta)
 
@@ -236,7 +251,7 @@ func distance_to_target() -> float:
 
 ## 返回这一帧造成的伤害（0 表示没打中）。够得着就开始抬手，过一会儿才真正打中
 func try_attack() -> float:
-	if dead or GameConfig.TEST_ZOMBIES_NO_ATTACK:
+	if dead or GameConfig.TEST_ZOMBIES_NO_ATTACK or not brain.chasing():
 		return 0.0
 	if _pending_damage > 0.0:
 		var d := _pending_damage
@@ -261,6 +276,7 @@ func take_hit(amount: float, from: Vector3, headshot := false) -> void:
 	if dead:
 		return
 	hp -= amount
+	brain.on_hit()
 	_hit_flash = 0.15
 	if hp > 0.0 and _rng.randf() < 0.5:
 		Sfx.play(_voice + "pain", global_position + Vector3.UP * 1.6)
@@ -277,6 +293,7 @@ func take_hit(amount: float, from: Vector3, headshot := false) -> void:
 			position = world.push_out(position, 0.35)
 	if hp <= 0.0:
 		dead = true
+		brain.die()
 		Sfx.play(_voice + "death", global_position + Vector3.UP * 1.4)
 		_set_tint(Color.WHITE)
 		# 打的方向决定往哪边倒

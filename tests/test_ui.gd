@@ -39,7 +39,8 @@ func _ready() -> void:
 	check(fire_left.get_center().x < half_w, "左手开火键在左半屏")
 	check(bag.get_center().x < half_w and bag.get_center().y > attack.get_center().y, "背包在底部偏左")
 	var all_btns := {"开火": attack, "开镜": aim, "换弹": reload, "跳": jump, "搜索": action,
-		"背包": bag, "设置": pause, "左开火": fire_left, "摇杆": hud._joy_base.get_global_rect()}
+		"背包": bag, "设置": pause, "左开火": fire_left, "摇杆": hud._joy_base.get_global_rect(),
+		"蹲": hud._crouch_btn.get_global_rect()}
 	var names := all_btns.keys()
 	for i in names.size():
 		for j in range(i + 1, names.size()):

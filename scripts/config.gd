@@ -269,3 +269,36 @@ const LOD_UPDATE_INTERVAL := 0.5
 const BLOOD_POOL_MAX := 24
 ## 地上贴花数量
 const DECAL_COUNT := 140
+
+# —— 僵尸 AI（6a）：感官、噪音、热量、蹲伏、AI 预算 ——
+## 视野：前方扇形角度，白天/夜里看多远（米）；蹲下时视距乘这个
+const ZOMBIE_SIGHT_FOV := 120.0
+const ZOMBIE_SIGHT_DAY := 25.0
+const ZOMBIE_SIGHT_NIGHT := 15.0
+const ZOMBIE_SIGHT_CROUCH_MULT := 0.5
+## 贴身（米）时不看朝向也能察觉
+const ZOMBIE_SENSE_TOUCH := 1.6
+## 追击丢失目标几秒后转为调查；调查点停留几秒后回到游荡
+const ZOMBIE_LOSE_TARGET := 8.0
+const ZOMBIE_INVESTIGATE_LINGER := 10.0
+## 游荡：走多远、速度是基础步速的倍数
+const ZOMBIE_WANDER_RADIUS := 8.0
+const ZOMBIE_WANDER_SPEED_MULT := 0.5
+## 噪音半径（米），GameState.noise(pos, radius, kind) 的 kind
+const NOISE := {
+	"pistol": 45.0, "rifle": 60.0, "shotgun": 50.0, "explosion": 80.0,
+	"melee_hit": 6.0, "sprint": 8.0, "walk": 4.0, "crouch": 1.5, "block_break": 15.0,
+}
+## 热量：按 32 米分格累计，到 100 刷尖叫者；每游戏小时衰减 30%
+const HEAT_CELL := 32.0
+const HEAT_SCREAMER := 100.0
+const HEAT_DECAY_PER_HOUR := 0.3
+const HEAT := {"shot": 1.0, "craft_per_sec": 0.2, "campfire_per_sec": 0.5}
+## 测试：热量倍率（调大可以很快看到尖叫者）
+const TEST_HEAT_MULT := 1.0
+## 蹲伏：视角降低多少米、移速倍率
+const CROUCH_DROP := 0.6
+const CROUCH_SPEED_MULT := 0.5
+## AI 预算：每帧最多更新几只的感知；多远停骨骼（近处按距离降帧见 zombie_body.gd）
+const AI_SENSE_PER_FRAME := 6
+const ZOMBIE_ANIM_OFF_DIST := 50.0

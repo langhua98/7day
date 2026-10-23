@@ -8,6 +8,8 @@ signal item_used(id: String)
 signal action_pressed
 signal reload_pressed
 signal jump_pressed
+## 6a：蹲伏切换
+signal crouch_pressed
 signal continue_pressed
 signal settings_changed(settings: Dictionary)
 signal quit_to_title
@@ -28,6 +30,7 @@ var _water_bar := ProgressBar.new()
 var _effects := Label.new()
 var _reload_btn := Button.new()
 var _jump_btn := Button.new()
+var _crouch_btn := Button.new()
 var _ammo := Label.new()
 var _kills := Label.new()
 var _toast := Label.new()
@@ -234,6 +237,8 @@ func _ready() -> void:
 	# 这些按钮都在 _input 里按触点自己处理：系统按钮只认第一根手指，边走边打会没反应。
 	_round(_attack_btn, "开火", Control.PRESET_BOTTOM_RIGHT, Vector2(-300, -330), 160, 34)
 	_round(_jump_btn, "跳", Control.PRESET_BOTTOM_RIGHT, Vector2(-130, -400), 110, 28)
+	# 6a：蹲（吃鸡布局里在跳下面、开火键右下）
+	_round(_crouch_btn, "蹲", Control.PRESET_BOTTOM_RIGHT, Vector2(-130, -250), 110, 28)
 	_round(_aim_btn, "开镜", Control.PRESET_BOTTOM_RIGHT, Vector2(-440, -440), 110, 26)
 	_round(_reload_btn, "换弹", Control.PRESET_BOTTOM_RIGHT, Vector2(-440, -270), 100, 24)
 	_round(_fire_left, "开火", Control.PRESET_BOTTOM_LEFT, Vector2(50, -440), 110, 24)
@@ -599,6 +604,12 @@ func show_end(text: String) -> void:
 	_release_touches()
 	_end_label.text = text
 	_end_panel.visible = true
+
+
+## 蹲着时按钮高亮
+func set_crouch(on: bool) -> void:
+	_crouch_btn.text = "站" if on else "蹲"
+	_crouch_btn.self_modulate = Color(1.0, 0.85, 0.4) if on else Color.WHITE
 
 
 ## 拿着枪时显示「弹匣 / 背包」子弹数和换弹键；text 为空就隐藏
@@ -997,6 +1008,10 @@ func _touch_down(index: int, pos: Vector2) -> void:
 	if _jump_btn.get_global_rect().grow(10).has_point(pos):
 		_press_button(_jump_btn)
 		jump_pressed.emit()
+		return
+	if _crouch_btn.get_global_rect().grow(10).has_point(pos):
+		_press_button(_crouch_btn)
+		crouch_pressed.emit()
 		return
 	if _action_btn.visible and _action_btn.get_global_rect().grow(12).has_point(pos):
 		_press_button(_action_btn)

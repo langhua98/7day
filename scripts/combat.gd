@@ -86,7 +86,6 @@ func attack() -> void:
 	attack_cd = C.MELEE_COOLDOWN
 	arms.swing(1.0 / C.MELEE_COOLDOWN * 0.9)
 	Sfx.play("swing" if kind == Assets.Kind.MELEE else "swing_fist", Vector3.INF, -4.0)
-	GameState.noise.emit(player_sys.player.global_position, 8.0, "melee")
 	var dmg: float = row.get("power", C.FIST_DAMAGE) if kind == Assets.Kind.MELEE else C.FIST_DAMAGE
 	if kind == Assets.Kind.MELEE:
 		dmg *= Weapons.quality_mult(int(inventory.qualities.get(inventory.equipped, 1)))
@@ -231,7 +230,13 @@ func _fire(row: Dictionary) -> void:
 	Fx.muzzle(arms, arms.muzzle_position())
 	Sfx.play(st.fire_snd, Vector3.INF, -2.0, 0.05)
 	Input.vibrate_handheld(20)
-	GameState.noise.emit(player_sys.player.global_position, 45.0, "gun")
+	# 枪声按枪的类型：霰弹、全自动/远射程算步枪、其余手枪；爆炸另算
+	var gun_kind := "pistol"
+	if int(st.pellets) > 1:
+		gun_kind = "shotgun"
+	elif bool(st.auto) or float(st.range) >= 60.0:
+		gun_kind = "rifle"
+	GameState.make_noise(player_sys.player.global_position, gun_kind, 45.0)
 	var kick: float = 0.012 + st.damage * 0.0004 * st.pellets
 	player_sys.add_recoil(kick)
 	player_sys.pitch = clampf(player_sys.pitch + kick * C.RECOIL_AIM_SHARE, -1.3, 1.3)
@@ -296,6 +301,7 @@ func _shoot_ray(eye: Vector3, dir: Vector3, st: Dictionary) -> void:
 
 func _explode(at: Vector3, st: Dictionary) -> void:
 	Sfx.play("explosion", at, 6.0)
+	GameState.make_noise(at, "explosion", 80.0)
 	Fx.impact(main, at, Vector3.UP)
 	Fx.blood(main, at, Vector3.UP, true)
 	for z in zombie_root.get_children():
@@ -313,7 +319,7 @@ func _hit_zombie(z: Zombie, dmg: float, head: bool, at: Vector3, dir: Vector3) -
 	Fx.blood(main, at, dir.normalized() + Vector3.UP * 0.2, head)
 	var gun: bool = Assets.items_by_id.get(inventory.equipped, {}).get("kind", -1) == Assets.Kind.GUN
 	Sfx.play("bullet_flesh" if gun else "hit_flesh", at, -2.0)
-	GameState.noise.emit(player_sys.player.global_position, 6.0, "hit")
+	GameState.make_noise(player_sys.player.global_position, "melee_hit", 6.0)
 	hud.hitmarker(head)
 	if head:
 		hud.toast("爆头！")
