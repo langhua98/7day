@@ -1087,9 +1087,17 @@ func _poi(name: String, c: Vector2) -> void:
 		for m in full.meshes:
 			var fi := MeshInstance3D.new()
 			fi.mesh = m
+			# 只有方块面的网格整个用 POI 着色器，和远景网格一样用 material_override
+			var all_blocks: bool = m.get_surface_count() > 0
 			for i in m.get_surface_count():
-				if m.surface_get_name(i) == "blocks":
-					fi.set_surface_override_material(i, _poi_material())
+				if not m.surface_get_name(i).begins_with("blocks"):
+					all_blocks = false
+			if all_blocks:
+				fi.material_override = _poi_material()
+			else:
+				for i in m.get_surface_count():
+					if m.surface_get_name(i).begins_with("blocks"):
+						fi.set_surface_override_material(i, _poi_material())
 			fi.position = mi.position
 			fi.rotation.y = rot
 			fi.visibility_range_end = FULL_DETAIL_RANGE
