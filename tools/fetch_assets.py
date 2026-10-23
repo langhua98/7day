@@ -731,6 +731,20 @@ CONFIG_ZIP = "小橘素材库/Data_Config.zip"
 SHAPES_ZIP = "小橘素材库/shapes_by_name.zip"
 
 
+def _zip_name(info):
+    """压缩包里的文件名：没标 UTF-8 的按 UTF-8 / GBK 还原（Python 默认当 cp437 读）"""
+    name = info.filename
+    if info.flag_bits & 0x800:
+        return name
+    raw = name.encode("cp437", "replace")
+    for enc in ("utf-8", "gbk"):
+        try:
+            return raw.decode(enc)
+        except UnicodeDecodeError:
+            pass
+    return name
+
+
 def fetch_full_buildings(dest):
     """游戏的方块表、形状表、刷漆表和形状模型，然后用 tools/build_poi_full.py 生成完整的楼（assets/poi/*.full）"""
     bdir = os.path.join(dest, "blocks")
@@ -759,11 +773,18 @@ def fetch_full_buildings(dest):
         os.makedirs(sdir, exist_ok=True)
         # 只给 build_poi_full.py 读，不让 Godot 导入
         open(os.path.join(sdir, ".gdignore"), "w").close()
-        for i in zf.infolist():
-            # “按模型文件名/” 下每个模型一个 glb，文件名 = shapes.xml 里 Model 指向的 fbx 名
-            if "按模型文件名/" in i.filename and i.filename.endswith(".glb"):
-                with zf.open(i) as src, open(os.path.join(sdir, os.path.basename(i.filename)), "wb") as dst:
-                    shutil.copyfileobj(src, dst)
+        glbs = [i for i in zf.infolist() if i.filename.lower().endswith(".glb")]
+        # “按模型文件名/” 下每个模型一个 glb，文件名 = shapes.xml 里 Model 指向的 fbx 名。
+        # 压缩包里的中文路径常常没标 UTF-8，Python 按 cp437 读成乱码，所以先还原再比
+        by_model = [i for i in glbs if "按模型文件名/" in _zip_name(i)]
+        picked = by_model or glbs
+        for i in picked:
+            with zf.open(i) as src, open(os.path.join(sdir, os.path.basename(_zip_name(i))), "wb") as dst:
+                shutil.copyfileobj(src, dst)
+        print(f"形状模型: 压缩包里 {len(glbs)} 个 glb，按模型文件名的 {len(by_model)} 个，取了 {len(picked)} 个")
+        if not picked:
+            print("  shapes_by_name.zip 里没有 glb，楼只用远景网格。前几个文件：" +
+                  "，".join(_zip_name(i) for i in zf.infolist()[:5]))
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import build_poi_full
     print("完整的楼:")
