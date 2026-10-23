@@ -65,8 +65,8 @@ const GRID := 8.0
 const BATCH_CELL := 38.0
 var _batching := false
 var _batch := {}        # "模型|格x|格z" -> {name, cell, xfs: [Transform3D]}
-## 自己摆的方块按 16 米一块、每种方块一个 MultiMesh
-const VOXEL_CHUNK := 16
+## 自己摆的方块按 32 米一块、每种方块一个 MultiMesh
+const VOXEL_CHUNK := 32
 var _vox_chunks := {}   # "x|z|方块名" -> {mmi, cells: {格子: true}}
 var _vox_dirty := {}
 var _vox_flush_queued := false
