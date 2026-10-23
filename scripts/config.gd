@@ -37,6 +37,10 @@ const STAMINA_REGEN := 12.0
 const GRAVITY := 12.0
 ## 起跳速度 5.2 大约能跳 1.1 米高，刚好跳上一块方块
 const JUMP_SPEED := 5.2
+## 爬梯子速度（米/秒）
+const LADDER_SPEED := 2.4
+## 开关门：够得着的距离（米）
+const DOOR_REACH := 1.8
 const PLAYER_EYE_HEIGHT := 1.65
 const LOOK_SENSITIVITY := 0.0045
 ## 第一人称手感：基础视野、冲刺拉宽、开镜 FOV、后坐力回弹、落地压头
@@ -297,6 +301,7 @@ const ZOMBIE_WANDER_SPEED_MULT := 0.5
 const NOISE := {
 	"pistol": 45.0, "rifle": 60.0, "shotgun": 50.0, "explosion": 80.0,
 	"melee_hit": 6.0, "sprint": 8.0, "walk": 4.0, "crouch": 1.5, "block_break": 15.0,
+	"door": 5.0,
 }
 ## 热量：按 32 米分格累计，到 100 刷尖叫者；每游戏小时衰减 30%
 const HEAT_CELL := 32.0

@@ -62,6 +62,10 @@ var _mat_cache := {}
 var _marks: SurfaceTool
 var _poi_mat: ShaderMaterial
 var _cells := PackedByteArray()   # 楼的占地图，(MAP*2)² 格，1 = 挡路
+## 能走进去的楼（有 .col 碰撞格子的完整重建楼）。这些楼不盖 _cells，玩家按方块碰撞走
+var interiors: Array[PoiInterior] = []
+var _iwall := PackedByteArray()   # 能进的楼在街面那层哪些格子是墙（僵尸寻路、刷怪用），1 = 挡路
+var _door_nodes := {}             # 楼序号 -> {wood: MultiMeshInstance3D, metal: …, slots: [[材质, 下标]]}
 var _grid := {}         # 粗网格加速查询：格子 -> 障碍物下标
 const GRID := 8.0
 ## 合批：不能交互的重复道具按「模型 + 街区格」攒起来，最后每组一个 MultiMesh
@@ -87,6 +91,7 @@ var _flat_mats := {}
 
 func _ready() -> void:
 	_cells.resize(MAP * 2 * MAP * 2)
+	_iwall.resize(MAP * 2 * MAP * 2)
 	if FileAccess.file_exists(POI_INDEX):
 		var p = JSON.parse_string(FileAccess.get_file_as_string(POI_INDEX))
 		if p is Dictionary:
@@ -201,6 +206,11 @@ func push_out(p: Vector3, radius: float) -> Vector3:
 					else:
 						d.y = signf(d.y if d.y != 0.0 else 1.0) * h
 					q = c + d
+	# 能进的楼：按方块碰撞（地板、墙、楼梯、门）
+	for it in interiors:
+		if it.contains(Vector3(q.x, 0, q.y), radius + 1.0):
+			var r := it.push_out(Vector3(q.x, p.y, q.y), radius)
+			q = Vector2(r.x, r.z)
 	# 自己摆的方块：只算和身体高度（脚底到头顶）重叠的那几层
 	if not voxels.is_empty():
 		for gz in range(floori(q.y - radius), floori(q.y + radius) + 1):
@@ -256,9 +266,27 @@ func line_blocked(a: Vector3, b: Vector3) -> bool:
 	var steps := int(a.distance_to(b) / 0.5)
 	for s in range(1, steps):
 		var p := a.lerp(b, float(s) / steps)
-		if _wall(floori(p.x), floori(p.z)):
+		if _point_blocked(p):
 			return true
 	return false
+
+
+## 视线、子弹走到这一点被挡没有：能进的楼里按方块（分楼层），其他楼按占地图
+func _point_blocked(p: Vector3) -> bool:
+	for it in interiors:
+		if it.contains(p):
+			return it.solid_point(p) or (not _low.is_empty() and _low.has(Vector2i(floori(p.x), floori(p.z))) and p.y < 2.0)
+	return _wall(floori(p.x), floori(p.z))
+
+
+## 子弹飞到这一点打中墙、楼板没有（地面、楼、自己摆的方块）
+func solid_at(p: Vector3) -> bool:
+	if p.y < 0.0:
+		return true
+	for it in interiors:
+		if it.contains(p):
+			return it.solid_point(p) or voxels.has(cell_of(p))
+	return (p.y < 30.0 and _cell(floori(p.x), floori(p.z))) or voxels.has(cell_of(p))
 
 
 ## 离玩家最近、够得着的容器（楼里的容器还要在同一层）
@@ -384,7 +412,29 @@ func _cell(gx: int, gz: int) -> bool:
 
 ## 楼，或者贴地两格里有自己摆的方块（僵尸过不去、绕着走）
 func _wall(gx: int, gz: int) -> bool:
-	return _cell(gx, gz) or (not _low.is_empty() and _low.has(Vector2i(gx, gz)))
+	return _cell(gx, gz) or _iwall_at(gx, gz) or (not _low.is_empty() and _low.has(Vector2i(gx, gz)))
+
+
+func _iwall_at(gx: int, gz: int) -> bool:
+	var x := gx + MAP
+	var z := gz + MAP
+	if x < 0 or z < 0 or x >= MAP * 2 or z >= MAP * 2:
+		return false
+	return _iwall[z * MAP * 2 + x] == 1
+
+
+## 重算能进的楼在街面那层某一格挡不挡路（格子里取 4 个点，站在地面 y=0）
+func _update_iwall(it: PoiInterior, gx: int, gz: int) -> void:
+	var x := gx + MAP
+	var z := gz + MAP
+	if x < 0 or z < 0 or x >= MAP * 2 or z >= MAP * 2:
+		return
+	var hit := false
+	for o in [Vector2(0.25, 0.25), Vector2(0.75, 0.25), Vector2(0.25, 0.75), Vector2(0.75, 0.75)]:
+		if it.blocks_at(Vector3(gx + o.x, 0.0, gz + o.y)):
+			hit = true
+			break
+	_iwall[z * MAP * 2 + x] = 1 if hit else 0
 
 
 # —— 自己摆的方块（1 米一格，格子坐标 = 世界坐标向下取整） ——
@@ -418,6 +468,10 @@ func can_place(c: Vector3i) -> bool:
 		return false
 	if absi(c.x) >= int(EDGE) or absi(c.z) >= int(EDGE):
 		return false
+	var mid := Vector3(c) + Vector3.ONE * 0.5
+	for it in interiors:
+		if it.contains(mid) and (it.solid_point(mid) or it.ladder_at(Vector3(c))):
+			return false
 	return not _cell(c.x, c.z)
 
 
@@ -549,9 +603,12 @@ func voxel_load(list: Array) -> void:
 
 ## 站在 p 时脚下最高的方块顶（没有就是地面 0）。只算比脚底高不了多少的方块，免得被吸到头顶上
 func floor_under(p: Vector3, radius: float) -> float:
-	if voxels.is_empty():
-		return 0.0
 	var best := 0.0
+	for it in interiors:
+		if it.contains(p, radius):
+			best = maxf(best, it.floor_at(p, radius))
+	if voxels.is_empty():
+		return best
 	var top := floori(p.y + 0.3)
 	for gz in range(floori(p.z - radius), floori(p.z + radius) + 1):
 		for gx in range(floori(p.x - radius), floori(p.x + radius) + 1):
@@ -566,6 +623,9 @@ func floor_under(p: Vector3, radius: float) -> float:
 
 ## 头顶（p.y + height）碰到方块没有
 func ceiling_hit(p: Vector3, radius: float, height: float) -> bool:
+	for it in interiors:
+		if it.contains(p, radius) and it.ceiling_hit(p, radius, height):
+			return true
 	if voxels.is_empty():
 		return false
 	var y := floori(p.y + height)
@@ -599,7 +659,7 @@ func ray_voxel(from: Vector3, dir: Vector3, reach: float) -> Dictionary:
 		if c != cell_of(from):
 			if voxels.has(c):
 				return {"hit": c, "place": prev, "t": t}
-			if c.y < 0 or (c.y < 30 and _cell(c.x, c.z)):
+			if c.y < 0 or (c.y < 30 and _cell(c.x, c.z)) or _interior_solid(from + dir * (t + 0.01)):
 				return {"hit": null, "place": prev, "t": t}
 		prev = c
 		var a := 0
@@ -1019,6 +1079,9 @@ func _poi(name: String, c: Vector2) -> void:
 		_poi_lod.append({"node": mi, "pos": c})
 	buildings.append({"name": name, "pos": Vector3(c.x, 0, c.y)})
 	_poi_containers(name, c, rot, mi.position.y)
+	# 有按方块的碰撞格子：楼能走进去，不盖实心占地
+	if _add_interior(name, Vector3(c.x, mi.position.y, c.y), rot):
+		return
 	var w: int = info.grid_w
 	var h: int = info.grid_h
 	var g: String = info.grid
@@ -1049,13 +1112,198 @@ func _poi_containers(name: String, c: Vector2, rot: float, base_y: float) -> voi
 	var cs := cos(rot)
 	var sn := sin(rot)
 	for e in entry.get("list", []):
-		var lx := float(e.get("x", 0.0))
+		# 方块数据是游戏的左手坐标，网格翻了 x，这里也翻
+		var lx := -float(e.get("x", 0.0))
 		var lz := float(e.get("z", 0.0))
 		var pos := Vector3(c.x + lx * cs + lz * sn, base_y + float(e.get("y", 0.0)), c.y - lx * sn + lz * cs)
 		var official: String = str(e.get("loot", ""))
 		containers.append({"node": null, "pos": pos, "name": _container_zh(official),
 			"loot": "any", "container": official, "block": str(e.get("block", "")),
 			"searched": false, "r": 0.5, "kind": "block", "indoor": true, "poi": name})
+
+
+## 能进的楼：读碰撞格子，盖街面那层的占地图，摆门板和没模型的容器箱子。没有 .col 返回 false
+func _add_interior(name: String, at: Vector3, rot: float) -> bool:
+	var entry = poi_containers.get(name)
+	if not (entry is Dictionary) or not entry.get("col", false):
+		return false
+	var it := PoiInterior.load_col("%s/poi/%s.col" % [ROOT, name], name, at, rot, entry.get("doors", []))
+	if it == null:
+		return false
+	add_interior(it, entry)
+	return true
+
+
+## 登记一栋能进的楼（测试也直接调这个）
+func add_interior(it: PoiInterior, entry: Dictionary) -> void:
+	interiors.append(it)
+	var r := it.rect
+	for gz in range(floori(r.position.y), ceili(r.end.y) + 1):
+		for gx in range(floori(r.position.x), ceili(r.end.x) + 1):
+			_update_iwall(it, gx, gz)
+	_build_interior_props(interiors.size() - 1, entry)
+
+
+## 门板（木门、铁门各一个 MultiMesh）和没有模型的容器（画成箱子）。挂在和楼网格一样变换的节点下
+func _build_interior_props(ii: int, entry: Dictionary) -> void:
+	var it: PoiInterior = interiors[ii]
+	var holder := Node3D.new()
+	holder.name = "Interior_" + it.name
+	holder.position = it.origin
+	holder.rotation.y = it.rot
+	add_child(holder)
+	var slots := []
+	var lists := {"wood": [], "metal": []}
+	for i in it.doors.size():
+		var kind := "metal" if it.doors[i].metal else "wood"
+		slots.append([kind, lists[kind].size()])
+		lists[kind].append(i)
+	var nodes := {"slots": slots}
+	for kind in lists:
+		if lists[kind].is_empty():
+			continue
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = BoxMesh.new()
+		mm.instance_count = lists[kind].size()
+		for k in lists[kind].size():
+			mm.set_instance_transform(k, it.door_transform(lists[kind][k]))
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		mmi.material_override = _prop_material(kind)
+		mmi.visibility_range_end = FULL_DETAIL_RANGE
+		holder.add_child(mmi)
+		nodes[kind] = mmi
+	_door_nodes[ii] = nodes
+	# 没模型的容器：画成一个箱子，免得看不见
+	var boxes: Array[Transform3D] = []
+	for e in entry.get("list", []):
+		if e.get("drawn", true):
+			continue
+		var sz := Vector3(float(e.get("sx", 1)), float(e.get("sy", 1)), float(e.get("sz", 1))) * 0.9
+		var c := Vector3(-float(e.get("x", 0.0)), float(e.get("y", 0.0)) + sz.y * 0.5, float(e.get("z", 0.0)))
+		boxes.append(Transform3D(Basis.from_scale(sz), c))
+	if not boxes.is_empty():
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = BoxMesh.new()
+		mm.instance_count = boxes.size()
+		for k in boxes.size():
+			mm.set_instance_transform(k, boxes[k])
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		mmi.material_override = _prop_material("crate")
+		mmi.visibility_range_end = FULL_DETAIL_RANGE
+		holder.add_child(mmi)
+
+
+func _prop_material(kind: String) -> Material:
+	var key := "interior_" + kind
+	if not _mat_cache.has(key):
+		var m := StandardMaterial3D.new()
+		match kind:
+			"metal":
+				m.albedo_color = Color(0.44, 0.46, 0.48)
+				m.metallic = 0.6
+				m.roughness = 0.45
+			"crate":
+				m.albedo_color = Color(0.46, 0.4, 0.32)
+				m.roughness = 0.9
+			_:
+				m.albedo_color = Color(0.42, 0.29, 0.18)
+				m.roughness = 0.8
+		_mat_cache[key] = m
+	return _mat_cache[key]
+
+
+func _interior_solid(p: Vector3) -> bool:
+	for it in interiors:
+		if it.contains(p) and it.solid_point(p):
+			return true
+	return false
+
+
+## 身体在梯子格里（玩家爬梯子）
+func ladder_at(p: Vector3) -> bool:
+	for it in interiors:
+		if it.contains(p) and it.ladder_at(p):
+			return true
+	return false
+
+
+## 离 p 最近、大致在面前的门：{interior, door, pos, open}，没有返回空
+func nearest_door(p: Vector3, facing: Vector3, reach := 1.8) -> Dictionary:
+	var best := {}
+	var best_d := INF
+	for ii in interiors.size():
+		var it := interiors[ii]
+		if not it.contains(p, reach + 1.0):
+			continue
+		var i := it.nearest_door(p, facing, reach)
+		if i < 0:
+			continue
+		var c := it.door_center(i)
+		var d := Vector2(c.x - p.x, c.z - p.z).length()
+		if d < best_d:
+			best_d = d
+			best = {"interior": ii, "door": i, "pos": c, "open": it.doors[i].open}
+	return best
+
+
+## 开关门：更新碰撞、门板和街面占地图（僵尸寻路）
+func set_door(ii: int, i: int, open: bool) -> void:
+	if ii < 0 or ii >= interiors.size():
+		return
+	var it := interiors[ii]
+	if i < 0 or i >= it.doors.size():
+		return
+	it.set_door(i, open)
+	for k in it.door_world_cells(i):
+		_update_iwall(it, k.x, k.y)
+	var nodes: Dictionary = _door_nodes.get(ii, {})
+	var slot: Array = nodes.get("slots", [])[i] if i < nodes.get("slots", []).size() else []
+	if slot.size() == 2 and nodes.has(slot[0]):
+		(nodes[slot[0]] as MultiMeshInstance3D).multimesh.set_instance_transform(slot[1], it.door_transform(i))
+
+
+func toggle_door(ii: int, i: int) -> bool:
+	if ii < 0 or ii >= interiors.size() or i < 0 or i >= interiors[ii].doors.size():
+		return false
+	var open: bool = not interiors[ii].doors[i].open
+	set_door(ii, i, open)
+	return open
+
+
+## 门会不会夹住人：关门时门洞里站着人就不关
+func door_blocked_by(ii: int, i: int, p: Vector3, radius: float) -> bool:
+	var it := interiors[ii]
+	var d: Dictionary = it.doors[i]
+	var c := it.to_cell(p)
+	return c.x > d.x0 - radius and c.x < d.x1 + 1 + radius and c.z > d.z0 - radius and c.z < d.z1 + 1 + radius \
+		and c.y > d.y0 - 1.6 and c.y < d.y1 + 1
+
+
+## 存档：开着的门 [[楼名, 门序号], …]
+func door_save() -> Array:
+	var out := []
+	for it in interiors:
+		for i in it.doors.size():
+			if it.doors[i].open:
+				out.append([it.name, i])
+	return out
+
+
+func door_load(list: Array) -> void:
+	for ii in interiors.size():
+		for i in interiors[ii].doors.size():
+			if interiors[ii].doors[i].open:
+				set_door(ii, i, false)
+	for e in list:
+		if not (e is Array) or e.size() < 2:
+			continue
+		for ii in interiors.size():
+			if interiors[ii].name == str(e[0]):
+				set_door(ii, int(e[1]), true)
 
 
 ## 容器的中文叫法（按官方 LootList 名里的关键词猜，猜不到就叫「柜子」）

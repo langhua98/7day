@@ -113,7 +113,12 @@ func update(delta: float) -> void:
 	hud.set_stamina(stamina)
 	# 跳（hud 的跳键调 jump()）：简单的竖直速度和重力
 	# 地面是 0；站在自己摆的方块上就是方块顶
-	_vy -= C.GRAVITY * delta
+	# 楼里的梯子：推摇杆往前爬上去、往后爬下来，不受重力，也不算摔
+	if world.ladder_at(player.position):
+		_vy = mv.y * C.LADDER_SPEED
+		_air_top = player.position.y
+	else:
+		_vy -= C.GRAVITY * delta
 	player.position.y += _vy * delta
 	if _vy > 0.0 and world.ceiling_hit(player.position, 0.3, 1.8):
 		_vy = 0.0
