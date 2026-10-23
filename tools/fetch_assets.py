@@ -36,6 +36,7 @@ import json
 import os
 import re
 import shutil
+import struct
 import subprocess
 import sys
 import tempfile
@@ -635,7 +636,7 @@ def fetch_poi(dest):
             out = os.path.join(out_dir, base)
             with zf.open(i) as src, open(out, "wb") as dst:
                 shutil.copyfileobj(src, dst)
-            n += base.endswith(".mesh")
+            n += base.endswith(".poimesh")
     print(f"市中心建筑: {n} 栋")
 
 
@@ -726,7 +727,6 @@ def _unpack_normal(im, size):
 
 
 # 市中心路口那几栋用完整方块数据生成（窗户、楼梯、屋檐都有），其余的楼用远景网格
-FULL_POIS = ["skyscraper_01", "skyscraper_04", "hotel_ostrich", "courthouse_med_01"]
 CONFIG_ZIP = "小橘素材库/Data_Config.zip"
 SHAPES_ZIP = "小橘素材库/shapes_by_name.zip"
 
@@ -788,7 +788,148 @@ def fetch_full_buildings(dest):
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import build_poi_full
     print("完整的楼:")
-    build_poi_full.run(dest, FULL_POIS)
+    build_poi_full.run(dest)
+
+
+# —— 楼里的家具、灯、柜子、门（方块表里 Shape="ModelEntity" 的实体模型）——
+# 云盘 entities_by_prefab.zip：每个预制体一个 glb（保留子节点层级，底色贴图嵌在里面），文件名就是预制体名。
+# 这里只取楼里用到的，tools/build_props.gd 再在 Godot 里把每个 glb 合成一个网格（assets/poiprops/*.res）
+PROPS_ZIP = "小橘素材库/entities_by_prefab.zip"
+
+
+def _godot_rotations():
+    """方块转向 0..27 → Godot 的 Basis（楼的本地坐标 x 是翻过来的：M·R·M，M = diag(-1, 1, 1)），按列存"""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import build_poi_full
+    out = []
+    for r in build_poi_full.ROTATIONS:
+        g = [[r[i][j] * (-1 if i == 0 else 1) * (-1 if j == 0 else 1) for j in range(3)] for i in range(3)]
+        out.append([g[i][j] for j in range(3) for i in range(3)])
+    return out
+
+
+# 底色 512；法线、ORM（遮蔽/粗糙度/金属度）手机上看不出 256 和 512 的差别，省一半多内存
+POI_PROP_TEX = {"albedo": 512, "normal": 256, "orm": 256}
+NORMAL_IMPORT = ('[remap]\n\nimporter="texture"\ntype="CompressedTexture2D"\n\n[params]\n\n'
+                 'compress/mode=2\ncompress/normal_map=1\nmipmaps/generate=true\n')
+
+
+def _glb_image_roles(j):
+    """glb 里每张图的用途：材质里当底色、法线还是 ORM 用"""
+    roles = {}
+
+    def mark(ref, role):
+        if isinstance(ref, dict) and "index" in ref:
+            src = j.get("textures", [])[ref["index"]].get("source")
+            if src is not None:
+                roles.setdefault(src, role)
+
+    for m in j.get("materials", []):
+        pbr = m.get("pbrMetallicRoughness", {})
+        mark(pbr.get("baseColorTexture"), "albedo")
+        mark(m.get("normalTexture"), "normal")
+        mark(pbr.get("metallicRoughnessTexture"), "orm")
+        mark(m.get("occlusionTexture"), "orm")
+    return roles
+
+
+def _glb_external_textures(data, tex_dir, rel):
+    """glb 里嵌的贴图挪出去：按内容去重（很多预制体共用一张贴图，嵌在每个 glb 里各一份）、按用途缩小，
+    存成 tex_dir/<md5>_<用途>.jpg|png，glb 改成按相对路径 rel/… 引用。法线图顺便写好导入设置。返回新的 glb 字节"""
+    import hashlib
+    jl = struct.unpack_from("<I", data, 12)[0]
+    j = json.loads(data[20:20 + jl])
+    o = 20 + jl
+    bl = struct.unpack_from("<I", data, o)[0]
+    buf = data[o + 8:o + 8 + bl]
+    roles = _glb_image_roles(j)
+    for k, im in enumerate(j.get("images", [])):
+        if "bufferView" not in im:
+            continue
+        role = roles.get(k, "albedo")
+        bv = j["bufferViews"][im["bufferView"]]
+        raw = buf[bv.get("byteOffset", 0):bv.get("byteOffset", 0) + bv["byteLength"]]
+        ext = "png" if im.get("mimeType") == "image/png" or raw[:4] == b"\x89PNG" else "jpg"
+        name = f"{hashlib.md5(raw).hexdigest()}_{role}.{ext}"
+        out = os.path.join(tex_dir, name)
+        if not os.path.exists(out):
+            try:
+                from PIL import Image
+                img = Image.open(io.BytesIO(raw))
+                lim = POI_PROP_TEX[role]
+                if max(img.size) > lim:
+                    img.thumbnail((lim, lim), Image.LANCZOS)
+                if ext == "jpg":
+                    img.convert("RGB").save(out, quality=90)
+                else:
+                    img.save(out)
+            except ImportError:
+                with open(out, "wb") as f:
+                    f.write(raw)
+            if role == "normal" and not os.path.exists(out + ".import"):
+                with open(out + ".import", "w") as f:
+                    f.write(NORMAL_IMPORT)
+        del im["bufferView"]
+        im["uri"] = f"{rel}/{name}"
+    js = json.dumps(j, separators=(",", ":")).encode()
+    js += b" " * (-len(js) % 4)
+    rest = data[o:]
+    total = 12 + 8 + len(js) + len(rest)
+    return struct.pack("<4sII", b"glTF", 2, total) + struct.pack("<I4s", len(js), b"JSON") + js + rest
+
+
+def fetch_poi_props(dest):
+    """tools/build_poi_full.py 列出的实体模型（poi/props_needed.json）→ assets/poipropsrc/<文件夹>/<预制体>.glb，
+    对照表 assets/poi/props.json：{"models": {预制体: {src, mesh, door}}, "missing": [...], "rot": [...]}"""
+    poi_dir = os.path.join(dest, "poi")
+    need_path = os.path.join(poi_dir, "props_needed.json")
+    index_out = os.path.join(poi_dir, "props.json")
+    if not os.path.exists(need_path):
+        print("楼里的模型: 没有 poi/props_needed.json（完整版的楼没生成），跳过")
+        return
+    need = json.load(open(need_path))
+    doors = set(need.get("doors", []))
+    keys = sorted(set(need.get("props", [])) | doors)
+    src_dir = os.path.join(dest, "poipropsrc")
+    tex_dir = os.path.join(dest, "poiproptex")
+    # 云盘的 glb 重导过（加了法线、ORM）：旧版取的全部重取
+    mark = os.path.join(src_dir, ".v2")
+    if not os.path.exists(mark):
+        for d in (src_dir, tex_dir, os.path.join(dest, "poiprops")):
+            shutil.rmtree(d, ignore_errors=True)
+        os.makedirs(src_dir, exist_ok=True)
+        open(mark, "w").close()
+    todo = [k for k in keys if not os.path.exists(os.path.join(src_dir, k + ".glb"))]
+    if todo:
+        zf = open_remote_zip(f"{DRIVE_ROOT}/{PROPS_ZIP}")
+        if zf is None:
+            print("云盘里没有 entities_by_prefab.zip，楼里只有门板和箱子")
+        else:
+            infos = {_zip_name(i): i for i in zf.infolist()}
+            got = 0
+            for k in todo:
+                i = infos.get(k + ".glb")
+                if i is None:
+                    continue
+                out = os.path.join(src_dir, k + ".glb")
+                os.makedirs(os.path.dirname(out), exist_ok=True)
+                os.makedirs(tex_dir, exist_ok=True)
+                # glb 在 poipropsrc/<文件夹>/ 下，贴图在 poiproptex/
+                data = _glb_external_textures(zf.read(i), tex_dir, "../../poiproptex")
+                with open(out, "wb") as d_:
+                    d_.write(data)
+                got += 1
+            print(f"  取了 {got} 个 glb（缺的 {len(todo) - got} 个压缩包里没有）")
+    models, missing = {}, []
+    for k in keys:
+        if os.path.exists(os.path.join(src_dir, k + ".glb")):
+            stem = re.sub(r"[^A-Za-z0-9_]", "_", k)
+            models[k] = {"src": f"poipropsrc/{k}.glb", "mesh": f"poiprops/{stem}.res", "door": k in doors}
+        else:
+            missing.append(k)
+    with open(index_out, "w", encoding="utf-8") as f:
+        json.dump({"models": models, "missing": missing, "rot": _godot_rotations()}, f, ensure_ascii=False)
+    print(f"楼里的模型: 要 {len(keys)} 种（门 {len(doors)} 种），有模型 {len(models)} 种")
 
 
 def fetch_blocks(dest):
@@ -1118,7 +1259,7 @@ def main():
     ap.add_argument("--zombies", default=",".join(DEFAULT_ZOMBIES), help="逗号分隔的僵尸名，或 all")
     ap.add_argument("--music", type=int, default=6, help="每类音乐取几段")
     ap.add_argument("--all-icons", action="store_true", help="取全部图标（默认只取游戏会用到的）")
-    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,respawn,poi,full,blocks,terrain,effects,music,sounds,sky,data")
+    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,respawn,poi,full,props,blocks,terrain,effects,music,sounds,sky,data")
     args = ap.parse_args()
     skip = set(filter(None, args.skip.split(",")))
     dest = os.path.abspath(args.dest)
@@ -1142,6 +1283,8 @@ def main():
         fetch_poi(dest)
     if "full" not in skip:
         fetch_full_buildings(dest)
+    if "props" not in skip:
+        fetch_poi_props(dest)
     if "blocks" not in skip:
         fetch_blocks(dest)
     if "terrain" not in skip:

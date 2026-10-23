@@ -298,33 +298,32 @@ func set_door(i: int, open: bool) -> void:
 		doors[i].open = open
 
 
-## 门板现在的变换（楼节点本地坐标，单位立方体缩放成门板）
+## 门板现在的变换（楼节点本地坐标）：单位立方体先缩放成 宽×高×厚（宽沿 x），再绕 y 转到门洞方向。
+## 开着时绕门轴那头转 90 度贴着门框立着。门模型也按这个摆（先缩放成单位立方体）
 func door_transform(i: int) -> Transform3D:
 	var d: Dictionary = doors[i]
 	var h: float = d.y1 - d.y0 + 1 - 0.04
 	var y: float = d.y0 + 0.02 + h * 0.5
 	var c: Vector3
-	var sz: Vector3
+	var w: float
+	var yaw := 0.0
 	if d.axis == "x":
-		var w: float = d.x1 - d.x0 + 1
+		w = d.x1 - d.x0 + 1
 		var zc: float = d.z0 + 0.5 * (d.z1 - d.z0 + 1)
 		if d.open:
-			# 绕 x0 那头转 90 度，贴着门框立着
 			c = Vector3(d.x0 + DOOR_T * 0.5, y, zc + d.swing * w * 0.5)
-			sz = Vector3(DOOR_T, h, w)
+			yaw = PI / 2
 		else:
 			c = Vector3(d.x0 + w * 0.5, y, zc)
-			sz = Vector3(w, h, DOOR_T)
 	else:
-		var w: float = d.z1 - d.z0 + 1
+		w = d.z1 - d.z0 + 1
 		var xc: float = d.x0 + 0.5 * (d.x1 - d.x0 + 1)
 		if d.open:
 			c = Vector3(xc + d.swing * w * 0.5, y, d.z0 + DOOR_T * 0.5)
-			sz = Vector3(w, h, DOOR_T)
 		else:
 			c = Vector3(xc, y, d.z0 + w * 0.5)
-			sz = Vector3(DOOR_T, h, w)
-	return Transform3D(Basis.from_scale(sz), to_local(c))
+			yaw = PI / 2
+	return Transform3D(Basis(Vector3.UP, yaw) * Basis.from_scale(Vector3(w, h, DOOR_T)), to_local(c))
 
 
 ## 门所在的世界格子（开关门后重算街面占地图用）

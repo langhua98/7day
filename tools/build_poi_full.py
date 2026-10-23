@@ -420,10 +420,14 @@ def build_poi(name, poi_dir, db, shapes, paint_table, uv_ids):
         v = blocks[j] & 0xFFFF
         if v == 0:
             return True
-        if info(v) is None:
+        i = info(v)
+        if i is None:
             return not names.get(v, "").startswith("terrainFiller")
-        # 梯子、不挡人的装饰也能钻过去（梯子井上面的屋子也要画出来）
-        return col_kind(v) in (COL_EMPTY, COL_LADDER)
+        if i["kind"] == "terrain":
+            return False
+        # 只有整块的方块挡得住视线。桌子、柜台、半块、斜坡这些格子也要灌进去，
+        # 不然它们底下的地板、背后的墙不画，进楼后能从桌子底下看穿到楼下
+        return not i.get("full")
 
     for x in range(X):
         for y in range(Y):
@@ -562,8 +566,65 @@ def build_poi(name, poi_dir, db, shapes, paint_table, uv_ids):
     conts = find_containers(blocks, names, size, db, (ox, dy, oz))
     for c in conts:
         c["drawn"] = info(c.pop("_t")) is not None
+        if not c["drawn"]:
+            # 有实体模型的容器（冰箱、垃圾桶…）：游戏里有模型就不画箱子
+            c["model"] = prop_key(db.get(c["block"], "Model"))
+    props = find_props(blocks, names, size, db, (ox, dy, oz), ground)
     return {"parts": parts, "missing": missing, "containers": conts, "col": col, "doors": doors,
-            "offset": (ox, dy, oz), "ground": ground, "size": size}
+            "offset": (ox, dy, oz), "ground": ground, "size": size, "props": props}
+
+
+# 模型方块（家具、灯、柜子、杂物…）：游戏里是单独的预制体模型，不是形状方块。
+# 这几类不是摆设（睡着的僵尸、动物的刷新点），不画
+PROP_SKIP_FOLDERS = ("Zombies", "Animals")
+
+
+def prop_key(model):
+    """Model 属性 "@:Entities/Furniture/chair01Prefab.prefab" → "Furniture/chair01Prefab"；不是实体模型返回 None"""
+    m = re.match(r"@?:?Entities/(.+?)\.prefab$", model or "")
+    if not m:
+        return None
+    key = m.group(1)
+    folder = key.split("/")[0]
+    if folder in PROP_SKIP_FOLDERS:
+        return None
+    return folder + "/" + key.split("/")[-1]
+
+
+def find_props(blocks, names, size, db, offset, ground):
+    """楼里每个模型方块 → {"models": [预制体名], "items": [[模型下标, x, y, z, 转向], …]}。
+    门另外处理（会开关），不在这里。坐标和容器一样：方块底面中心，楼的本地坐标（Unity 方向，x 未翻）。
+    只存了多格方块的根格子：模型按 MultiBlockDim 摆在占的格子中间。"""
+    X, Y, Z = size
+    ox, dy, oz = offset
+    keys = {}
+    models, index, items = [], {}, []
+    for j, v in enumerate(blocks):
+        t = v & 0xFFFF
+        if not t:
+            continue
+        if t not in keys:
+            nm = names.get(t, "")
+            b = base_name(nm)
+            k = None
+            if nm and db.get(b, "Shape") == "ModelEntity" and not is_door(db, nm):
+                k = prop_key(db.get(b, "Model"))
+            keys[t] = (k, nm)
+        k, nm = keys[t]
+        if k is None:
+            continue
+        x, y, z = j % X, (j // X) % Y, j // (X * Y)
+        if y < ground - 1:
+            continue
+        r = (v >> 16) & 0x1F
+        dim = multi_dim(db, nm, r)
+        if k not in index:
+            index[k] = len(models)
+            models.append(k)
+        cx = x + 0.5 + (0.5 if dim[0] % 2 == 0 else 0.0)
+        cz = z + 0.5 + (0.5 if dim[2] % 2 == 0 else 0.0)
+        items.append([index[k], round(cx + ox, 2), y + dy, round(cz + oz, 2), r])
+    return {"models": models, "items": items}
 
 
 def diagnose(name, blocks, names, db, shapes, info):
@@ -846,7 +907,7 @@ def build_collision(blocks, size, db, names, shapes, info, col_kind):
             wz = solid(x0, y0, z0 - 1) + solid(x0, y0, z0 + 1)
             axis = "x" if wx > wz or (wx == wz and r % 2 == 0) else "z"
         low = base_name(nm).lower()
-        doors.append({"block": base_name(nm), "x0": x0, "y0": y0, "z0": z0, "x1": x1, "y1": y1, "z1": z1,
+        doors.append({"block": base_name(nm), "model": prop_key(db.get(base_name(nm), "Model")), "x0": x0, "y0": y0, "z0": z0, "x1": x1, "y1": y1, "z1": z1,
                       "axis": axis, "metal": any(w in low for w in ("metal", "steel", "vault", "iron", "security", "jail")),
                       "hatch": "hatch" in low})
     return col, doors
@@ -922,6 +983,8 @@ def run(assets, only=()):
     paint_table = load_paint_table(os.path.join(bdir, "painting.xml"))
     uv_ids = load_uv_ids(os.path.join(bdir, "ta_opaque.xml"))
     used = set()
+    props_needed = set()
+    doors_needed = set()
     cpath = os.path.join(poi_dir, "containers.json")
     conts = json.load(open(cpath)) if os.path.exists(cpath) else {}
     for n in names:
@@ -937,14 +1000,20 @@ def run(assets, only=()):
             if kind == 0:
                 used.update(mo.tex)
             tris += len(mo.idx) // 3
-        conts[n] = {"ground": res["ground"], "list": res["containers"], "doors": res["doors"], "col": True}
+        conts[n] = {"ground": res["ground"], "list": res["containers"], "doors": res["doors"], "col": True,
+                    "props": res["props"]}
+        props_needed.update(res["props"]["models"])
+        doors_needed.update(d["model"] for d in res["doors"] if d.get("model"))
         print(f"  {n}: {tris} 个三角形，{len({k[0] for k in res['parts']})} 块，{len(res['containers'])} 个容器，"
-              f"{len(res['doors'])} 扇门", flush=True)
+              f"{len(res['doors'])} 扇门，{len(res['props']['items'])} 个模型（{len(res['props']['models'])} 种）", flush=True)
     used.discard(-1)
     up = os.path.join(poi_dir, "full_textures.json")
     old = set(json.load(open(up))) if os.path.exists(up) else set()
     json.dump(sorted(used | old), open(up, "w"))
     json.dump(conts, open(cpath, "w"), ensure_ascii=False)
+    # 要找模型的预制体（tools/fetch_assets.py 的 fetch_poi_props 读）
+    json.dump({"props": sorted(props_needed), "doors": sorted(doors_needed)},
+              open(os.path.join(poi_dir, "props_needed.json"), "w"))
     return used
 
 
