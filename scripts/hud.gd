@@ -216,7 +216,7 @@ func _ready() -> void:
 	_bag_panel.add_child(bag_v)
 	var bag_title := HBoxContainer.new()
 	var bt := Label.new()
-	bt.text = "背包（点物品使用 / 装备）"
+	bt.text = "背包（点物品使用 / 装备，点子弹换上对应的枪，点方块拿来建造）"
 	bt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bag_title.add_child(bt)
 	var close := Button.new()

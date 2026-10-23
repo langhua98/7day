@@ -111,6 +111,21 @@ func push_out(p: Vector3, radius: float) -> Vector3:
 					else:
 						d.y = signf(d.y if d.y != 0.0 else 1.0) * h
 					q = c + d
+	# 自己摆的方块：只算和身体高度（脚底到头顶）重叠的那几层
+	if not voxels.is_empty():
+		for gz in range(floori(q.y - radius), floori(q.y + radius) + 1):
+			for gx in range(floori(q.x - radius), floori(q.x + radius) + 1):
+				if not _solid_column(gx, gz, p.y):
+					continue
+				var c := Vector2(gx + 0.5, gz + 0.5)
+				var d := q - c
+				var h := 0.5 + radius
+				if absf(d.x) < h and absf(d.y) < h:
+					if h - absf(d.x) < h - absf(d.y):
+						d.x = signf(d.x if d.x != 0.0 else 1.0) * h
+					else:
+						d.y = signf(d.y if d.y != 0.0 else 1.0) * h
+					q = c + d
 	for i in _nearby(q):
 		var o: Dictionary = obstacles[i]
 		var d: Vector2 = q - o.c
@@ -136,7 +151,7 @@ func blocked(p: Vector3, radius := 0.3) -> bool:
 		return true
 	for gz in range(floori(q.y - radius), floori(q.y + radius) + 1):
 		for gx in range(floori(q.x - radius), floori(q.x + radius) + 1):
-			if _cell(gx, gz):
+			if _wall(gx, gz):
 				return true
 	for i in _nearby(q):
 		var o: Dictionary = obstacles[i]
@@ -151,7 +166,7 @@ func line_blocked(a: Vector3, b: Vector3) -> bool:
 	var steps := int(a.distance_to(b) / 0.5)
 	for s in range(1, steps):
 		var p := a.lerp(b, float(s) / steps)
-		if _cell(floori(p.x), floori(p.z)):
+		if _wall(floori(p.x), floori(p.z)):
 			return true
 	return false
 
@@ -230,10 +245,10 @@ func update_flow(target: Vector3) -> void:
 				continue
 			var wx := _flow_center.x - FLOW_R + nx
 			var wz := _flow_center.y - FLOW_R + nz
-			if _cell(wx, wz):
+			if _wall(wx, wz):
 				_flow[ni] = -2
 				continue
-			if k >= 4 and (_cell(_flow_center.x - FLOW_R + x + dv.x, _flow_center.y - FLOW_R + z) or _cell(_flow_center.x - FLOW_R + x, _flow_center.y - FLOW_R + z + dv.y)):
+			if k >= 4 and (_wall(_flow_center.x - FLOW_R + x + dv.x, _flow_center.y - FLOW_R + z) or _wall(_flow_center.x - FLOW_R + x, _flow_center.y - FLOW_R + z + dv.y)):
 				continue
 			_flow[ni] = d + 1
 			queue[tail] = ni
@@ -273,6 +288,182 @@ func _cell(gx: int, gz: int) -> bool:
 	if x < 0 or z < 0 or x >= MAP * 2 or z >= MAP * 2:
 		return false
 	return _cells[z * MAP * 2 + x] == 1
+
+
+## 楼，或者贴地两格里有自己摆的方块（僵尸过不去、绕着走）
+func _wall(gx: int, gz: int) -> bool:
+	return _cell(gx, gz) or (not _low.is_empty() and _low.has(Vector2i(gx, gz)))
+
+
+# —— 自己摆的方块（1 米一格，格子坐标 = 世界坐标向下取整） ——
+
+## 格子 -> {id, hp, node}
+var voxels := {}
+var _low := {}      # Vector2i(x, z) -> 这一列 y=0、1 两格里有几块（挡僵尸用）
+var _voxel_root: Node3D
+const VOXEL_TOP := 40
+
+
+static func cell_of(p: Vector3) -> Vector3i:
+	return Vector3i(floori(p.x), floori(p.y), floori(p.z))
+
+
+func has_voxel(c: Vector3i) -> bool:
+	return voxels.has(c)
+
+
+## 这一列在 [脚底, 头顶] 这段高度里有没有方块
+func _solid_column(gx: int, gz: int, feet: float) -> bool:
+	for y in range(maxi(0, floori(feet + 0.05)), floori(feet + 1.7) + 1):
+		if voxels.has(Vector3i(gx, y, gz)):
+			return true
+	return false
+
+
+## 这格能不能摆：空的、不在楼里、在地图里、不太高
+func can_place(c: Vector3i) -> bool:
+	if voxels.has(c) or c.y < 0 or c.y >= VOXEL_TOP:
+		return false
+	if absi(c.x) >= int(EDGE) or absi(c.z) >= int(EDGE):
+		return false
+	return not _cell(c.x, c.z)
+
+
+func add_voxel(c: Vector3i, id: String, hp := -1.0) -> void:
+	if voxels.has(c):
+		return
+	if _voxel_root == null:
+		_voxel_root = Node3D.new()
+		_voxel_root.name = "Voxels"
+		add_child(_voxel_root)
+	var node := Blocks.make_node(id)
+	node.position = Vector3(c)
+	_voxel_root.add_child(node)
+	voxels[c] = {"id": id, "hp": hp if hp > 0.0 else float(Blocks.info(id).get("hp", 100.0)), "node": node}
+	if c.y <= 1:
+		var k := Vector2i(c.x, c.z)
+		_low[k] = _low.get(k, 0) + 1
+
+
+func remove_voxel(c: Vector3i) -> String:
+	var v: Dictionary = voxels.get(c, {})
+	if v.is_empty():
+		return ""
+	(v.node as Node).queue_free()
+	voxels.erase(c)
+	if c.y <= 1:
+		var k := Vector2i(c.x, c.z)
+		_low[k] = _low.get(k, 1) - 1
+		if _low[k] <= 0:
+			_low.erase(k)
+	return v.id
+
+
+## 打方块，耐久打完就拆掉，返回拆下来的方块名（没拆掉返回空）
+func damage_voxel(c: Vector3i, dmg: float) -> String:
+	var v: Dictionary = voxels.get(c, {})
+	if v.is_empty():
+		return ""
+	v.hp -= dmg
+	if v.hp <= 0.0:
+		return remove_voxel(c)
+	return ""
+
+
+## 方块还剩几成耐久（0..1）
+func voxel_health(c: Vector3i) -> float:
+	var v: Dictionary = voxels.get(c, {})
+	if v.is_empty():
+		return 0.0
+	return v.hp / float(Blocks.info(v.id).get("hp", 100.0))
+
+
+func clear_voxels() -> void:
+	for c in voxels.keys():
+		remove_voxel(c)
+	voxels.clear()
+	_low.clear()
+
+
+## 存档用：[[x, y, z, 方块名, 耐久], …]
+func voxel_save() -> Array:
+	var out := []
+	for c in voxels:
+		out.append([c.x, c.y, c.z, voxels[c].id, voxels[c].hp])
+	return out
+
+
+func voxel_load(list: Array) -> void:
+	clear_voxels()
+	for e in list:
+		if e is Array and e.size() >= 4 and Blocks.is_block(str(e[3])):
+			add_voxel(Vector3i(int(e[0]), int(e[1]), int(e[2])), str(e[3]), float(e[4]) if e.size() > 4 else -1.0)
+
+
+## 站在 p 时脚下最高的方块顶（没有就是地面 0）。只算比脚底高不了多少的方块，免得被吸到头顶上
+func floor_under(p: Vector3, radius: float) -> float:
+	if voxels.is_empty():
+		return 0.0
+	var best := 0.0
+	var top := floori(p.y + 0.3)
+	for gz in range(floori(p.z - radius), floori(p.z + radius) + 1):
+		for gx in range(floori(p.x - radius), floori(p.x + radius) + 1):
+			for y in range(mini(top - 1, VOXEL_TOP), -1, -1):
+				if float(y + 1) <= best:
+					break
+				if voxels.has(Vector3i(gx, y, gz)):
+					best = float(y + 1)
+					break
+	return best
+
+
+## 头顶（p.y + height）碰到方块没有
+func ceiling_hit(p: Vector3, radius: float, height: float) -> bool:
+	if voxels.is_empty():
+		return false
+	var y := floori(p.y + height)
+	for gz in range(floori(p.z - radius), floori(p.z + radius) + 1):
+		for gx in range(floori(p.x - radius), floori(p.x + radius) + 1):
+			if voxels.has(Vector3i(gx, y, gz)):
+				return true
+	return false
+
+
+## 沿射线一格一格走（DDA），找到第一个碰到的东西：
+## {hit: 打中的方块格子（没打中方块是 null）, place: 打中前那一格（能摆新方块的地方）, t: 距离}
+## 打到地面或楼也算，这时 hit 是 null。什么都没碰到返回空字典。
+func ray_voxel(from: Vector3, dir: Vector3, reach: float) -> Dictionary:
+	dir = dir.normalized()
+	var c := cell_of(from)
+	var prev := c
+	var step := Vector3i(int(signf(dir.x)), int(signf(dir.y)), int(signf(dir.z)))
+	var t_max := Vector3.ZERO
+	var t_delta := Vector3.ZERO
+	for a in 3:
+		if absf(dir[a]) < 1e-6:
+			t_max[a] = INF
+			t_delta[a] = INF
+		else:
+			var edge := float(c[a] + (1 if dir[a] > 0.0 else 0))
+			t_max[a] = (edge - from[a]) / dir[a]
+			t_delta[a] = absf(1.0 / dir[a])
+	var t := 0.0
+	while t <= reach:
+		if c != cell_of(from):
+			if voxels.has(c):
+				return {"hit": c, "place": prev, "t": t}
+			if c.y < 0 or (c.y < 30 and _cell(c.x, c.z)):
+				return {"hit": null, "place": prev, "t": t}
+		prev = c
+		var a := 0
+		if t_max.y < t_max[a]:
+			a = 1
+		if t_max.z < t_max[a]:
+			a = 2
+		t = t_max[a]
+		t_max[a] += t_delta[a]
+		c[a] += step[a]
+	return {}
 
 
 func has(name: String) -> bool:
@@ -585,18 +776,7 @@ func _poi(name: String, c: Vector2) -> void:
 
 func _poi_material() -> ShaderMaterial:
 	if _poi_mat == null:
-		_poi_mat = ShaderMaterial.new()
-		_poi_mat.shader = POI_SHADER
-		var albedo := "%s/poi/atlas_albedo.res" % ROOT
-		var normal := "%s/poi/atlas_normal.res" % ROOT
-		if ResourceLoader.exists(albedo):
-			var tex: Texture2DArray = load(albedo).to_texture()
-			var ntex: Texture2DArray = load(normal).to_texture() if ResourceLoader.exists(normal) else null
-			if tex:
-				_poi_mat.set_shader_parameter("atlas", tex)
-				if ntex:
-					_poi_mat.set_shader_parameter("atlas_normal", ntex)
-				_poi_mat.set_shader_parameter("use_atlas", true)
+		_poi_mat = Blocks.material()
 	return _poi_mat
 
 

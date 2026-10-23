@@ -607,6 +607,39 @@ TERRAIN_ZIP = "小橘素材库/terraintextures_arrays.zip"
 TERRAIN_LAYERS = {"asphalt": (4, 8), "concrete": (6, 4), "gravel": (5, 8), "dirt": (9, 8), "rubble": (8, 8),
                   "forest_ground": (2, 8), "burnt_forest_ground": (10, 8), "desert_debris": (11, 8)}
 TERRAIN_TEX = 1024
+# 能自己摆的建造方块（scripts/blocks.gd 里的同名表）：从游戏的 blocks.xml 查它们用哪张贴图
+BLOCKS_XML = "小橘素材库/config"
+BUILD_BLOCKS = ["frameShapes", "woodShapes", "cobblestoneShapes", "concreteShapes", "steelShapes", "flagstoneShapes"]
+
+
+def _build_block_textures():
+    """建造方块名 → 贴图编号（blocks.xml 里的 Texture 属性，没有就顺着 Extends 往上找）"""
+    it = find(list_dir(f"{DRIVE_ROOT}/{BLOCKS_XML}"), "blocks.xml")
+    if not it:
+        print("云盘里没有 config/blocks.xml，建造方块用纯色")
+        return {}
+    with request(f"/items/{it['id']}/content") as r:
+        xml = r.read().decode("utf-8-sig", "replace")
+    tex, ext = {}, {}
+    for m in re.finditer(r'<block\s+name="([^"]+)"(.*?)</block>', xml, re.S):
+        name, body = m.group(1), m.group(2)
+        t = re.search(r'name="Texture"\s+value="([^"]*)"', body)
+        if t:
+            nums = re.findall(r"\d+", t.group(1))
+            if nums:
+                tex[name] = int(nums[0])
+        e = re.search(r'name="Extends"\s+value="([^"]*)"', body)
+        if e:
+            ext[name] = e.group(1).split(",")[0].strip()
+    out = {}
+    for name in BUILD_BLOCKS:
+        n, hops = name, 0
+        while n and n not in tex and hops < 8:
+            n, hops = ext.get(n), hops + 1
+        if n in tex:
+            out[name] = tex[n]
+    print(f"建造方块贴图: {len(out)}/{len(BUILD_BLOCKS)} 种在 blocks.xml 里找到")
+    return out
 
 
 def _poi_tex_ids(poi_dir):
@@ -652,8 +685,12 @@ def fetch_blocks(dest):
     out_dir = os.path.join(dest, "blocks")
     index_out = os.path.join(out_dir, "atlas.json")
     if os.path.exists(index_out):
-        print("方块贴图: 已有，跳过（删掉 assets/blocks/atlas.json 可重新取）")
-        return
+        with open(index_out, encoding="utf-8") as f:
+            done = "blocks" in json.load(f)
+        if done:
+            print("方块贴图: 已有，跳过（删掉 assets/blocks/atlas.json 可重新取）")
+            return
+        print("方块贴图: 旧版没有建造方块，重新取")
     try:
         from PIL import Image
     except ImportError:
@@ -673,7 +710,12 @@ def fetch_blocks(dest):
             uv[int(a["id"])] = (int(a["index"]), int(a.get("blockw", 1)), int(a.get("blockh", 1)))
     poi_dir = os.path.join(dest, "poi")
     used = _poi_tex_ids(poi_dir) if os.path.isdir(poi_dir) else set()
-    wanted = sorted(i for i in (used or uv.keys()) if i in uv)
+    try:
+        build = _build_block_textures()
+    except Exception as e:  # 查不到就用纯色，不影响楼
+        print(f"建造方块贴图: 读 blocks.xml 失败（{e}），用纯色")
+        build = {}
+    wanted = sorted(i for i in ((used or set(uv.keys())) | set(build.values())) if i in uv)
     names = {os.path.basename(i.filename): i for i in zf.infolist()}
     os.makedirs(out_dir, exist_ok=True)
     # 这些图只给 tools/build_poi.gd 打包成图集用，不让 Godot 单独导入
@@ -691,7 +733,8 @@ def fetch_blocks(dest):
             layer += 1
     missing = sorted(used - set(uv))
     with open(index_out, "w", encoding="utf-8") as f:
-        json.dump({"layers": layer, "size": BLOCK_TEX, "ids": ids, "missing": missing}, f, indent=1)
+        json.dump({"layers": layer, "size": BLOCK_TEX, "ids": ids, "missing": missing,
+                   "blocks": {k: v for k, v in build.items() if str(v) in ids}}, f, indent=1)
     print(f"方块贴图: {len(ids)} 种，{layer} 层" + (f"（对照表里没有的编号 {missing}）" if missing else ""))
 
 

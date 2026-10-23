@@ -5,7 +5,7 @@ extends Node
 const ROOT := "res://assets"
 const INDEX_PATH := "res://assets/index/icon_to_model.json"
 
-enum Kind { MELEE, GUN, FOOD, DRINK, MEDICAL, RESOURCE, OTHER }
+enum Kind { MELEE, GUN, FOOD, DRINK, MEDICAL, RESOURCE, OTHER, BLOCK }
 
 ## 每项: {id, zh, en, model, icon, kind, power}
 var items: Array[Dictionary] = []
@@ -74,6 +74,7 @@ func scan() -> void:
 				break
 
 	_load_index()
+	_add_blocks()
 
 	if zombie_models.is_empty():
 		errors.append("assets/models/ 里没有文件名含 zombie 的模型")
@@ -153,6 +154,25 @@ func _load_index() -> void:
 			loot_pool[row.kind].append(row.id)
 	if loot_pool.is_empty():
 		errors.append("icon_to_model.json 里没有能匹配到图标或模型的武器、食物、药品")
+
+
+## 建造方块（scripts/blocks.gd）也当物品放进物品表；物品表里有同名图标就用游戏的图标
+func _add_blocks() -> void:
+	for t in Blocks.TYPES:
+		var id: String = t[0]
+		var row: Dictionary = items_by_id.get(id, {})
+		if row.is_empty():
+			row = {"id": id, "zh": t[1], "en": t[2], "model": "", "icon": _icon_files.get(id.to_lower(), "")}
+			items.append(row)
+			items_by_id[id] = row
+		else:
+			for k in loot_pool:
+				loot_pool[k].erase(id)
+		if row.zh == "":
+			row.zh = t[1]
+		row.model = ""
+		row.kind = Kind.BLOCK
+		row.power = 0.0
 
 
 ## 把各种可能的写法统一成 {id, zh, en, model}。主要格式是 [物品名, 中文名, 英文名, 模型名]。
@@ -314,6 +334,8 @@ func random_loot(rng: RandomNumberGenerator, tag := "any") -> String:
 
 func icon(id: String) -> Texture2D:
 	var row: Dictionary = items_by_id.get(id, {})
+	if row.get("kind", -1) == Kind.BLOCK and row.icon == "":
+		return Blocks.icon(id)
 	if row.is_empty() or row.icon == "":
 		return null
 	if not _icon_cache.has(id):

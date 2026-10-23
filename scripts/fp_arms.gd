@@ -494,6 +494,15 @@ func hold(item_id: String) -> void:
 	var row: Dictionary = Assets.items_by_id.get(item_id, {})
 	var kind: int = row.get("kind", -1)
 	var holder := Node3D.new()
+	if kind == Assets.Kind.BLOCK:
+		# 建造方块：手里托着一块小方块
+		var cube := Blocks.make_node(item_id)
+		cube.scale = Vector3.ONE * 0.11
+		cube.position = Vector3(-0.055, -0.02, -0.055)
+		holder.add_child(cube)
+		_grip = Grip.SMALL
+		_mount(holder)
+		return
 	var vis: Node3D = null
 	var size := Vector3(0.1, 0.3, 0.1)
 	if row.get("model", "") == "" and kind == Assets.Kind.GUN:
@@ -553,6 +562,10 @@ func hold(item_id: String) -> void:
 		sp.position = Vector3(0, 0.05, 0)
 		holder.add_child(sp)
 		_grip = Grip.SMALL
+	_mount(holder)
+
+
+func _mount(holder: Node3D) -> void:
 	_weapon_mount.add_child(holder)
 	_weapon = holder
 	for m in holder.find_children("*", "GeometryInstance3D", true, false):

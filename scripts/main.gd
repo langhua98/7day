@@ -52,6 +52,9 @@ var _night_announced := -1
 var _step_d := 0.0      # 走了多远，够一步就放脚步声
 var world_seed := 0
 var _save_t := 0.0
+var _grounded := true
+## 拿着方块时准星指的那一格，显示一个半透明的框
+var _ghost: MeshInstance3D
 const SAVE_PATH := "user://save.json"
 
 
@@ -125,6 +128,7 @@ func _save() -> void:
 		"kills": kills, "inventory": inventory, "order": pickup_order, "equipped": equipped, "mags": mags,
 		"pos": [player.position.x, player.position.z], "yaw": yaw,
 		"bleed": bleed_t, "sick": sick_t, "buff": buff_t, "searched": searched,
+		"y": player.position.y, "blocks": world.voxel_save(),
 	}
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:
@@ -162,8 +166,12 @@ func _continue() -> void:
 	for i in d.get("searched", []):
 		if int(i) < world.containers.size():
 			world.containers[int(i)].searched = true
-	player.position = world.push_out(Vector3(d.pos[0], 0, d.pos[1]), 0.35)
+	world.voxel_load(d.get("blocks", []))
+	player.position = world.push_out(Vector3(d.pos[0], float(d.get("y", 0.0)), d.pos[1]), 0.35)
+	player.position.y = world.floor_under(player.position + Vector3.UP * 0.5, 0.3)
 	yaw = d.yaw
+	if C.TEST_ALL_ITEMS:
+		_give_all_items(true)
 	var eq: String = d.get("equipped", "")
 	_equip(eq if inventory.has(eq) else "")
 	_refresh_inventory()
@@ -222,6 +230,18 @@ func _build_player() -> void:
 	player.add_child(camera)
 	arms = FpArms.new()
 	camera.add_child(arms)
+	_ghost = MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = Vector3.ONE * 1.02
+	_ghost.mesh = box
+	var gm := StandardMaterial3D.new()
+	gm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	gm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	gm.albedo_color = Color(1, 1, 1, 0.22)
+	_ghost.material_override = gm
+	_ghost.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_ghost.visible = false
+	add_child(_ghost)
 
 
 # —— 开局 / 结束 ——
@@ -251,6 +271,8 @@ func _start(fresh := true) -> void:
 	spawn_cd = 6.0
 	for c in world.containers:
 		c.searched = false
+	world.clear_voxels()
+	_grounded = true
 	_search = {}
 	hud.set_progress(-1.0)
 	mags.clear()
@@ -271,28 +293,41 @@ func _start(fresh := true) -> void:
 	hud.set_banner("")
 	_refresh_inventory()
 	if fresh and C.TEST_ALL_ITEMS:
-		hud.toast("测试模式：全部物品都在背包里，点背包换着试")
+		hud.toast("测试模式：全部物品和建造方块都在背包里，子弹用不完")
 	elif fresh:
 		hud.toast("第 1 天。找武器、找吃的，天黑前做好准备。")
 		_save()
 
 
-## 测试模式：全部物品直接进背包（零件、机器人这些用不了的除外），枪装满，每种子弹给足
-func _give_all_items() -> void:
+## 测试模式：全部物品直接进背包（零件、机器人这些用不了的除外），枪装满，每种子弹、每种方块给足。
+## top_up = 读档时补齐：缺的补上，不换手上的东西
+func _give_all_items(top_up := false) -> void:
 	var kinds := [Assets.Kind.GUN, Assets.Kind.MELEE, Assets.Kind.FOOD, Assets.Kind.DRINK, Assets.Kind.MEDICAL]
 	for k in kinds:
 		for row in Assets.items:
 			var id: String = row.id
 			if row.kind != k or id.ends_with("Parts") or id.begins_with("gunBot"):
 				continue
-			inventory[id] = 1 if k in [Assets.Kind.MELEE, Assets.Kind.GUN] else 5
-			pickup_order.append(id)
-			if k == Assets.Kind.GUN:
+			var want := 1 if k in [Assets.Kind.MELEE, Assets.Kind.GUN] else 5
+			if inventory.get(id, 0) < want:
+				inventory[id] = want
+			if not pickup_order.has(id):
+				pickup_order.append(id)
+			if k == Assets.Kind.GUN and not mags.has(id):
 				mags[id] = Weapons.stats(id).mag
 	for row in Assets.items:
 		if Weapons.is_ammo(row.id):
-			inventory[row.id] = C.TEST_AMMO
-			pickup_order.append(row.id)
+			inventory[row.id] = maxi(inventory.get(row.id, 0), C.TEST_AMMO)
+			if not pickup_order.has(row.id):
+				pickup_order.append(row.id)
+	for t in Blocks.TYPES:
+		var id: String = t[0]
+		if Assets.items_by_id.has(id):
+			inventory[id] = maxi(inventory.get(id, 0), C.TEST_BLOCKS)
+			if not pickup_order.has(id):
+				pickup_order.append(id)
+	if top_up:
+		return
 	# 快捷栏先放手枪和步枪（不然按字母排第一把是弓）
 	for id in ["gunMGT2TacticalAR", "gunHandgunT0PipePistol"]:
 		if pickup_order.has(id):
@@ -381,11 +416,17 @@ func _update_player(delta: float) -> void:
 	# 跳：简单的竖直速度和重力
 	if Input.is_physical_key_pressed(KEY_C):
 		_jump()
+	# 地面是 0；站在自己摆的方块上就是方块顶
 	_vy -= C.GRAVITY * delta
-	player.position.y = max(0.0, player.position.y + _vy * delta)
-	if player.position.y <= 0.0:
+	player.position.y += _vy * delta
+	if _vy > 0.0 and world.ceiling_hit(player.position, 0.3, 1.8):
+		_vy = 0.0
+	var floor_y := world.floor_under(player.position, 0.3)
+	_grounded = player.position.y <= floor_y + 0.01
+	if _grounded:
 		if _vy < -3.0:
 			Sfx.play("land", Vector3.INF, -6.0)
+		player.position.y = floor_y
 		_vy = 0.0
 	# 后坐力：镜头往上一跳，慢慢回落
 	if _recoil > 0.0:
@@ -399,7 +440,7 @@ func _update_player(delta: float) -> void:
 	var vel := (fwd * mv.y + right * mv.x) * C.PLAYER_SPEED * (C.SPRINT_MULT if sprint else 1.0)
 	var before := player.position
 	player.position = world.push_out(player.position + vel * delta, 0.35)
-	if player.position.y <= 0.01:
+	if _grounded:
 		_step_d += Vector2(player.position.x - before.x, player.position.z - before.z).length()
 		if _step_d > (1.9 if sprint else 1.5):
 			_step_d = 0.0
@@ -413,6 +454,7 @@ func _update_player(delta: float) -> void:
 	if Input.is_physical_key_pressed(KEY_R):
 		_reload()
 	_update_ammo_hud()
+	_update_ghost()
 
 	attack_cd = max(0.0, attack_cd - delta)
 	if Input.is_physical_key_pressed(KEY_E) and not _e_down:
@@ -428,6 +470,9 @@ func _attack() -> void:
 	var kind: int = row.get("kind", -1)
 	if kind == Assets.Kind.GUN:
 		_fire(row)
+		return
+	if kind == Assets.Kind.BLOCK:
+		_place_block()
 		return
 	attack_cd = C.MELEE_COOLDOWN
 	arms.swing(1.0 / C.MELEE_COOLDOWN * 0.9)
@@ -460,6 +505,89 @@ func _attack() -> void:
 		var head := pitch > 0.12
 		_hit_zombie(best, dmg * (C.HEADSHOT_MULT if head else 1.0), head,
 			best.global_position + Vector3.UP * (best.height() * (0.88 if head else 0.6)), flat_aim)
+	else:
+		_hit_block(dmg)
+
+
+# —— 建造：拿着方块点攻击就摆，空手 / 近战打方块就拆 ——
+
+## 准星指着的地方：{hit: 方块格子或 null, place: 能摆的那一格}
+func _aim_block(reach: float) -> Dictionary:
+	return world.ray_voxel(camera.global_position, -camera.global_basis.z, reach)
+
+
+## 这一格会不会卡住自己或者僵尸
+func _cell_occupied(c: Vector3i) -> bool:
+	var box := AABB(Vector3(c), Vector3.ONE)
+	var me := AABB(player.position + Vector3(-0.3, 0.0, -0.3), Vector3(0.6, 1.8, 0.6))
+	if box.intersects(me):
+		return true
+	for z in zombie_root.get_children():
+		if z.dead:
+			continue
+		var zb := AABB(z.global_position + Vector3(-0.3, 0.0, -0.3), Vector3(0.6, 1.8, 0.6))
+		if box.intersects(zb):
+			return true
+	return false
+
+
+func _place_target() -> Variant:
+	var aim := _aim_block(C.BUILD_REACH)
+	if aim.is_empty():
+		return null
+	var c: Vector3i = aim.place
+	if not world.can_place(c) or _cell_occupied(c):
+		return null
+	return c
+
+
+func _update_ghost() -> void:
+	var row: Dictionary = Assets.items_by_id.get(equipped, {})
+	var c = _place_target() if row.get("kind", -1) == Assets.Kind.BLOCK else null
+	_ghost.visible = c != null
+	if c != null:
+		_ghost.position = Vector3(c) + Vector3.ONE * 0.5
+
+
+func _place_block() -> void:
+	attack_cd = C.BUILD_COOLDOWN
+	if inventory.get(equipped, 0) <= 0:
+		return
+	var c = _place_target()
+	if c == null:
+		return
+	world.add_voxel(c, equipped)
+	arms.swing(6.0)
+	Sfx.play("land", Vector3(c) + Vector3.ONE * 0.5, -4.0)
+	if not C.TEST_INFINITE:
+		inventory[equipped] -= 1
+		if inventory[equipped] <= 0:
+			var id := equipped
+			inventory.erase(id)
+			pickup_order.erase(id)
+			_equip("")
+		_refresh_inventory()
+
+
+## 空手或近战打到方块：扣耐久，打碎了方块回到背包
+func _hit_block(dmg: float) -> void:
+	var aim := _aim_block(C.MELEE_RANGE + 0.6)
+	if aim.is_empty() or aim.hit == null:
+		return
+	var c: Vector3i = aim.hit
+	var at := camera.global_position - camera.global_basis.z * float(aim.t)
+	Fx.impact(self, at + camera.global_basis.z * 0.05, camera.global_basis.z)
+	Sfx.play("bullet_wall", at, -4.0)
+	var got := world.damage_voxel(c, dmg)
+	if got != "":
+		if not C.TEST_INFINITE:
+			inventory[got] = inventory.get(got, 0) + 1
+			if not pickup_order.has(got):
+				pickup_order.append(got)
+			_refresh_inventory()
+		hud.toast("拆掉了%s" % Assets.display_name(got))
+	else:
+		hud.toast("%s 耐久 %d%%" % [Assets.display_name(world.voxels[c].id), int(world.voxel_health(c) * 100.0)])
 
 
 ## 开枪：每颗弹丸从镜头沿准星方向射出，先打中的是僵尸还是墙
@@ -471,7 +599,7 @@ func _fire(row: Dictionary) -> void:
 	if left <= 0:
 		attack_cd = 0.35
 		Sfx.play("empty")
-		if Weapons.ammo_count(inventory, equipped) > 0:
+		if Weapons.ammo_count(inventory, equipped) > 0 or C.TEST_INFINITE:
 			_reload()
 		else:
 			hud.toast("没子弹了，翻翻警车和武器包")
@@ -501,6 +629,9 @@ func _shoot_ray(eye: Vector3, dir: Vector3, st: Dictionary) -> void:
 			break
 		if world.blocked(Vector3(p.x, 0, p.z), 0.0) and p.y < 1.4:
 			wall_t = t   # 车、箱子这种矮的东西
+			break
+		if world.has_voxel(World.cell_of(p)):
+			wall_t = t   # 自己摆的方块
 			break
 		t += 0.25
 	# 僵尸：当成竖着的胶囊
@@ -569,7 +700,7 @@ func _reload() -> void:
 	var st := Weapons.stats(equipped)
 	if mags.get(equipped, 0) >= st.mag:
 		return
-	if Weapons.ammo_count(inventory, equipped) <= 0:
+	if Weapons.ammo_count(inventory, equipped) <= 0 and not C.TEST_INFINITE:
 		hud.toast("没有这把枪的子弹")
 		return
 	_reload_left = st.reload
@@ -580,6 +711,10 @@ func _reload() -> void:
 func _finish_reload() -> void:
 	var st := Weapons.stats(equipped)
 	var need: int = st.mag - mags.get(equipped, 0)
+	if C.TEST_INFINITE:
+		# 测试模式：直接装满，不扣背包里的子弹
+		mags[equipped] = st.mag
+		return
 	for id in Weapons.ammo_in(inventory, equipped):
 		if need <= 0:
 			break
@@ -598,14 +733,14 @@ func _update_ammo_hud() -> void:
 	if row.get("kind", -1) != Assets.Kind.GUN:
 		hud.set_ammo("")
 		return
-	var text := "%d / %d" % [mags.get(equipped, 0), Weapons.ammo_count(inventory, equipped)]
+	var text := "%d / %s" % [mags.get(equipped, 0), "∞" if C.TEST_INFINITE else str(Weapons.ammo_count(inventory, equipped))]
 	if _reload_left > 0.0:
 		text = "换弹中…"
 	hud.set_ammo(text)
 
 
 func _jump() -> void:
-	if player.position.y <= 0.01 and stamina > 8.0:
+	if _grounded and stamina > 8.0:
 		_vy = C.JUMP_SPEED
 		stamina -= 8.0
 		Sfx.play("jump", Vector3.INF, -6.0)
@@ -852,14 +987,34 @@ func _use_item(id: String) -> void:
 	if not inventory.has(id):
 		return
 	var row: Dictionary = Assets.items_by_id[id]
+	if Weapons.is_ammo(id):
+		_use_ammo(id)
+		_refresh_inventory()
+		return
 	match row.kind:
 		Assets.Kind.MELEE, Assets.Kind.GUN:
 			_equip("" if equipped == id else id)
 		Assets.Kind.FOOD, Assets.Kind.DRINK, Assets.Kind.MEDICAL:
 			_apply_effect(id, row.kind)
+		Assets.Kind.BLOCK:
+			_equip("" if equipped == id else id)
+			if equipped == id:
+				hud.toast("拿着%s：对准地面或方块点「攻击」摆放，空手或近战打方块能拆" % Assets.display_name(id))
 		_:
 			hud.toast("%s：材料，留着吧" % Assets.display_name(id))
 	_refresh_inventory()
+
+
+## 点背包里的子弹：手上的枪用这种子弹就换弹，不然换上背包里第一把用这种子弹的枪
+func _use_ammo(id: String) -> void:
+	if equipped != "" and id.begins_with(Weapons.stats(equipped).ammo) and Assets.items_by_id[equipped].kind == Assets.Kind.GUN:
+		_reload()
+		return
+	for gun in pickup_order:
+		if Assets.items_by_id[gun].kind == Assets.Kind.GUN and id.begins_with(Weapons.stats(gun).ammo):
+			_equip(gun)
+			return
+	hud.toast("背包里没有用%s的枪" % Assets.display_name(id))
 
 
 ## 吃喝用药：按 Survival 表加减各项，再把物品用掉
@@ -915,7 +1070,7 @@ func _refresh_inventory() -> void:
 	if equipped != "":
 		bar.append(equipped)
 	# 先每类放一个（枪、近战、吃的、喝的、药），再按捡到的顺序补满
-	var kinds := [Assets.Kind.GUN, Assets.Kind.MELEE, Assets.Kind.FOOD, Assets.Kind.DRINK, Assets.Kind.MEDICAL]
+	var kinds := [Assets.Kind.GUN, Assets.Kind.MELEE, Assets.Kind.BLOCK, Assets.Kind.FOOD, Assets.Kind.DRINK, Assets.Kind.MEDICAL]
 	for pass_ in 2:
 		for k in kinds:
 			for id in pickup_order:
