@@ -8,6 +8,8 @@ extends Node3D
 const ROOT := "res://assets"
 const INDEX := "res://assets/index/world_models.json"
 const POI_INDEX := "res://assets/poi/index.json"
+## 楼里的容器方块（tools/build_poi_full.py 输出）：{楼名: {ground, list: [{block, loot, x, y, z, rot}]}}
+const POI_CONTAINERS := "res://assets/poi/containers.json"
 const POI_SHADER := preload("res://scripts/poi.gdshader")
 const TERRAIN_INDEX := "res://assets/terrain/terrain.json"
 ## 多远以内显示完整的楼（再远用简化的远景网格，省手机性能）
@@ -50,6 +52,7 @@ var models := {}
 var textures := {}
 var decals: PackedStringArray = []
 var pois := {}
+var poi_containers := {}
 ## 地面贴图（游戏的地形贴图数组）：名字 -> {albedo, normal, orm, tile}
 var terrain := {}
 var ready_ok := false
@@ -88,6 +91,10 @@ func _ready() -> void:
 		var p = JSON.parse_string(FileAccess.get_file_as_string(POI_INDEX))
 		if p is Dictionary:
 			pois = p
+	if FileAccess.file_exists(POI_CONTAINERS):
+		var pc = JSON.parse_string(FileAccess.get_file_as_string(POI_CONTAINERS))
+		if pc is Dictionary:
+			poi_containers = pc
 	if FileAccess.file_exists(TERRAIN_INDEX):
 		var t = JSON.parse_string(FileAccess.get_file_as_string(TERRAIN_INDEX))
 		if t is Dictionary:
@@ -254,11 +261,13 @@ func line_blocked(a: Vector3, b: Vector3) -> bool:
 	return false
 
 
-## 离玩家最近、够得着的容器
+## 离玩家最近、够得着的容器（楼里的容器还要在同一层）
 func nearest_container(p: Vector3, reach := 1.4) -> Dictionary:
 	var best := {}
 	var best_d := INF
 	for c in containers:
+		if c.get("indoor", false) and absf(p.y - c.pos.y) > 2.0:
+			continue
 		var d: float = Vector2(p.x - c.pos.x, p.z - c.pos.z).length() - c.r
 		if d < reach and d < best_d:
 			best_d = d
@@ -1009,6 +1018,7 @@ func _poi(name: String, c: Vector2) -> void:
 	else:
 		_poi_lod.append({"node": mi, "pos": c})
 	buildings.append({"name": name, "pos": Vector3(c.x, 0, c.y)})
+	_poi_containers(name, c, rot, mi.position.y)
 	var w: int = info.grid_w
 	var h: int = info.grid_h
 	var g: String = info.grid
@@ -1028,6 +1038,37 @@ func _poi(name: String, c: Vector2) -> void:
 			var gz := floori(wz) + MAP
 			if gx >= 0 and gz >= 0 and gx < MAP * 2 and gz < MAP * 2:
 				_cells[gz * MAP * 2 + gx] = 1
+
+
+## 把这栋楼方块数据里的容器方块加进 containers。方块本身已经画在完整网格里，这里只登记位置。
+## loot 是官方 LootList 名（交给 Loot.roll）；旧的分类掷骰没有对应时按 any。
+func _poi_containers(name: String, c: Vector2, rot: float, base_y: float) -> void:
+	var entry = poi_containers.get(name)
+	if not (entry is Dictionary):
+		return
+	var cs := cos(rot)
+	var sn := sin(rot)
+	for e in entry.get("list", []):
+		var lx := float(e.get("x", 0.0))
+		var lz := float(e.get("z", 0.0))
+		var pos := Vector3(c.x + lx * cs + lz * sn, base_y + float(e.get("y", 0.0)), c.y - lx * sn + lz * cs)
+		var official: String = str(e.get("loot", ""))
+		containers.append({"node": null, "pos": pos, "name": _container_zh(official),
+			"loot": "any", "container": official, "block": str(e.get("block", "")),
+			"searched": false, "r": 0.5, "kind": "block", "indoor": true, "poi": name})
+
+
+## 容器的中文叫法（按官方 LootList 名里的关键词猜，猜不到就叫「柜子」）
+func _container_zh(loot: String) -> String:
+	var l := loot.to_lower()
+	for k in [["fridge", "冰箱"], ["cupboard", "橱柜"], ["cabinet", "柜子"], ["desk", "书桌"], ["safe", "保险箱"],
+			["garbage", "垃圾桶"], ["trash", "垃圾桶"], ["cardboard", "纸箱"], ["box", "箱子"], ["crate", "木箱"],
+			["shelf", "货架"], ["dresser", "梳妆台"], ["locker", "储物柜"], ["toilet", "马桶"], ["oven", "烤箱"],
+			["bookcase", "书柜"], ["book", "书柜"], ["medicine", "药柜"], ["gun", "枪柜"], ["backpack", "背包"],
+			["mailbox", "邮箱"], ["sink", "水槽"], ["file", "文件柜"], ["vending", "售货机"], ["register", "收银机"]]:
+		if l.contains(k[0]):
+			return k[1]
+	return "柜子"
 
 
 func _poi_material() -> ShaderMaterial:
