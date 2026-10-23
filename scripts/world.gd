@@ -14,6 +14,8 @@ const POI_SHADER := preload("res://scripts/poi.gdshader")
 const TERRAIN_INDEX := "res://assets/terrain/terrain.json"
 ## 多远以内显示完整的楼（再远用简化的远景网格，省手机性能）
 const FULL_DETAIL_RANGE := 80.0
+## 完整版至少要有远景网格这么多比例的顶点才用（否则当成没转好）
+const FULL_MIN_SHARE := 0.25
 
 ## 街道中线（x、z 两个方向一样）。原点是市中心的十字路口
 const ROADS := [-152.0, -76.0, 0.0, 76.0, 152.0]
@@ -1048,7 +1050,11 @@ func _poi(name: String, c: Vector2) -> void:
 	add_child(mi)
 	# 有完整方块数据生成的楼时，近处换成它（有窗户、楼梯、屋檐），远处还用简化的远景网格
 	var full_path := "%s/poi/%s_full.res" % [ROOT, name]
-	if ResourceLoader.exists(full_path):
+	# 完整版顶点太少说明方块数据没转好（缺形状模型、方块表不对），用它楼会在近处消失，宁可还用远景网格
+	var use_full := ResourceLoader.exists(full_path) and float(info.get("full_verts", 0)) >= float(info.get("verts", 1)) * FULL_MIN_SHARE
+	if not use_full and ResourceLoader.exists(full_path):
+		push_warning("%s 的完整版只有 %d 顶点（远景 %d），不用" % [name, int(info.get("full_verts", 0)), int(info.get("verts", 0))])
+	if use_full:
 		var full: Resource = load(full_path)
 		for m in full.meshes:
 			var fi := MeshInstance3D.new()
@@ -1080,7 +1086,7 @@ func _poi(name: String, c: Vector2) -> void:
 	buildings.append({"name": name, "pos": Vector3(c.x, 0, c.y)})
 	_poi_containers(name, c, rot, mi.position.y)
 	# 有按方块的碰撞格子：楼能走进去，不盖实心占地
-	if _add_interior(name, Vector3(c.x, mi.position.y, c.y), rot):
+	if use_full and _add_interior(name, Vector3(c.x, mi.position.y, c.y), rot):
 		return
 	var w: int = info.grid_w
 	var h: int = info.grid_h

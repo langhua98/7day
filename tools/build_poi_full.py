@@ -548,12 +548,53 @@ def build_poi(name, poi_dir, db, shapes, paint_table, uv_ids):
                 q = q[::-1]
             mo.tri([q[0], q[1], q[2]], wd, tex)
             mo.tri([q[0], q[2], q[3]], wd, tex)
+    diagnose(name, blocks, names, db, shapes, info)
     col, doors = build_collision(blocks, size, db, names, shapes, info, col_kind)
     conts = find_containers(blocks, names, size, db, (ox, dy, oz))
     for c in conts:
         c["drawn"] = info(c.pop("_t")) is not None
     return {"parts": parts, "missing": missing, "containers": conts, "col": col, "doors": doors,
             "offset": (ox, dy, oz), "ground": ground, "size": size}
+
+
+def diagnose(name, blocks, names, db, shapes, info):
+    """打印这栋楼的方块有多少能画出来、画不出来的原因（排查完整版为空用）"""
+    count = collections.Counter(v & 0xFFFF for v in blocks if v & 0xFFFF)
+    why = collections.Counter()
+    miss_model = collections.Counter()
+    miss_block = collections.Counter()
+    for t, n in count.items():
+        nm = names.get(t, "")
+        if info(t) is not None:
+            why["能画"] += n
+            continue
+        b = base_name(nm)
+        sh = shape_of(nm)
+        if not nm:
+            why["名表里没有"] += n
+        elif nm.startswith("terrainFiller"):
+            why["terrainFiller"] += n
+        elif b not in db.b:
+            why["blocks.xml 里没有"] += n
+            miss_block[b] += n
+        elif sh is not None and sh not in shapes.defs:
+            why["shapes.xml 里没有形状"] += n
+            miss_model["形状 " + sh] += n
+        else:
+            model = shapes.defs.get(sh, {}).get("Model") if sh else db.get(b, "Model")
+            shape = db.get(b, "Shape")
+            if sh or (model or "").startswith("@:Shapes/") or shape == "New":
+                why["缺形状模型 glb"] += n
+                miss_model[os.path.basename(model or "Cube.fbx")] += n
+            else:
+                why["模型方块（%s）" % (shape or "?")] += n
+    print(f"  {name}: 方块表 {len(db.b)} 种，形状表 {len(shapes.defs)} 种，形状模型 {len(shapes.files)} 个；"
+          f"非空格 {sum(count.values())}，" + "，".join(f"{k} {v}" for k, v in why.most_common()), flush=True)
+    if miss_block:
+        print("    blocks.xml 里没有：" + "，".join(f"{k}×{v}" for k, v in miss_block.most_common(8)))
+    if miss_model:
+        print("    缺模型：" + "，".join(f"{k}×{v}" for k, v in miss_model.most_common(8)))
+        print("    已有模型举例：" + "，".join(sorted(shapes.files)[:8]))
 
 
 def container_name(db, nm):
@@ -841,6 +882,7 @@ def run(assets, only=()):
     names = sorted(f[:-4] for f in os.listdir(poi_dir) if f.endswith(".tts"))
     if only:
         names = [n for n in names if n in only]
+    print("  方块文件：" + "，".join(f"{f} {os.path.getsize(os.path.join(bdir, f)) // 1024}KB" for f in need), flush=True)
     db = Blocks(os.path.join(bdir, "blocks.xml"))
     shapes = Shapes(os.path.join(bdir, "shapes.xml"), os.path.join(assets, "shapes"))
     paint_table = load_paint_table(os.path.join(bdir, "painting.xml"))
