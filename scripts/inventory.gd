@@ -231,10 +231,67 @@ func give_all_items(top_up := false) -> void:
 		if pickup_order.has(id):
 			pickup_order.erase(id)
 			pickup_order.push_front(id)
+	for id in ["gunMGT2TacticalAR", "gunHandgunT0PipePistol", "gunHandgunT1Pistol"]:
+		if inventory.has(id):
+			equip(id)
+			return
 	for id in ["meleeWpnClubT1BaseballBat", "meleeToolPickT1IronPickaxe"]:
 		if inventory.has(id):
 			equip(id)
 			break
+
+
+## 正式模式开局：给一把手枪、一把步枪和子弹，拿枪在手上
+func give_starter_kit() -> void:
+	var pistol := _find_gun(["gunHandgunT1Pistol", "gunHandgunT0PipePistol"], "Pistol")
+	var rifle := _find_gun(["gunMGT2TacticalAR", "gunMGT1AK47"], "MG")
+	_give_starter_gun(pistol)
+	_give_starter_gun(rifle)
+	if rifle != "":
+		equip(rifle)
+	elif pistol != "":
+		equip(pistol)
+	refresh()
+	if equipped != "":
+		hud.toast("开局：背包里有枪和子弹")
+
+
+func _find_gun(preferred: Array, keyword: String) -> String:
+	for id in preferred:
+		if Assets.items_by_id.has(id) and Assets.items_by_id[id].kind == Assets.Kind.GUN:
+			return id
+	for row in Assets.items:
+		var id: String = row.id
+		if row.kind == Assets.Kind.GUN and not id.ends_with("Parts") and not id.begins_with("gunBot"):
+			if keyword == "" or id.contains(keyword):
+				return id
+	return ""
+
+
+func _find_ammo(prefix: String) -> String:
+	for row in Assets.items:
+		if Weapons.is_ammo(row.id) and row.id.begins_with(prefix):
+			return row.id
+	return ""
+
+
+func _give_starter_gun(id: String) -> void:
+	if id == "":
+		return
+	inventory[id] = maxi(1, inventory.get(id, 0))
+	if not pickup_order.has(id):
+		pickup_order.append(id)
+	if not mags.has(id):
+		mags[id] = Weapons.stats(id).mag
+	if not mags_type.has(id):
+		mags_type[id] = Weapons.default_ammo(id)
+	var ammo := Weapons.default_ammo(id)
+	if not Assets.items_by_id.has(ammo):
+		ammo = _find_ammo(Weapons.stats(id).ammo)
+	if ammo != "":
+		inventory[ammo] = maxi(inventory.get(ammo, 0), C.STARTER_AMMO)
+		if not pickup_order.has(ammo):
+			pickup_order.append(ammo)
 
 
 func save_data() -> Dictionary:

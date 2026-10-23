@@ -92,6 +92,26 @@ func _run() -> void:
 	check_close(main.player_sys.hp, 42.0, 0.01, "旧存档应能读")
 	check_eq(main.spawner.kills, 3, "旧存档击杀数")
 	main.running = false
+
+	# 有素材时检查：开局背包里有枪弹，并且枪已经拿在手上
+	var has_gun := false
+	for row in Assets.items:
+		if row.kind == Assets.Kind.GUN:
+			has_gun = true
+			break
+	if has_gun:
+		main.start(true)
+		var eq: String = main.inventory.equipped
+		check(eq != "", "开局应装备枪")
+		check_eq(Assets.items_by_id.get(eq, {}).get("kind", -1), Assets.Kind.GUN, "开局装备应为枪")
+		var has_ammo := false
+		for id in main.inventory.inventory:
+			if Weapons.is_ammo(id) and int(main.inventory.inventory[id]) > 0:
+				has_ammo = true
+				break
+		check(has_ammo, "开局背包里应有子弹")
+		check(not main.inventory.mags_type.is_empty(), "开局枪应有弹种")
+		main.running = false
 	_finish()
 
 

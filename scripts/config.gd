@@ -46,6 +46,8 @@ const TEST_AMMO := 300
 const TEST_INFINITE := true
 ## 测试模式：每种建造方块给多少块
 const TEST_BLOCKS := 999
+## 正式模式开局给多少发手枪/步枪子弹
+const STARTER_AMMO := 120
 ## 建造：离多远能摆 / 拆方块（米），两次摆方块的间隔（秒）
 const BUILD_REACH := 5.0
 const BUILD_COOLDOWN := 0.22
