@@ -590,6 +590,17 @@ def diagnose(name, blocks, names, db, shapes, info):
                 why["模型方块（%s）" % (shape or "?")] += n
     print(f"  {name}: 方块表 {len(db.b)} 种，形状表 {len(shapes.defs)} 种，形状模型 {len(shapes.files)} 个；"
           f"非空格 {sum(count.values())}，" + "，".join(f"{k} {v}" for k, v in why.most_common()), flush=True)
+    # 容器、门的方块名（排查楼里认不出箱子和门）
+    kinds = []
+    for t, n in count.most_common():
+        nm = names.get(t, "")
+        b = base_name(nm)
+        cls = db.get(b, "Class") or ""
+        low = b.lower()
+        if "cnt" in low or "loot" in low or "door" in low or "hatch" in low or "Loot" in cls or "Door" in cls:
+            kinds.append(f"{nm}[{cls or '-'}|{db.get(b, 'Shape') or '-'}|{db.get(b, 'LootList') or '-'}|画{'是' if info(t) else '否'}]×{n}")
+    if kinds:
+        print("    容器/门方块：" + "，".join(kinds[:25]))
     if miss_block:
         print("    blocks.xml 里没有：" + "，".join(f"{k}×{v}" for k, v in miss_block.most_common(8)))
     if miss_model:
