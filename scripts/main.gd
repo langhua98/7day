@@ -189,11 +189,9 @@ func _process(delta: float) -> void:
 	var night := time_sys.night
 	var blood_moon := time_sys.blood_moon
 
-	player_sys.aiming = (hud.aim_held or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
-		or Input.is_physical_key_pressed(KEY_F)) \
+	player_sys.aiming = hud.aim_held \
 		and Assets.items_by_id.get(inventory.equipped, {}).get("kind", -1) == Assets.Kind.GUN
 	player_sys.update(delta)
-	looting.update(delta)
 	combat.update(delta)
 	spawner.update(delta, day, night, blood_moon)
 	horde.update(delta, blood_moon, day)
