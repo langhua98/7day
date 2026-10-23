@@ -190,6 +190,26 @@ func _build_atlas() -> void:
 		res.images = images
 		ResourceSaver.save(res, "%s/atlas_%s.res" % [DIR, kind[1]], ResourceSaver.FLAG_COMPRESS)
 	print("方块图集: %d 种贴图，%d 层" % [atlas_ids.size(), n])
+	_build_block_index(info.get("blocks", {}), path)
+
+
+## 建造方块（scripts/blocks.gd）：方块名 → [图集层号, 占几格]，写到 assets/poi/blocks.json；
+## 顺便把贴图缩成小图 block_<方块名>.png，当背包图标
+func _build_block_index(blocks: Dictionary, path: String) -> void:
+	var out := {}
+	for name in blocks:
+		var at: Array = atlas_ids.get(str(int(blocks[name])), [])
+		if at.is_empty():
+			continue
+		out[name] = [int(at[0]), int(at[1])]
+		var img := Image.load_from_file("%s/c_%03d.png" % [path, int(at[0])])
+		if img:
+			img.resize(96, 96, Image.INTERPOLATE_LANCZOS)
+			img.save_png(ProjectSettings.globalize_path("%s/block_%s.png" % [DIR, name]))
+	var f := FileAccess.open(DIR + "/blocks.json", FileAccess.WRITE)
+	f.store_string(JSON.stringify(out, " "))
+	f.close()
+	print("建造方块贴图: %d 种" % out.size())
 
 
 func _prop(xml: String, key: String) -> String:

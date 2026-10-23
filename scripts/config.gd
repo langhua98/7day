@@ -29,12 +29,20 @@ const SPRINT_DRAIN := 18.0
 const STAMINA_REGEN := 12.0
 ## 跳跃：重力（米/秒²）和起跳速度
 const GRAVITY := 12.0
-const JUMP_SPEED := 4.5
+## 起跳速度 5.2 大约能跳 1.1 米高，刚好跳上一块方块
+const JUMP_SPEED := 5.2
 const PLAYER_EYE_HEIGHT := 1.65
 const LOOK_SENSITIVITY := 0.0045
-## 测试模式：开局背包里就有全部武器、吃的喝的、药，每种子弹 300 发，不用去捡。正式玩时改成 false
+## 测试模式：背包里就有全部武器、吃的喝的、药、建造方块，每种子弹 300 发，不用去捡（读档时也会补齐）。正式玩时改成 false
 const TEST_ALL_ITEMS := true
 const TEST_AMMO := 300
+## 测试模式：子弹和建造方块用不完（换弹不扣背包里的子弹，摆方块不扣数量）。正式玩时改成 false
+const TEST_INFINITE := true
+## 测试模式：每种建造方块给多少块
+const TEST_BLOCKS := 999
+## 建造：离多远能摆 / 拆方块（米），两次摆方块的间隔（秒）
+const BUILD_REACH := 5.0
+const BUILD_COOLDOWN := 0.22
 ## 测试模式：僵尸照常出现、追人，但不会抬手打主角。正式玩时改成 false
 const TEST_ZOMBIES_NO_ATTACK := true
 
