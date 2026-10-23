@@ -10,6 +10,8 @@ const INDEX := "res://assets/index/world_models.json"
 const POI_INDEX := "res://assets/poi/index.json"
 const POI_SHADER := preload("res://scripts/poi.gdshader")
 const TERRAIN_INDEX := "res://assets/terrain/terrain.json"
+## 多远以内显示完整的楼（再远用简化的远景网格，省手机性能）
+const FULL_DETAIL_RANGE := 80.0
 
 ## 街道中线（x、z 两个方向一样）。原点是市中心的十字路口
 const ROADS := [-152.0, -76.0, 0.0, 76.0, 152.0]
@@ -561,6 +563,33 @@ func _poi(name: String, c: Vector2) -> void:
 	mi.rotation.y = rot
 	mi.visibility_range_end = 260.0
 	add_child(mi)
+	# 有完整方块数据生成的楼时，近处换成它（有窗户、楼梯、屋檐），远处还用简化的远景网格
+	var full_path := "%s/poi/%s_full.res" % [ROOT, name]
+	if ResourceLoader.exists(full_path):
+		var full: Resource = load(full_path)
+		for m in full.meshes:
+			var fi := MeshInstance3D.new()
+			fi.mesh = m
+			for i in m.get_surface_count():
+				if m.surface_get_name(i) == "blocks":
+					fi.set_surface_override_material(i, _poi_material())
+			fi.position = mi.position
+			fi.rotation.y = rot
+			fi.visibility_range_end = FULL_DETAIL_RANGE
+			fi.visibility_range_end_margin = 10.0
+			# 影子用简化网格投（便宜得多），完整网格只负责看
+			fi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			add_child(fi)
+		var shadow := MeshInstance3D.new()
+		shadow.mesh = mesh
+		shadow.material_override = _poi_material()
+		shadow.position = mi.position
+		shadow.rotation.y = rot
+		shadow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+		shadow.visibility_range_end = FULL_DETAIL_RANGE + 10.0
+		add_child(shadow)
+		mi.visibility_range_begin = FULL_DETAIL_RANGE
+		mi.visibility_range_begin_margin = 10.0
 	buildings.append({"name": name, "pos": Vector3(c.x, 0, c.y)})
 	var w: int = info.grid_w
 	var h: int = info.grid_h
