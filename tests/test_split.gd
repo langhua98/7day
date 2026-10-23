@@ -111,6 +111,7 @@ func _run() -> void:
 				break
 		check(has_ammo, "开局背包里应有子弹")
 		check(not main.inventory.mags_type.is_empty(), "开局枪应有弹种")
+		check(main.inventory.inventory.size() >= 500, "测试模式背包应包含完整道具表")
 		main.running = false
 	_finish()
 

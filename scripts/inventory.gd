@@ -197,33 +197,30 @@ func consume(id: String, msg: String) -> void:
 
 ## 测试模式：全部物品直接进背包，枪装满，每种子弹、每种方块给足。
 func give_all_items(top_up := false) -> void:
-	var kinds := [Assets.Kind.GUN, Assets.Kind.MELEE, Assets.Kind.FOOD, Assets.Kind.DRINK, Assets.Kind.MEDICAL]
-	for k in kinds:
-		for row in Assets.items:
-			var id: String = row.id
-			if row.kind != k or id.ends_with("Parts") or id.begins_with("gunBot"):
-				continue
-			var want := 1 if k in [Assets.Kind.MELEE, Assets.Kind.GUN] else 5
-			if inventory.get(id, 0) < want:
-				inventory[id] = want
-			if not pickup_order.has(id):
-				pickup_order.append(id)
-			if k == Assets.Kind.GUN:
-				if not mags.has(id):
-					mags[id] = Weapons.stats(id).mag
-				if not mags_type.has(id):
-					mags_type[id] = Weapons.default_ammo(id)
-	for row in Assets.items:
-		if Weapons.is_ammo(row.id):
-			inventory[row.id] = maxi(inventory.get(row.id, 0), C.TEST_AMMO)
-			if not pickup_order.has(row.id):
-				pickup_order.append(row.id)
-	for t in Blocks.TYPES:
-		var id: String = t[0]
-		if Assets.items_by_id.has(id):
-			inventory[id] = maxi(inventory.get(id, 0), C.TEST_BLOCKS)
-			if not pickup_order.has(id):
-				pickup_order.append(id)
+	# 测试模式：官方物品表里的东西全部进背包，数量按类别给
+	for id in Data.items:
+		if not Assets.items_by_id.has(id):
+			continue
+		var row: Dictionary = Assets.items_by_id[id]
+		var kind: int = row.kind
+		var want := 20
+		if kind in [Assets.Kind.GUN, Assets.Kind.MELEE]:
+			want = 1
+		elif kind in [Assets.Kind.FOOD, Assets.Kind.DRINK, Assets.Kind.MEDICAL]:
+			want = 5
+		elif kind == Assets.Kind.BLOCK:
+			want = C.TEST_BLOCKS
+		elif Weapons.is_ammo(id):
+			want = C.TEST_AMMO
+		if inventory.get(id, 0) < want:
+			inventory[id] = want
+		if not pickup_order.has(id):
+			pickup_order.append(id)
+		if kind == Assets.Kind.GUN:
+			if not mags.has(id):
+				mags[id] = Weapons.stats(id).mag
+			if not mags_type.has(id):
+				mags_type[id] = Weapons.default_ammo(id)
 	if top_up:
 		return
 	# 快捷栏先放手枪和步枪（不然按字母排第一把是弓）
