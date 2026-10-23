@@ -109,21 +109,21 @@ const HONEY_INFECTION_CURE := 5
 ##   flags：禁止的动作，例如 no_sprint、no_jump（3b 骨折用）
 ##   bad：坏状态（红牌），否则绿牌
 const STATUS := {
-	"hungry": {"zh": "饥饿", "short": "饿", "buff": "buffStatusHungry1", "bad": true,
+	"hungry": {"zh": "饥饿", "short": "饿", "buff": "buffStatusHungry01", "bad": true,
 		"desc": "饱食低于 25，体力恢复减半。吃东西解除。", "mult": {"stamina_regen": 0.5}},
-	"starving": {"zh": "饿肚子", "short": "饿死", "buff": "buffStatusHungry2", "bad": true,
+	"starving": {"zh": "饿肚子", "short": "饿死", "buff": "buffStatusHungry02", "bad": true,
 		"desc": "饱食为 0，每游戏小时掉 6 血。吃东西解除。", "hp": -6.0},
-	"thirsty": {"zh": "口渴", "short": "渴", "buff": "buffStatusThirsty1", "bad": true,
+	"thirsty": {"zh": "口渴", "short": "渴", "buff": "buffStatusThirsty01", "bad": true,
 		"desc": "水分低于 25，体力上限 −25。喝东西解除。", "add": {"stamina_max": -25.0}},
-	"dehydrated": {"zh": "脱水", "short": "脱水", "buff": "buffStatusThirsty2", "bad": true,
+	"dehydrated": {"zh": "脱水", "short": "脱水", "buff": "buffStatusThirsty02", "bad": true,
 		"desc": "水分为 0，每游戏小时掉 10 血。喝东西解除。", "hp": -10.0},
 	"bleeding": {"zh": "流血", "short": "血", "buff": "buffInjuryBleeding", "bad": true, "hours": 0.67,
 		"desc": "每秒掉 0.7 血。用绷带或急救包止血。", "hp_sec": -0.7},
-	"dysentery": {"zh": "腹泻", "short": "泻", "buff": "buffIllDysentery", "bad": true, "hours": 1.25,
+	"dysentery": {"zh": "腹泻", "short": "泻", "buff": "buffDysenteryMain", "bad": true, "hours": 1.25,
 		"desc": "水分掉得快 3.5 倍。喝金棒茶或用急救包治好。", "mult": {"water_drain": 3.5}},
 	"near_death_trauma": {"zh": "濒死创伤", "short": "创伤", "buff": "buffNearDeathTrauma", "bad": true, "hours": 24.0,
 		"desc": "刚死过一次，体力上限 −20。一个游戏天后消失。", "add": {"stamina_max": -20.0}},
-	"caffeine": {"zh": "咖啡因", "short": "咖", "buff": "buffCoffeeStaminaRegen", "hours": 1.5,
+	"caffeine": {"zh": "咖啡因", "short": "咖", "buff": "buffCoffee", "hours": 1.5,
 		"desc": "体力恢复 ×2.2。", "mult": {"stamina_regen": 2.2}},
 	# 3b 受伤与感染
 	"sprain": {"zh": "扭伤", "short": "扭", "buff": "buffLegSprained", "bad": true, "hours": 24.0,
