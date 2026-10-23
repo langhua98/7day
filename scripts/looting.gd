@@ -92,8 +92,9 @@ func spawn_loot(pos: Vector3, id := "", quality := 0, amount := 0) -> void:
 	glow.light_energy = 0.6
 	glow.omni_range = 1.4
 	glow.distance_fade_enabled = true
-	glow.distance_fade_begin = 25.0
-	glow.distance_fade_length = 5.0
+	# 只有身边十几米的物品亮光，同时可见的动态光不超过 8 个左右
+	glow.distance_fade_begin = 14.0
+	glow.distance_fade_length = 4.0
 	glow.position.y = 0.5
 	holder.add_child(glow)
 	loot_root.add_child(holder)
