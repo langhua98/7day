@@ -65,14 +65,11 @@ func update(delta: float) -> void:
 		_reload_left -= delta
 		if _reload_left <= 0.0:
 			_finish_reload()
-	if Input.is_physical_key_pressed(KEY_R):
-		reload()
 	_update_ammo_hud()
 	_update_ghost()
 
 	attack_cd = max(0.0, attack_cd - delta)
-	var attacking := hud.attack_held or Input.is_physical_key_pressed(KEY_SPACE)
-	if attacking and attack_cd <= 0.0:
+	if hud.attack_held and attack_cd <= 0.0:
 		attack()
 
 
