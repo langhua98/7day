@@ -101,6 +101,7 @@ jobs:
           "$GODOT" --headless --path . res://tests/test_weapons.tscn
           "$GODOT" --headless --path . res://tests/test_ui.tscn
           "$GODOT" --headless --path . res://tests/test_split.tscn
+          "$GODOT" --headless --path . res://tests/test_bag.tscn
           "$GODOT" --headless --path . res://tests/test_data.tscn
           "$GODOT" --headless --path . res://tests/test_status.tscn
 

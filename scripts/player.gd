@@ -12,6 +12,8 @@ var rng: RandomNumberGenerator
 var player := Node3D.new()
 var camera := Camera3D.new()
 var arms: FpArms
+## 背包（读超重）
+var inventory: InventorySystem
 
 var yaw := 0.0
 var pitch := 0.0
@@ -93,6 +95,10 @@ func update(delta: float) -> void:
 	# 冲刺：摇杆推到底往前，或者按 Shift；耗体力
 	var sprint := (mv.length() > 0.92 and mv.y > 0.6) or Input.is_physical_key_pressed(KEY_SHIFT)
 	sprint = sprint and stamina > 1.0 and mv.y > 0.3 and not Status.blocked("no_sprint")
+	# 背包超重：变慢，不能冲刺
+	var heavy: float = inventory.overload() if inventory else 0.0
+	if heavy > 0.0:
+		sprint = false
 	_sprinting = sprint
 	# 体力上限、恢复速度受状态影响（口渴 −25 上限，饥饿恢复减半，咖啡因 ×2.2）
 	var st_max := stamina_max()
@@ -133,7 +139,7 @@ func update(delta: float) -> void:
 	camera.position.y = C.PLAYER_EYE_HEIGHT - _land_dip
 	var fwd := -player.global_basis.z
 	var right := player.global_basis.x
-	var vel := (fwd * mv.y + right * mv.x) * C.PLAYER_SPEED * (C.SPRINT_MULT if sprint else 1.0) * Status.modifier("move_speed")
+	var vel := (fwd * mv.y + right * mv.x) * C.PLAYER_SPEED * (C.SPRINT_MULT if sprint else 1.0) * Status.modifier("move_speed") * (1.0 - heavy)
 	var before := player.position
 	player.position = world.push_out(player.position + vel * delta, 0.35)
 	if _grounded:

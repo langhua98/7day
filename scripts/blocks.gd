@@ -14,6 +14,8 @@ const TYPES := [
 	["flagstoneShapes", "石板块", "Flagstone Block", 160.0, Color(0.6, 0.56, 0.5)],
 	["concreteShapes", "混凝土块", "Concrete Block", 320.0, Color(0.68, 0.68, 0.66)],
 	["steelShapes", "钢块", "Steel Block", 600.0, Color(0.42, 0.45, 0.5)],
+	# 玩家储物箱（官方 cntWoodWritableCrate）：云盘 lootcontainers 里还没有它的模型，先用木色方块
+	["cntWoodWritableCrate", "可写木箱（储物箱）", "Writable Storage Box", 120.0, Color(0.62, 0.44, 0.24)],
 ]
 
 static var _mat: ShaderMaterial
