@@ -278,6 +278,8 @@ const QUALITY_PRESETS := [
 const PERF_UPDATE_INTERVAL := 0.5
 const SKY_UPDATE_INTERVAL := 0.1
 const LOD_UPDATE_INTERVAL := 0.5
+## 僵尸寻路距离场每帧最多算多久（微秒）。一次算完要 20 多毫秒，会让画面每 0.5 秒顿一下
+const FLOW_BUDGET_USEC := 1500
 ## 地上最多留多少摊血
 const BLOOD_POOL_MAX := 24
 ## 地上贴花数量

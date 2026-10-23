@@ -36,6 +36,11 @@ func setup(parent: Node3D, world_ref: World, player_ref: PlayerSystem, hud_ref: 
 
 func build() -> void:
 	main.add_child(zombie_root)
+	# 先把每种僵尸模型读一遍放进缓存：第一次刷某种僵尸要现读 glb（7~18 毫秒），跑动中会顿一下
+	for m in Assets.zombie_models:
+		var n := Assets.make_model(m, 0.0)
+		if n:
+			n.free()
 
 
 func reset() -> void:
@@ -51,7 +56,9 @@ func update(delta: float, day: int, night: bool, horde: bool) -> void:
 	_flow_t -= delta
 	if _flow_t <= 0.0:
 		_flow_t = 0.5
-		world.update_flow(player_sys.player.position)
+		world.request_flow(player_sys.player.position)
+	# 距离场分几帧算，每帧最多占一点点时间，跑动时不卡
+	world.flow_step(C.FLOW_BUDGET_USEC)
 	var alive := 0
 	for z in zombie_root.get_children():
 		if z.dead:

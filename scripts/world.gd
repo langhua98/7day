@@ -329,52 +329,138 @@ func set_block_atlas(atlas: Texture2DArray, normal: Texture2DArray = null) -> vo
 # —— 僵尸寻路：以玩家为中心的距离场，僵尸沿着距离变小的方向走就能绕开楼 ——
 
 const FLOW_R := 48
+const FLOW_SIZE := FLOW_R * 2 + 1
 var _flow := PackedInt32Array()
 var _flow_center := Vector2i(1 << 20, 0)
+## 正在后台分几帧算的新距离场（算完才换掉 _flow，僵尸这期间用旧的）
+## 以前一次算完要 20 多毫秒，每 0.5 秒卡一帧，跑动时画面一顿一顿的
+var _fj_active := false
+var _fj_center := Vector2i.ZERO
+var _fj_dist := PackedInt32Array()
+var _fj_wall := PackedByteArray()   # 窗口里每格挡不挡路（开算时一行一行填）
+var _fj_queue := PackedInt32Array()
+var _fj_row := 0                    # 墙填到第几行
+var _fj_head := 0
+var _fj_tail := 0
+var _fj_next := Vector2i.ZERO       # 算的过程中又要了新中心，算完接着算
+var _fj_has_next := false
 
 
-## 每隔一会儿以 target 为中心重算一次（BFS，8 方向，不能斜着穿墙角）
+## 立刻把距离场整个算完（测试、开局用）
 func update_flow(target: Vector3) -> void:
-	var size := FLOW_R * 2 + 1
-	if _flow.size() != size * size:
-		_flow.resize(size * size)
-	_flow.fill(-1)
-	_flow_center = Vector2i(floori(target.x), floori(target.z))
-	var queue := PackedInt32Array()
-	queue.resize(size * size)
-	var head := 0
-	var tail := 0
-	var start := FLOW_R * size + FLOW_R
-	_flow[start] = 0
-	queue[tail] = start
-	tail += 1
-	var dirs := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
-		Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]
+	request_flow(target)
+	while _fj_active:
+		flow_step(1 << 30)
+
+
+## 要一个以 target 为中心的新距离场；真正的计算在 flow_step 里分几帧做完
+func request_flow(target: Vector3) -> void:
+	var c := Vector2i(floori(target.x), floori(target.z))
+	if _fj_active:
+		_fj_next = c
+		_fj_has_next = true
+		return
+	_start_flow(c)
+
+
+func _start_flow(c: Vector2i) -> void:
+	var n := FLOW_SIZE * FLOW_SIZE
+	if _fj_dist.size() != n:
+		_fj_dist.resize(n)
+		_fj_wall.resize(n)
+		_fj_queue.resize(n)
+	_fj_dist.fill(-1)
+	_fj_center = c
+	_fj_row = 0
+	_fj_head = 0
+	_fj_tail = 0
+	_fj_active = true
+
+
+## 每帧调：最多花 budget_usec 微秒往下算（BFS，8 方向，不能斜着穿墙角）
+func flow_step(budget_usec: int) -> void:
+	if not _fj_active:
+		return
+	var t0 := Time.get_ticks_usec()
+	var size := FLOW_SIZE
+	var ox := _fj_center.x - FLOW_R
+	var oz := _fj_center.y - FLOW_R
+	# 第一步：把窗口里的墙填进字节表，后面 BFS 只查表
+	while _fj_row < size:
+		var base := _fj_row * size
+		var wz := oz + _fj_row
+		for x in size:
+			_fj_wall[base + x] = 1 if _wall(ox + x, wz) else 0
+		_fj_row += 1
+		if _fj_row == size:
+			var start := FLOW_R * size + FLOW_R
+			_fj_dist[start] = 0
+			_fj_queue[0] = start
+			_fj_tail = 1
+		if Time.get_ticks_usec() - t0 > budget_usec:
+			return
+	# 第二步：BFS。每 256 格看一次表
+	var dist := _fj_dist
+	var wall := _fj_wall
+	var queue := _fj_queue
+	var head := _fj_head
+	var tail := _fj_tail
+	var count := 0
 	while head < tail:
 		var i := queue[head]
 		head += 1
 		var x := i % size
 		var z := i / size
-		var d := _flow[i]
-		for k in 8:
-			var dv: Vector2i = dirs[k]
-			var nx := x + dv.x
-			var nz := z + dv.y
-			if nx < 0 or nz < 0 or nx >= size or nz >= size:
-				continue
-			var ni := nz * size + nx
-			if _flow[ni] != -1:
-				continue
-			var wx := _flow_center.x - FLOW_R + nx
-			var wz := _flow_center.y - FLOW_R + nz
-			if _wall(wx, wz):
-				_flow[ni] = -2
-				continue
-			if k >= 4 and (_wall(_flow_center.x - FLOW_R + x + dv.x, _flow_center.y - FLOW_R + z) or _wall(_flow_center.x - FLOW_R + x, _flow_center.y - FLOW_R + z + dv.y)):
-				continue
-			_flow[ni] = d + 1
-			queue[tail] = ni
-			tail += 1
+		var d1 := dist[i] + 1
+		var w_l := x == 0 or wall[i - 1] == 1
+		var w_r := x == size - 1 or wall[i + 1] == 1
+		var w_u := z == 0 or wall[i - size] == 1
+		var w_d := z == size - 1 or wall[i + size] == 1
+		# 上下左右
+		if x > 0:
+			tail = _flow_visit(i - 1, d1, tail)
+		if x < size - 1:
+			tail = _flow_visit(i + 1, d1, tail)
+		if z > 0:
+			tail = _flow_visit(i - size, d1, tail)
+		if z < size - 1:
+			tail = _flow_visit(i + size, d1, tail)
+		# 斜着：两边都不是墙才能走
+		if not w_r and not w_d:
+			tail = _flow_visit(i + size + 1, d1, tail)
+		if not w_r and not w_u:
+			tail = _flow_visit(i - size + 1, d1, tail)
+		if not w_l and not w_d:
+			tail = _flow_visit(i + size - 1, d1, tail)
+		if not w_l and not w_u:
+			tail = _flow_visit(i - size - 1, d1, tail)
+		count += 1
+		if count & 255 == 0 and Time.get_ticks_usec() - t0 > budget_usec:
+			_fj_head = head
+			_fj_tail = tail
+			return
+	# 算完：换上新的，有排队的中心就接着算
+	_fj_head = head
+	_fj_tail = tail
+	var tmp := _flow
+	_flow = _fj_dist
+	_fj_dist = tmp
+	_flow_center = _fj_center
+	_fj_active = false
+	if _fj_has_next:
+		_fj_has_next = false
+		_start_flow(_fj_next)
+
+
+func _flow_visit(ni: int, d: int, tail: int) -> int:
+	if _fj_dist[ni] != -1:
+		return tail
+	if _fj_wall[ni] == 1:
+		_fj_dist[ni] = -2
+		return tail
+	_fj_dist[ni] = d
+	_fj_queue[tail] = ni
+	return tail + 1
 
 
 ## 从 p 出发往目标走的方向（不在距离场里返回 ZERO，调用方直接朝目标走）

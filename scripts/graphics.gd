@@ -17,6 +17,11 @@ var _governor := PerfGovernor.new()
 var _sky_t := 0.0
 var _lod_t := 0.0
 var _perf_t := 0.0
+## 卡顿统计：最近一段时间里比 HITCH_MS 慢的帧（性能面板显示，方便在手机上确认）
+const HITCH_MS := 25.0
+var _hitch_times: Array[float] = []
+var _worst_ms := 0.0
+var _clock := 0.0
 
 
 func setup(parent: Node3D, world_ref: World, atmo: Atmosphere, player_ref: PlayerSystem,
@@ -82,6 +87,13 @@ func sky_due(delta: float) -> bool:
 
 
 func update(delta: float) -> void:
+	_clock += delta
+	var ms := delta * 1000.0
+	_worst_ms = maxf(_worst_ms, ms)
+	if ms > HITCH_MS:
+		_hitch_times.append(_clock)
+	while not _hitch_times.is_empty() and _clock - _hitch_times[0] > 10.0:
+		_hitch_times.pop_front()
 	_lod_t += delta
 	if _lod_t >= C.LOD_UPDATE_INTERVAL:
 		_lod_t = 0.0
@@ -105,6 +117,7 @@ func _update_perf(delta: float) -> void:
 	var draws := int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
 	var prims := int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
 	var nodes := int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
-	hud.set_perf("FPS %d  %.1f ms\n绘制 %d  三角面 %dk\n3D %.2f  僵尸 %d  节点 %d" % [
+	hud.set_perf("FPS %d  %.1f ms\n绘制 %d  三角面 %dk\n3D %.2f  僵尸 %d  节点 %d\n最慢 %.0f ms  10 秒内卡顿 %d 次" % [
 		fps, ms, draws, prims / 1000, main.get_viewport().scaling_3d_scale,
-		zombie_root.get_child_count(), nodes])
+		zombie_root.get_child_count(), nodes, _worst_ms, _hitch_times.size()])
+	_worst_ms = 0.0
