@@ -44,7 +44,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: assets
-          key: assets-v3
+          key: assets-v4
 
       - name: 从小桔云盘下载素材
         env:
