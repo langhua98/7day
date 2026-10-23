@@ -63,6 +63,7 @@ python3 tools/fetch_assets.py --zombies all --music 12   # 想要更多
 project.godot          Godot 项目
 scenes/main.tscn       主场景
 scripts/asset_db.gd    读取素材、物品分类（自动加载为 Assets）
+scripts/data.gd        读取官方配置 JSON（自动加载为 Data）
 scripts/game_state.gd  全局信号和共享状态（自动加载为 GameState）
 scripts/main.gd        组装世界和系统，连接信号
 scripts/time_of_day.gd 昼夜推进、无尽时间和血月周期
@@ -80,4 +81,5 @@ scripts/hud.gd         界面和触屏操作
 scripts/music.gd       音乐切换
 scripts/config.gd      数值
 tools/fetch_assets.py  从云盘同步素材
+tools/build_data.py    官方 Data_Config.zip → assets/data/*.json
 ```

@@ -35,6 +35,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -1058,7 +1059,7 @@ def main():
     ap.add_argument("--zombies", default=",".join(DEFAULT_ZOMBIES), help="逗号分隔的僵尸名，或 all")
     ap.add_argument("--music", type=int, default=6, help="每类音乐取几段")
     ap.add_argument("--all-icons", action="store_true", help="取全部图标（默认只取游戏会用到的）")
-    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,poi,full,blocks,terrain,effects,music,sounds,sky")
+    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,poi,full,blocks,terrain,effects,music,sounds,sky,data")
     args = ap.parse_args()
     skip = set(filter(None, args.skip.split(",")))
     dest = os.path.abspath(args.dest)
@@ -1092,6 +1093,9 @@ def main():
         fetch_sounds(dest)
     if "sky" not in skip:
         fetch_sky_fonts(dest)
+    if "data" not in skip:
+        print("官方配置表…")
+        subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "build_data.py"), "--dest", dest], check=True)
     print("完成。用 Godot 打开项目即可（第一次打开会导入素材，需要几分钟）。")
 
 
