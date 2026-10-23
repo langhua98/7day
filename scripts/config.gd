@@ -64,24 +64,95 @@ const TEST_ZOMBIES_NO_ATTACK := true
 
 const MAX_HP := 100.0
 const MAX_FOOD := 100.0
-## 每真实秒消耗的饱食度
-const FOOD_DRAIN := 0.12
-## 饱食度为 0 时每秒掉血
-const STARVE_DAMAGE := 1.0
 const MAX_WATER := 100.0
-## 每真实秒消耗的水分（比饿得快）
-const WATER_DRAIN := 0.17
-## 水分为 0 时每秒掉血
-const THIRST_DAMAGE := 1.4
-## 被僵尸打中后开始流血的几率、流血每秒掉血、流血多久自己止住（秒）
+## 生存数值都按「游戏小时」算，改 DAY_LENGTH_MIN 后节奏不变
+## 每游戏小时掉多少饱食、水分；冲刺时再乘 SPRINT_HUNGER_MULT
+const FOOD_PER_HOUR := 1.6
+const WATER_PER_HOUR := 2.5
+const SPRINT_HUNGER_MULT := 2.0
+## 饱食 / 水分低于多少算饥饿 / 口渴
+const HUNGRY_BELOW := 25.0
+const THIRSTY_BELOW := 25.0
+## 吃饱喝足（饱食 > 60、水 > 50、没有掉血的状态）时每游戏小时回血
+const HP_REGEN_PER_HOUR := 24.0
+const REGEN_FOOD_ABOVE := 60.0
+const REGEN_WATER_ABOVE := 50.0
+## 被僵尸打中后开始流血的几率
 const BLEED_CHANCE := 0.3
-const BLEED_DAMAGE := 0.7
-const BLEED_TIME := 40.0
-## 腹泻持续秒数，期间水分掉得快几倍
-const SICK_TIME := 75.0
-const SICK_WATER_MULT := 3.5
-## 咖啡因：体力恢复倍数
-const BUFF_STAMINA_MULT := 2.2
+
+## 受伤与感染（3b），高度单位米，时间单位游戏小时
+## 摔落：超过 FALL_SAFE 米开始掉血，每多 1 米掉 FALL_DAMAGE_PER_M
+const FALL_SAFE := 3.0
+const FALL_DAMAGE_PER_M := 15.0
+## 3–4 米 50% 扭伤；4 米以上必骨折
+const SPRAIN_HEIGHT := 3.0
+const SPRAIN_CHANCE := 0.5
+const FRACTURE_HEIGHT := 4.0
+## 大块头僵尸（类型 HP 倍率 ≥ 这个值）打中有几率骨折
+const BIG_ZOMBIE_HP_MULT := 1.5
+const BIG_HIT_FRACTURE_CHANCE := 0.1
+## 被僵尸打中感染几率；感染度从 1% 开始，每游戏小时涨多少，到 100% 死亡
+const INFECTION_CHANCE := 0.1
+const INFECTION_START := 1
+const INFECTION_PER_HOUR := 1.0
+const INFECTION_MAX := 100
+## 药品降低的感染度（抗生素直接治好）
+const HERBAL_ANTIBIOTICS_CURE := 25
+const HONEY_INFECTION_CURE := 5
+
+## 状态效果表：id → 定义。所有持续状态都走 scripts/status_effects.gd。
+##   zh 中文名  short 图标牌上的字  desc 说明  buff 官方 buffs.xml 名（有就用官方中文名）
+##   hours 默认持续游戏小时（0 = 一直有，直到移除）  stack 能否叠加（max_stack 上限）
+##   hp / food / water：每游戏小时的增减（叠加时乘层数）  hp_sec：每真实秒（流血）
+##   mult：倍率修正 {stat: 倍数}，例如 move_speed、stamina_regen、food_drain、water_drain
+##   add：加值修正 {stat: 值}，例如 stamina_max
+##   flags：禁止的动作，例如 no_sprint、no_jump（3b 骨折用）
+##   bad：坏状态（红牌），否则绿牌
+const STATUS := {
+	"hungry": {"zh": "饥饿", "short": "饿", "buff": "buffStatusHungry1", "bad": true,
+		"desc": "饱食低于 25，体力恢复减半。吃东西解除。", "mult": {"stamina_regen": 0.5}},
+	"starving": {"zh": "饿肚子", "short": "饿死", "buff": "buffStatusHungry2", "bad": true,
+		"desc": "饱食为 0，每游戏小时掉 6 血。吃东西解除。", "hp": -6.0},
+	"thirsty": {"zh": "口渴", "short": "渴", "buff": "buffStatusThirsty1", "bad": true,
+		"desc": "水分低于 25，体力上限 −25。喝东西解除。", "add": {"stamina_max": -25.0}},
+	"dehydrated": {"zh": "脱水", "short": "脱水", "buff": "buffStatusThirsty2", "bad": true,
+		"desc": "水分为 0，每游戏小时掉 10 血。喝东西解除。", "hp": -10.0},
+	"bleeding": {"zh": "流血", "short": "血", "buff": "buffInjuryBleeding", "bad": true, "hours": 0.67,
+		"desc": "每秒掉 0.7 血。用绷带或急救包止血。", "hp_sec": -0.7},
+	"dysentery": {"zh": "腹泻", "short": "泻", "buff": "buffIllDysentery", "bad": true, "hours": 1.25,
+		"desc": "水分掉得快 3.5 倍。喝金棒茶或用急救包治好。", "mult": {"water_drain": 3.5}},
+	"near_death_trauma": {"zh": "濒死创伤", "short": "创伤", "buff": "buffNearDeathTrauma", "bad": true, "hours": 24.0,
+		"desc": "刚死过一次，体力上限 −20。一个游戏天后消失。", "add": {"stamina_max": -20.0}},
+	"caffeine": {"zh": "咖啡因", "short": "咖", "buff": "buffCoffeeStaminaRegen", "hours": 1.5,
+		"desc": "体力恢复 ×2.2。", "mult": {"stamina_regen": 2.2}},
+	# 3b 受伤与感染
+	"sprain": {"zh": "扭伤", "short": "扭", "buff": "buffLegSprained", "bad": true, "hours": 24.0,
+		"desc": "移速 −25%，1 游戏天自己好。用夹板固定好得快。", "mult": {"move_speed": 0.75}},
+	"sprain_splinted": {"zh": "扭伤（已固定）", "short": "固定", "buff": "buffLegSplinted", "bad": true, "hours": 6.0,
+		"desc": "夹板固定了扭伤，移速 −10%，6 游戏小时后好。", "mult": {"move_speed": 0.9}},
+	"fracture": {"zh": "骨折", "short": "骨折", "buff": "buffLegBroken", "bad": true,
+		"desc": "移速 −50%，不能冲刺和跳。不会自己好，用夹板或石膏。",
+		"mult": {"move_speed": 0.5}, "flags": ["no_sprint", "no_jump"]},
+	"fracture_splinted": {"zh": "打夹板", "short": "夹板", "buff": "buffLegSplinted", "bad": true, "hours": 72.0,
+		"desc": "骨折打了夹板，移速 −25%，不能冲刺，3 游戏天后好。打石膏只要 1 天。",
+		"mult": {"move_speed": 0.75}, "flags": ["no_sprint"]},
+	"fracture_cast": {"zh": "打石膏", "short": "石膏", "buff": "buffLegCast", "bad": true, "hours": 24.0,
+		"desc": "骨折打了石膏，移速 −15%，1 游戏天后好。", "mult": {"move_speed": 0.85}},
+	"infection": {"zh": "感染", "short": "感染", "buff": "buffInfectionMain", "bad": true, "unit": "%",
+		"stack": true, "max_stack": 100,
+		"desc": "感染度每游戏小时 +1%，到 100% 会死。草药抗生素 −25%，蜂蜜 −5%，抗生素治好。"},
+}
+
+## 死亡与重生（3c）
+## true = 老规矩：死了就结算、删档；false = 黑屏后在睡袋（没有就在出生点）醒来
+const PERMADEATH := false
+## 死后黑屏几秒；醒来时血、饱食、水是满值的多少
+const DEATH_BLACKOUT := 2.0
+const RESPAWN_STATS := 0.5
+## 每死一次存活天数减几天（官方 daysAliveChangeWhenKilled），游戏阶段跟着降
+const DAYS_ALIVE_LOST_ON_DEATH := 2
+## 睡袋（官方方块 bedroll），同时只能有一个
+const BEDROLL_ID := "bedroll"
 
 const FIST_DAMAGE := 8.0
 const MELEE_RANGE := 2.3
@@ -124,8 +195,28 @@ const ZOMBIE_TYPES := {
 	"screamer": {"name": "尖叫者", "hp": 0.7, "speed": 1.2, "damage": 0.8, "screams": true},
 }
 
+## 背包 45 格（官方）；超过后每多 1 格移速 −10%，最多 −50%，超重时不能冲刺
+const BAG_SLOTS := 45
+const BAG_OVERLOAD_SLOTS := 5
+const OVERLOAD_PER_SLOT := 0.1
+const OVERLOAD_MAX := 0.5
+## 玩家储物箱 cntWoodWritableCrate 的格数；容器离开多远自动关面板（米）
+const CRATE_SLOTS := 32
+const CONTAINER_CLOSE_DIST := 2.0
+## 路边容器面板最少几格
+const CONTAINER_SLOTS := 9
+
+## 合成：时间 = 官方 craft_time × 0.5，材料 = 官方 × 0.5（向上取整，至少 1），队列最多 4 项
+const CRAFT_TIME_MULT := 0.5
+const RECIPE_COST_MULT := 0.5
+const CRAFT_QUEUE_MAX := 4
+## 需要学习（tags 带 learnable）的配方先全开；第 7 步改成 false，靠读书解锁
+const RECIPES_ALL_UNLOCKED := true
+## 测试模式：还没有工作站（4c）时，当作所有工作站都在旁边
+const TEST_STATIONS_NEAR := true
+
 ## 地上零散物品的数量（主要的东西要翻容器找）
-const LOOT_COUNT := 24
+const LOOT_COUNT := 8
 const LOOT_SIZE := 0.55
 ## 离物品多近能拾取
 const PICKUP_RADIUS := 2.0
@@ -187,3 +278,36 @@ const LOD_UPDATE_INTERVAL := 0.5
 const BLOOD_POOL_MAX := 24
 ## 地上贴花数量
 const DECAL_COUNT := 140
+
+# —— 僵尸 AI（6a）：感官、噪音、热量、蹲伏、AI 预算 ——
+## 视野：前方扇形角度，白天/夜里看多远（米）；蹲下时视距乘这个
+const ZOMBIE_SIGHT_FOV := 120.0
+const ZOMBIE_SIGHT_DAY := 25.0
+const ZOMBIE_SIGHT_NIGHT := 15.0
+const ZOMBIE_SIGHT_CROUCH_MULT := 0.5
+## 贴身（米）时不看朝向也能察觉
+const ZOMBIE_SENSE_TOUCH := 1.6
+## 追击丢失目标几秒后转为调查；调查点停留几秒后回到游荡
+const ZOMBIE_LOSE_TARGET := 8.0
+const ZOMBIE_INVESTIGATE_LINGER := 10.0
+## 游荡：走多远、速度是基础步速的倍数
+const ZOMBIE_WANDER_RADIUS := 8.0
+const ZOMBIE_WANDER_SPEED_MULT := 0.5
+## 噪音半径（米），GameState.noise(pos, radius, kind) 的 kind
+const NOISE := {
+	"pistol": 45.0, "rifle": 60.0, "shotgun": 50.0, "explosion": 80.0,
+	"melee_hit": 6.0, "sprint": 8.0, "walk": 4.0, "crouch": 1.5, "block_break": 15.0,
+}
+## 热量：按 32 米分格累计，到 100 刷尖叫者；每游戏小时衰减 30%
+const HEAT_CELL := 32.0
+const HEAT_SCREAMER := 100.0
+const HEAT_DECAY_PER_HOUR := 0.3
+const HEAT := {"shot": 1.0, "craft_per_sec": 0.2, "campfire_per_sec": 0.5}
+## 测试：热量倍率（调大可以很快看到尖叫者）
+const TEST_HEAT_MULT := 1.0
+## 蹲伏：视角降低多少米、移速倍率
+const CROUCH_DROP := 0.6
+const CROUCH_SPEED_MULT := 0.5
+## AI 预算：每帧最多更新几只的感知；多远停骨骼（近处按距离降帧见 zombie_body.gd）
+const AI_SENSE_PER_FRAME := 6
+const ZOMBIE_ANIM_OFF_DIST := 50.0

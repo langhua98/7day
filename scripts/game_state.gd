@@ -13,6 +13,14 @@ signal item_used(id: String)
 signal blood_moon_warning(hour: int)
 signal blood_moon_started
 signal blood_moon_ended(count: int)
+## 死亡与重生（3c）：死在哪、在哪醒来、睡袋摆在哪（yaw 是朝向）
+signal player_died(pos: Vector3)
+signal player_respawned(pos: Vector3)
+signal bedroll_placed(pos: Vector3, yaw: float)
+## 合成完成一批（成品 id、数量）
+signal item_crafted(id: String, count: int)
+## 合成队列变了（加入、完成、取消）
+signal craft_queue_changed
 
 const C = preload("res://scripts/config.gd")
 
@@ -22,6 +30,8 @@ var player: Node3D
 var running := false
 var blood_moon := false
 var blood_moons_survived := 0
+## 死亡扣掉的存活天数（存活天数 = 天数 − 这个，最少 0）
+var days_alive_lost := 0
 
 
 func reset() -> void:
@@ -29,13 +39,24 @@ func reset() -> void:
 	hours = C.START_HOUR
 	blood_moon = false
 	blood_moons_survived = 0
+	days_alive_lost = 0
 
 
 func gamestage() -> int:
 	# 还没有等级系统，先把等级当作天数；官方公式 (等级 + 存活天数) × 1.2
 	var level := maxi(1, day)
-	var days_alive := mini(day, level)
-	return maxi(1, floori((level + days_alive) * 1.2))
+	return maxi(1, floori((level + mini(days_alive(), level)) * 1.2))
+
+
+## 存活天数：每死一次 −2（官方 daysAliveChangeWhenKilled），之后照常一天天涨
+func days_alive() -> int:
+	return maxi(0, day - days_alive_lost)
+
+
+## 死了：存活天数减 n，最少减到 0
+func lose_days_alive(n: int) -> void:
+	var left := maxi(0, days_alive() - n)
+	days_alive_lost = day - left
 
 
 func current_gamestage() -> int:
@@ -60,3 +81,21 @@ func days_until_blood_moon() -> int:
 
 func next_blood_moon_day() -> int:
 	return int(hours / 24.0) + 1 + days_until_blood_moon()
+
+
+## 6a：热量来源（合成、篝火等每秒调用 heat.emit），HeatMap 订阅
+signal heat(pos: Vector3, amount: float, kind: String)
+## 6a：玩家是否蹲着（player.gd 写，僵尸感官读）
+var player_crouching := false
+
+
+func is_night() -> bool:
+	var h := fmod(hours, 24.0)
+	return h >= C.DUSK_HOUR or h < C.DAWN_HOUR
+
+
+## 发噪音：半径从 config 的 NOISE 表取，没有就用 fallback
+func make_noise(pos: Vector3, kind: String, fallback := 0.0) -> void:
+	var r: float = C.NOISE.get(kind, fallback)
+	if r > 0.0:
+		noise.emit(pos, r, kind)

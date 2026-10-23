@@ -13,6 +13,8 @@ var combat: CombatSystem
 var spawner: SpawnerSystem
 var horde: Horde
 var looting: LootingSystem
+var respawn: RespawnSystem
+var crafting: Crafting
 var save_game: SaveGame
 var time_sys: TimeOfDay
 var graphics: GraphicsSystem
@@ -57,6 +59,11 @@ func _ready() -> void:
 	looting.setup(self, world, player_sys, inventory, hud, rng)
 	looting.build()
 
+	respawn = RespawnSystem.new()
+	respawn.setup(self, world, player_sys, inventory, looting, hud)
+	respawn.build()
+	GameState.player_respawned.connect(_on_respawned)
+
 	spawner = SpawnerSystem.new()
 	spawner.setup(self, world, player_sys, hud, looting, rng)
 	spawner.build()
@@ -69,9 +76,16 @@ func _ready() -> void:
 	add_child(combat)
 	combat.build()
 	inventory.combat = combat
+	player_sys.inventory = inventory
 
 	graphics = GraphicsSystem.new()
 	graphics.setup(self, world, atmosphere, player_sys, hud, spawner.zombie_root)
+
+	crafting = Crafting.new()
+	crafting.name = "Crafting"
+	add_child(crafting)
+	crafting.setup(inventory, looting, player_sys, hud)
+	hud.craft_panel.bind(crafting)
 
 	save_game = SaveGame.new()
 	save_game.setup(self, world, player_sys, inventory, combat, spawner, horde, atmosphere, hud, time_sys)
@@ -79,9 +93,11 @@ func _ready() -> void:
 	hud.start_pressed.connect(start)
 	hud.restart_pressed.connect(start)
 	hud.item_used.connect(inventory.use_item)
+	hud.item_dropped.connect(looting.drop_slot)
 	hud.action_pressed.connect(looting.action)
 	hud.reload_pressed.connect(combat.reload)
 	hud.jump_pressed.connect(player_sys.jump)
+	hud.crouch_pressed.connect(player_sys.toggle_crouch)
 	hud.continue_pressed.connect(save_game.continue_game)
 	hud.quit_to_title.connect(func():
 		save_game.save()
@@ -90,6 +106,7 @@ func _ready() -> void:
 		combat.running = false
 		looting.running = false
 		graphics.on_stop()
+		crafting.running = false
 		Sfx.stop_loops()
 		hud.show_start(true))
 	hud.settings_changed.connect(_apply_settings)
@@ -134,9 +151,11 @@ func start(fresh := true) -> void:
 	spawner.reset()
 	horde.reset()
 	looting.reset()
+	respawn.reset()
 	time_sys.reset()
 	player_sys.reset()
 	inventory.reset()
+	crafting.reset()
 	combat.reset()
 	atmosphere.reset()
 	GameState.running = true
@@ -144,6 +163,7 @@ func start(fresh := true) -> void:
 
 	for c in world.containers:
 		c.searched = false
+		c.erase("items")
 	world.clear_voxels()
 	for i in C.LOOT_COUNT / 2:
 		looting.spawn_loot(world.free_point(Vector3.ZERO, 4.0, 60.0))
@@ -152,6 +172,7 @@ func start(fresh := true) -> void:
 			inventory.give_all_items()
 		else:
 			inventory.give_starter_kit()
+		respawn.on_start(true)
 	# 开局在面前放一件近战武器，马上就能看到手里的模型
 	var weapons: Array = Assets.loot_pool.get(Assets.Kind.MELEE, [])
 	if not weapons.is_empty() and not C.TEST_ALL_ITEMS:
@@ -161,6 +182,7 @@ func start(fresh := true) -> void:
 	running = true
 	combat.running = true
 	looting.running = true
+	crafting.running = true
 	hud.set_banner("")
 	inventory.refresh()
 	save_game.reset_timer()
@@ -171,12 +193,34 @@ func start(fresh := true) -> void:
 		save_game.save()
 
 
+## 死了：PERMADEATH 下结算删档；否则停住游戏，黑屏后在睡袋醒来（respawn.gd）
+func _die() -> void:
+	if C.PERMADEATH:
+		_end()
+		return
+	running = false
+	combat.running = false
+	looting.running = false
+	hud.container_panel.close_panel()
+	respawn.die()
+
+
+func _on_respawned(_pos: Vector3) -> void:
+	if not GameState.running:
+		return
+	running = true
+	combat.running = true
+	looting.running = true
+	save_game.save()
+
+
 func _end() -> void:
 	running = false
 	GameState.running = false
 	combat.running = false
 	looting.running = false
 	graphics.on_stop()
+	crafting.running = false
 	save_game.delete_save()
 	Sfx.stop_loops()
 	Sfx.play("death")
@@ -191,6 +235,7 @@ func _process(delta: float) -> void:
 	if not running:
 		atmosphere.update_sky(time_sys.hours)
 		return
+	var hours_before := time_sys.hours
 	time_sys.update(delta)
 	var day := time_sys.day
 	var hour := fmod(time_sys.hours, 24.0)
@@ -205,7 +250,8 @@ func _process(delta: float) -> void:
 	horde.update(delta, blood_moon, day)
 	looting.update_loot(delta)
 	looting.update_action(delta)
-	player_sys.update_survival(delta)
+	respawn.update(delta)
+	player_sys.update_survival(delta, time_sys.hours - hours_before)
 	if graphics.sky_due(delta):
 		atmosphere.update_sky(time_sys.hours)
 	atmosphere.update_music(delta, night, blood_moon, spawner.zombie_root)
@@ -220,4 +266,4 @@ func _process(delta: float) -> void:
 	hud.set_status(day, hour, player_sys.hp, player_sys.food, spawner.kills, near, night,
 		day % C.BLOOD_MOON_EVERY == 0 or blood_moon, blood_moon, GameState.next_blood_moon_day())
 	if player_sys.hp <= 0.0:
-		_end()
+		_die()

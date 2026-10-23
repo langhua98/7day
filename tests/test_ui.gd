@@ -39,7 +39,8 @@ func _ready() -> void:
 	check(fire_left.get_center().x < half_w, "左手开火键在左半屏")
 	check(bag.get_center().x < half_w and bag.get_center().y > attack.get_center().y, "背包在底部偏左")
 	var all_btns := {"开火": attack, "开镜": aim, "换弹": reload, "跳": jump, "搜索": action,
-		"背包": bag, "设置": pause, "左开火": fire_left, "摇杆": hud._joy_base.get_global_rect()}
+		"背包": bag, "设置": pause, "左开火": fire_left, "摇杆": hud._joy_base.get_global_rect(),
+		"蹲": hud._crouch_btn.get_global_rect()}
 	var names := all_btns.keys()
 	for i in names.size():
 		for j in range(i + 1, names.size()):
@@ -154,24 +155,11 @@ func _ready() -> void:
 	hud._touch_up(12)
 	check(used == ["b"], "点快捷栏第 2 格应使用 b")
 
-	# 背包：点一下用物品，滑动不用；点背包外面关掉
+	# 背包能打开；格子点击/滑动由 test_bag 覆盖
 	hud.open_bag()
 	await get_tree().process_frame
-	var bag_slot: Button = hud._bag_grid.get_child(0)
-	var at := bag_slot.get_global_rect().get_center()
-	used.clear()
-	hud._bag_slot_input(bag_slot, "a", _mouse(at, true))
-	hud._bag_slot_input(bag_slot, "a", _mouse(at + Vector2(0, 60), false))
-	check(used.is_empty(), "在背包里滑动不应使用物品")
-	hud._bag_slot_input(bag_slot, "a", _mouse(at, true))
-	hud._bag_slot_input(bag_slot, "a", _mouse(at + Vector2(3, 4), false))
-	check(used == ["a"], "在背包里点一下应使用物品")
-	var outside := InputEventScreenTouch.new()
-	outside.index = 13
-	outside.pressed = true
-	outside.position = Vector2(4, 4)
-	hud._input(outside)
-	check(not hud._bag_panel.visible, "点背包外面应关掉背包")
+	check(hud._bag_panel.visible, "背包应打开")
+	hud._bag_panel.visible = false
 
 	# 安全区：刘海和底部横条让出来，按钮整体往里收
 	var attack_before := hud._attack_btn.get_global_rect()

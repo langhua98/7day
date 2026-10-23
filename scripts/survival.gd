@@ -1,15 +1,18 @@
 class_name Survival
 ## 吃喝用药的效果，按七日杀物品名判断。返回字典：
 ##   food 饱食  water 水分  hp 血量  stamina 体力
-##   stop_bleed 止血  cure 治腹泻  sick 生病几率(0~1)  buff 咖啡因秒数  msg 提示
+##   splint 夹板  cast 石膏  infection 感染度增减（−100 = 治好）
+##   stop_bleed 止血  cure 治腹泻  sick 生病几率(0~1)  buff 咖啡因游戏小时（这些都由 player.gd 转成状态效果，见 status_effects.gd）  msg 提示
+
+const C = preload("res://scripts/config.gd")
 
 ## [名字里含的词, food, water, hp, 额外]
 const TABLE := [
 	["RiverWater", 0, 30, 0, {"sick": 0.45}],
 	["BoiledWater", 0, 35, 0, {}],
 	["PureMineralWater", 0, 40, 5, {}],
-	["MegaCrush", 0, 20, 0, {"stamina": 100, "buff": 120}],
-	["Coffee", 0, 20, 0, {"buff": 90}],
+	["MegaCrush", 0, 20, 0, {"stamina": 100, "buff": 2.0}],
+	["Coffee", 0, 20, 0, {"buff": 1.5}],
 	["GoldenRodTea", 0, 25, 0, {"cure": true}],
 	["RedTea", 0, 25, 5, {}],
 	["HoneyTea", 0, 25, 8, {}],
@@ -32,15 +35,17 @@ const TABLE := [
 	["Chowder", 35, 15, 5, {}],
 	["Crop", 8, 3, 0, {}],
 	["Egg", 12, 0, 0, {}],
-	["Honey", 8, 0, 5, {"cure": true}],
+	["Honey", 8, 0, 5, {"cure": true, "infection": -C.HONEY_INFECTION_CURE}],
 	["Charred", 15, 0, 0, {}],
 	["Bandage", 0, 0, 10, {"stop_bleed": true}],
 	["FirstAidBandage", 0, 0, 25, {"stop_bleed": true}],
 	["FirstAidKit", 0, 0, 60, {"stop_bleed": true, "cure": true}],
 	["BloodBag", 0, 0, 45, {}],
 	["AloeCream", 0, 0, 15, {}],
-	["Splint", 0, 0, 10, {}],
-	["PlasterCast", 0, 0, 15, {}],
+	["Splint", 0, 0, 10, {"splint": true}],
+	["PlasterCast", 0, 0, 15, {"cast": true}],
+	["HerbalAntibiotics", 0, 0, 0, {"infection": -C.HERBAL_ANTIBIOTICS_CURE}],
+	["Antibiotics", 0, 0, 0, {"infection": -C.INFECTION_MAX}],
 ]
 
 

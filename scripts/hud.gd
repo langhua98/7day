@@ -8,9 +8,12 @@ signal item_used(id: String)
 signal action_pressed
 signal reload_pressed
 signal jump_pressed
+## 6a：蹲伏切换
+signal crouch_pressed
 signal continue_pressed
 signal settings_changed(settings: Dictionary)
 signal quit_to_title
+signal item_dropped(index: int)
 
 var move := Vector2.ZERO          # 摇杆输出，x 右 y 前
 var look_delta := Vector2.ZERO    # 本帧视角拖动量（像素）
@@ -27,6 +30,7 @@ var _water_bar := ProgressBar.new()
 var _effects := Label.new()
 var _reload_btn := Button.new()
 var _jump_btn := Button.new()
+var _crouch_btn := Button.new()
 var _ammo := Label.new()
 var _kills := Label.new()
 var _toast := Label.new()
@@ -40,8 +44,10 @@ var _action_btn := Button.new()
 var _progress := ProgressBar.new()
 var _progress_label := Label.new()
 var _bag_btn := Button.new()
-var _bag_panel := PanelContainer.new()
-var _bag_grid := GridContainer.new()
+var _bag_panel := BagPanel.new()
+var container_panel := ContainerPanel.new()
+var _craft_btn := Button.new()
+var craft_panel := CraftPanel.new()
 var _start_panel := PanelContainer.new()
 var _start_info := Label.new()
 var _end_panel := PanelContainer.new()
@@ -53,6 +59,18 @@ var _pause_btn := Button.new()
 var _pause_panel := PanelContainer.new()
 var _continue_btn := Button.new()
 var _perf := Label.new()
+## 右上角状态图标条（饥饿、流血……），点一下显示说明
+var _status_row := HBoxContainer.new()
+var _status_tip := Label.new()
+var _status_tip_t := 0.0
+var _status_ids: Array = []
+## 死亡黑屏（3c）和指向尸体背包的小箭头
+var _blackout := ColorRect.new()
+var _blackout_label := Label.new()
+var _blackout_tween: Tween
+var _bag_marker := Control.new()
+var _bag_arrow := Control.new()
+var _bag_marker_label := Label.new()
 ## 设置：灵敏度、亮度、音量、音乐音量（倍数）、画质档位、性能面板，存在 user://settings.cfg
 var settings := {"sensitivity": 1.0, "brightness": 1.0, "volume": 1.0, "music": 0.8,
 	"quality": 1.0, "show_perf": 0.0}
@@ -221,6 +239,8 @@ func _ready() -> void:
 	# 这些按钮都在 _input 里按触点自己处理：系统按钮只认第一根手指，边走边打会没反应。
 	_round(_attack_btn, "开火", Control.PRESET_BOTTOM_RIGHT, Vector2(-300, -330), 160, 34)
 	_round(_jump_btn, "跳", Control.PRESET_BOTTOM_RIGHT, Vector2(-130, -400), 110, 28)
+	# 6a：蹲（吃鸡布局里在跳下面、开火键右下）
+	_round(_crouch_btn, "蹲", Control.PRESET_BOTTOM_RIGHT, Vector2(-130, -250), 110, 28)
 	_round(_aim_btn, "开镜", Control.PRESET_BOTTOM_RIGHT, Vector2(-440, -440), 110, 26)
 	_round(_reload_btn, "换弹", Control.PRESET_BOTTOM_RIGHT, Vector2(-440, -270), 100, 24)
 	_round(_fire_left, "开火", Control.PRESET_BOTTOM_LEFT, Vector2(50, -440), 110, 24)
@@ -277,36 +297,20 @@ func _ready() -> void:
 	_bag_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_safe.add_child(_bag_btn)
 
-	# 背包
-	_bag_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_bag_panel.offset_left = 140
-	_bag_panel.offset_right = -140
-	_bag_panel.offset_top = 60
-	_bag_panel.offset_bottom = -60
-	_bag_panel.visible = false
-	var bag_v := VBoxContainer.new()
-	_bag_panel.add_child(bag_v)
-	var bag_title := HBoxContainer.new()
-	var bt := Label.new()
-	bt.text = "背包（点物品使用 / 装备，点子弹换上对应的枪，点方块拿来建造）"
-	bt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bag_title.add_child(bt)
-	var close := Button.new()
-	close.text = "关闭"
-	close.custom_minimum_size = Vector2(150, 80)
-	close.focus_mode = Control.FOCUS_NONE
-	close.pressed.connect(func(): _bag_panel.visible = false)
-	bag_title.add_child(close)
-	bag_v.add_child(bag_title)
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_bag_grid.columns = 7
-	_bag_grid.add_theme_constant_override("h_separation", 8)
-	_bag_grid.add_theme_constant_override("v_separation", 8)
-	scroll.add_child(_bag_grid)
-	bag_v.add_child(scroll)
+	# 背包（scripts/ui/bag_panel.gd）和容器面板（scripts/ui/container_panel.gd）
+	_bag_panel.use_pressed.connect(func(id): item_used.emit(id))
+	_bag_panel.drop_pressed.connect(func(i): item_dropped.emit(i))
 	_safe.add_child(_bag_panel)
+	_safe.add_child(container_panel)
+
+	# 合成按钮在背包下面，面板在 scripts/ui/craft_panel.gd
+	_craft_btn.text = "合成"
+	_craft_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_craft_btn.position = Vector2(-220, 144)
+	_craft_btn.size = Vector2(130, 64)
+	_craft_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_craft_btn)
+	_root.add_child(craft_panel)
 
 	# 摇杆：平时停在左下角，手指按在左半屏哪里就移到哪里
 	for p in [_joy_base, _joy_knob]:
@@ -329,11 +333,12 @@ func _ready() -> void:
 	_pause_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_safe.add_child(_pause_btn)
 
+	_build_status_bar()
 	_build_start_panel()
 	_build_end_panel()
 	_build_pause_panel()
+	_build_death_ui()
 	# 背包盖在摇杆上面
-	_safe.move_child(_bag_panel, -1)
 	get_viewport().size_changed.connect(_update_safe_area)
 	_update_safe_area()
 
@@ -612,6 +617,12 @@ func show_end(text: String) -> void:
 	_end_panel.visible = true
 
 
+## 蹲着时按钮高亮
+func set_crouch(on: bool) -> void:
+	_crouch_btn.text = "站" if on else "蹲"
+	_crouch_btn.self_modulate = Color(1.0, 0.85, 0.4) if on else Color.WHITE
+
+
 ## 拿着枪时显示「弹匣 / 背包」子弹数和换弹键；text 为空就隐藏
 func set_ammo(text: String) -> void:
 	if text == _ammo_text:
@@ -715,8 +726,76 @@ func toast(text: String) -> void:
 	_toast_t = 2.2
 
 
+func _build_death_ui() -> void:
+	# 指向尸体背包：顶部中间一个会转的三角 + 距离
+	_bag_marker.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_bag_marker.position = Vector2(-160, 150)
+	_bag_marker.size = Vector2(320, 50)
+	_bag_marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bag_marker.visible = false
+	_root.add_child(_bag_marker)
+	_bag_arrow.position = Vector2(30, 25)
+	_bag_arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var tri := Polygon2D.new()
+	tri.polygon = PackedVector2Array([Vector2(0, -18), Vector2(13, 14), Vector2(0, 7), Vector2(-13, 14)])
+	tri.color = Color(1.0, 0.55, 0.4)
+	_bag_arrow.add_child(tri)
+	_bag_marker.add_child(_bag_arrow)
+	_bag_marker_label.position = Vector2(56, 4)
+	_bag_marker_label.size = Vector2(260, 42)
+	_bag_marker_label.add_theme_font_size_override("font_size", 26)
+	_bag_marker_label.add_theme_color_override("font_color", Color(1.0, 0.75, 0.65))
+	_bag_marker_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_bag_marker_label.add_theme_constant_override("outline_size", 6)
+	_bag_marker.add_child(_bag_marker_label)
+	# 死亡黑屏，盖在所有界面上面
+	_blackout.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_blackout.color = Color(0, 0, 0, 0)
+	_blackout.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_blackout.visible = false
+	_root.add_child(_blackout)
+	_blackout_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_blackout_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_blackout_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_blackout_label.add_theme_font_size_override("font_size", 48)
+	_blackout_label.add_theme_color_override("font_color", Color(0.85, 0.2, 0.15))
+	_blackout.add_child(_blackout_label)
+
+
+## 死亡黑屏：on = true 变黑并显示 text，false 慢慢亮回来
+func set_blackout(on: bool, text := "") -> void:
+	if _blackout_tween:
+		_blackout_tween.kill()
+	_blackout_label.text = text
+	_blackout.visible = true
+	if on:
+		_release_touches()
+	_blackout_tween = create_tween()
+	_blackout_tween.tween_property(_blackout, "color:a", 1.0 if on else 0.0, 0.35 if on else 0.8)
+	if not on:
+		_blackout_tween.tween_callback(func(): _blackout.visible = false)
+
+
+func blackout_visible() -> bool:
+	return _blackout.visible and _blackout.color.a > 0.5
+
+
+## 尸体背包方向：angle 是相对视线的角度（弧度，0 = 正前方，正数在右边），dist 米；dist < 0 隐藏
+func set_bag_marker(angle: float, dist: float) -> void:
+	_bag_marker.visible = dist >= 0.0
+	if dist < 0.0:
+		return
+	_bag_arrow.rotation = angle
+	_bag_marker_label.text = "尸体背包 %d 米" % roundi(dist)
+
+
 func hurt() -> void:
 	_hurt.color.a = 0.35
+
+
+## 背包格子交给背包面板画
+func set_bag(slots: Array, cap: int, used: int, equipped: String) -> void:
+	_bag_panel.set_slots(slots, cap, used, equipped)
 
 
 ## inventory: [{id, count, equipped}]
@@ -725,10 +804,6 @@ func set_inventory(list: Array, hotbar_ids: Array) -> void:
 		c.queue_free()
 	for id in hotbar_ids:
 		_hotbar.add_child(_slot(id, list))
-	for c in _bag_grid.get_children():
-		c.queue_free()
-	for e in list:
-		_bag_grid.add_child(_slot(e.id, list, true))
 
 
 ## 刘海 / 灵动岛 / 底部横条：读系统给的安全区，换算成画布像素
@@ -829,6 +904,9 @@ func _bag_slot_input(b: Button, id: String, ev: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	if _status_tip_t > 0.0:
+		_status_tip_t -= delta
+		_status_tip.visible = _status_tip_t > 0.0
 	if _toast_t > 0.0:
 		_toast_t -= delta
 		if _toast_t < 0.6:
@@ -865,7 +943,7 @@ func consume_look() -> Vector2:
 
 
 func _panel_open() -> bool:
-	return _bag_panel.visible or _start_panel.visible or _end_panel.visible or _pause_panel.visible
+	return _bag_panel.visible or container_panel.visible or craft_panel.visible or _start_panel.visible or _end_panel.visible or _pause_panel.visible
 
 
 func _press_attack(pressed: bool) -> void:
@@ -942,6 +1020,10 @@ func _touch_down(index: int, pos: Vector2) -> void:
 		_press_button(_jump_btn)
 		jump_pressed.emit()
 		return
+	if _crouch_btn.get_global_rect().grow(10).has_point(pos):
+		_press_button(_crouch_btn)
+		crouch_pressed.emit()
+		return
 	if _action_btn.visible and _action_btn.get_global_rect().grow(12).has_point(pos):
 		_press_button(_action_btn)
 		action_pressed.emit()
@@ -950,9 +1032,16 @@ func _touch_down(index: int, pos: Vector2) -> void:
 		_tap_feedback()
 		set_paused(true)
 		return
+	if _status_touch(pos):
+		return
 	if _bag_btn.get_global_rect().grow(10).has_point(pos):
 		open_bag()
 		_press_button(_bag_btn)
+		return
+	if _craft_btn.get_global_rect().grow(10).has_point(pos):
+		craft_panel.open()
+		_release_touches()
+		_flash(_craft_btn)
 		return
 	for slot in _hotbar.get_children():
 		if (slot as Control).get_global_rect().grow(4).has_point(pos):
@@ -1017,3 +1106,93 @@ func _input(event: InputEvent) -> void:
 		elif _drag_last.has(event.index):
 			look_delta += event.position - _drag_last[event.index]
 			_drag_last[event.index] = event.position
+
+
+# —— 状态图标条 ——
+
+func _build_status_bar() -> void:
+	var holder := Control.new()
+	holder.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	holder.offset_left = -700
+	holder.offset_right = -30
+	holder.offset_top = 146
+	holder.offset_bottom = 214
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(holder)
+	_status_row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_status_row.alignment = BoxContainer.ALIGNMENT_END
+	_status_row.add_theme_constant_override("separation", 6)
+	_status_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(_status_row)
+	_status_tip.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_status_tip.offset_left = -700
+	_status_tip.offset_right = -30
+	_status_tip.offset_top = 220
+	_status_tip.offset_bottom = 300
+	_status_tip.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_status_tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_status_tip.add_theme_font_size_override("font_size", 22)
+	_status_tip.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_status_tip.add_theme_constant_override("outline_size", 6)
+	_status_tip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_status_tip.visible = false
+	_root.add_child(_status_tip)
+
+
+## 剩余游戏小时 → "1:30"；一直有的不显示时间
+static func status_time_text(left: float) -> String:
+	if left == INF or left <= 0.0:
+		return ""
+	var mins := ceili(left * 60.0)
+	return "%d:%02d" % [mins / 60, mins % 60]
+
+
+## list 来自 Status.active()：[{id, zh, short, desc, left, stacks, bad}]
+func set_effects(list: Array) -> void:
+	var ids := list.map(func(e): return e.id)
+	if ids != _status_ids:
+		_status_ids = ids
+		for c in _status_row.get_children():
+			c.queue_free()
+		for e in list:
+			var b := Button.new()
+			b.custom_minimum_size = Vector2(66, 66)
+			b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			b.focus_mode = Control.FOCUS_NONE
+			b.add_theme_font_size_override("font_size", 18)
+			var sb := StyleBoxFlat.new()
+			sb.bg_color = Color(0.55, 0.1, 0.08, 0.8) if e.bad else Color(0.12, 0.42, 0.2, 0.8)
+			sb.set_corner_radius_all(10)
+			sb.border_color = Color(1, 1, 1, 0.35)
+			sb.set_border_width_all(2)
+			for st in ["normal", "hover", "pressed"]:
+				b.add_theme_stylebox_override(st, sb)
+			_status_row.add_child(b)
+	var buttons := _status_row.get_children().filter(func(c): return not c.is_queued_for_deletion())
+	for i in mini(buttons.size(), list.size()):
+		var e: Dictionary = list[i]
+		var b: Button = buttons[i]
+		var t := status_time_text(float(e.left))
+		var label: String = str(e.short) + (" ×%d" % e.stacks if int(e.stacks) > 1 else "")
+		# 感染这类按百分比显示
+		if str(e.get("unit", "")) == "%":
+			label = "%s\n%d%%" % [e.short, int(e.stacks)]
+		b.text = label if t == "" else "%s\n%s" % [label, t]
+		b.set_meta("info", e)
+
+
+func _status_touch(pos: Vector2) -> bool:
+	for b in _status_row.get_children():
+		if b.is_queued_for_deletion() or not (b as Control).get_global_rect().grow(6).has_point(pos):
+			continue
+		var e: Dictionary = b.get_meta("info", {})
+		if e.is_empty():
+			return true
+		_flash(b)
+		var t := status_time_text(float(e.left))
+		var pct := (" %d%%" % int(e.stacks)) if str(e.get("unit", "")) == "%" else ""
+		_status_tip.text = "%s%s：%s%s" % [e.zh, pct, e.desc, ("  剩余 " + t) if t != "" else ""]
+		_status_tip.visible = true
+		_status_tip_t = 3.5
+		return true
+	return false

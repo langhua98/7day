@@ -16,6 +16,7 @@
     assets/index/item_models.json      （物品模型名 → 网格、贴图）
     assets/world/*.obj/.png            （市中心场景：车辆、可翻找的容器、杂物、地面和楼的贴图）
     assets/index/world_models.json     （场景模型的类别、中文名、战利品类型）
+    assets/world/bedroll.obj/.png      （睡袋，从 respawnpoints.zip 取）
     assets/poi/*.poimesh/.xml          （市中心建筑，再用 tools/build_poi.gd 转成 .res）
     assets/poi/*.tts/.nim → *.full     （完整方块数据，tools/build_poi_full.py 生成路口几栋楼的完整网格）
     assets/blocks/*.xml、assets/shapes/*.glb（游戏的方块表、形状表、刷漆表和形状模型）
@@ -574,6 +575,42 @@ def fetch_world(dest):
     print(f"市中心场景: 模型 {len(index['models'])} 个，贴花 {len(index['decals'])} 张，贴图 {len(index['textures'])} 张")
 
 
+# 睡袋（3c）：automatic_assets_entities/respawnpoints.zip 里按名字找网格和贴图
+RESPAWN_MODELS = [("bedroll", r"bedroll|sleepingbag"), ("corpse_bag", r"backpack")]
+
+
+def fetch_respawn(dest):
+    out_dir = os.path.join(dest, "world")
+    if os.path.exists(os.path.join(out_dir, "bedroll.obj")):
+        print("睡袋: 已有，跳过")
+        return
+    zf = open_remote_zip(f"{DRIVE_ROOT}/{WORLD_ENT}/respawnpoints.zip")
+    if zf is None:
+        print("云盘里没有 respawnpoints.zip，睡袋用纯色方块")
+        return
+    os.makedirs(out_dir, exist_ok=True)
+    meshes, texs = _zip_members(zf)
+
+    def best(names, pat):
+        hits = [n for n in names if re.search(pat, n, re.I)]
+        # 优先 LOD0、名字短的
+        hits.sort(key=lambda n: ("lod0" not in n.lower(), re.search(r"lod[1-9]", n, re.I) is not None, len(n)))
+        return hits[0] if hits else None
+
+    for out, pat in RESPAWN_MODELS:
+        m = best(meshes, pat)
+        if not m:
+            print(f"  respawnpoints.zip 里没找到 {out}（{pat}），先用纯色顶上")
+            continue
+        with open(os.path.join(out_dir, out + ".obj"), "wb") as f:
+            f.write(zf.read(meshes[m]))
+        stem = re.sub(r"_?LOD\d+$", "", m, flags=re.I)
+        t = best([n for n in texs if not re.search(r"_(n|normal|s|spec|mask)$", n, re.I)], re.escape(stem)) or best(texs, pat)
+        if t:
+            _save_png(zf.read(texs[t]), os.path.join(out_dir, out + ".png"))
+        print(f"  {out}: {m}" + (f" + {t}" if t else "（没贴图）"))
+
+
 def fetch_poi(dest):
     """市中心建筑（七日杀的 POI 预制体）：取远景网格 .mesh、属性 .xml，以及完整方块数据 .tts 和方块名表 .blocks.nim
     （存成 .nim）。.mesh（存成 .poimesh）之后由 tools/build_poi.gd 在 Godot 里转成 assets/poi/*.res。"""
@@ -1059,7 +1096,7 @@ def main():
     ap.add_argument("--zombies", default=",".join(DEFAULT_ZOMBIES), help="逗号分隔的僵尸名，或 all")
     ap.add_argument("--music", type=int, default=6, help="每类音乐取几段")
     ap.add_argument("--all-icons", action="store_true", help="取全部图标（默认只取游戏会用到的）")
-    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,poi,full,blocks,terrain,effects,music,sounds,sky,data")
+    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,respawn,poi,full,blocks,terrain,effects,music,sounds,sky,data")
     args = ap.parse_args()
     skip = set(filter(None, args.skip.split(",")))
     dest = os.path.abspath(args.dest)
@@ -1077,6 +1114,8 @@ def main():
         fetch_fp_arms(dest)
     if "world" not in skip:
         fetch_world(dest)
+    if "respawn" not in skip:
+        fetch_respawn(dest)
     if "poi" not in skip:
         fetch_poi(dest)
     if "full" not in skip:

@@ -15,6 +15,9 @@ var zombie_root := Node3D.new()
 var spawn_cd := 0.0
 var _flow_t := 0.0
 var kills := 0
+## 6a：热量地图、感知轮询位置
+var heat := HeatMap.new()
+var _sense_i := 0
 
 
 func setup(parent: Node3D, world_ref: World, player_ref: PlayerSystem, hud_ref: Hud,
@@ -25,6 +28,10 @@ func setup(parent: Node3D, world_ref: World, player_ref: PlayerSystem, hud_ref: 
 	hud = hud_ref
 	looting = looting_ref
 	rng = rng_ref
+	if not GameState.noise.is_connected(_on_noise):
+		GameState.noise.connect(_on_noise)
+	heat.connect_signals()
+	heat.overflow.connect(_on_heat_overflow)
 
 
 func build() -> void:
@@ -37,6 +44,7 @@ func reset() -> void:
 	spawn_cd = 6.0
 	_flow_t = 0.0
 	kills = 0
+	heat.reset()
 
 
 func update(delta: float, day: int, night: bool, horde: bool) -> void:
@@ -51,12 +59,13 @@ func update(delta: float, day: int, night: bool, horde: bool) -> void:
 		alive += 1
 		var dmg: float = z.try_attack()
 		if dmg > 0.0:
-			player_sys.take_damage(dmg, "zombie", C.BLEED_CHANCE)
+			player_sys.zombie_hit(dmg, z.type)
 		# 离太远的僵尸回收掉，在身边重新刷
 		if z.distance_to_target() > C.ZOMBIE_DESPAWN:
 			z.queue_free()
 		elif night or horde:
 			z.speed = max(z.speed, (C.ZOMBIE_HORDE_SPEED if horde else C.ZOMBIE_NIGHT_SPEED) * 0.9)
+	_sense_round()
 	# 血月僵尸由 Horde 负责；普通刷新按游戏阶段
 	var target := 0
 	if not horde:
@@ -142,18 +151,61 @@ func _on_zombie_died(z: Zombie) -> void:
 	GameState.zombie_killed.emit(z, "")
 
 
+## AI 预算：每帧轮流给最多 AI_SENSE_PER_FRAME 只僵尸做视觉判断
+func _sense_round() -> void:
+	var n := zombie_root.get_child_count()
+	if n == 0:
+		return
+	var budget := mini(C.AI_SENSE_PER_FRAME, n)
+	for i in budget:
+		_sense_i = (_sense_i + 1) % n
+		var z = zombie_root.get_child(_sense_i)
+		if not z.dead:
+			z.brain.sense(z, z.target, world)
+
+
+## 噪音：半径内的僵尸走过去查看
+func _on_noise(pos: Vector3, radius: float, _kind: String) -> void:
+	var r2 := radius * radius
+	for z in zombie_root.get_children():
+		if z.dead:
+			continue
+		var d: Vector3 = z.global_position - pos
+		d.y = 0.0
+		if d.length_squared() <= r2:
+			z.brain.hear(pos, _kind)
+
+
+## 热量满了：在那一格附近刷一只尖叫者，走过来查看
+func _on_heat_overflow(center: Vector3) -> void:
+	if Assets.zombie_models.is_empty() or zombie_root.get_child_count() >= C.ZOMBIE_MAX:
+		return
+	var model := pick_model("ZombiesNight")
+	for m in Assets.zombie_models:
+		if m.to_lower().contains("screamer"):
+			model = m
+			break
+	var z := spawn_zombie_at(model, GameState.day, GameState.is_night(), false, world.free_point(center, 18.0, 30.0))
+	if z:
+		z.brain.investigate(center)
+		hud.toast("这里动静太大，引来了尖叫者！")
+
+
 ## 尖叫者叫一声，附近再冒出几只僵尸
 func _on_scream(z: Zombie) -> void:
 	hud.toast("尖叫者在叫，附近的僵尸被引过来了！")
 	var day := GameState.day
 	for i in 3:
 		if zombie_root.get_child_count() < C.ZOMBIE_MAX:
-			spawn_zombie(day, true, false, z.global_position)
+			var nz := spawn_zombie(day, true, false, z.global_position)
+			if nz:
+				nz.brain.chase()
 
 
 func save_data() -> Dictionary:
-	return {"kills": kills}
+	return {"kills": kills, "heat": heat.save_data()}
 
 
 func load_data(d: Dictionary) -> void:
 	kills = int(d.get("kills", 0))
+	heat.load_data(d.get("heat", {}))

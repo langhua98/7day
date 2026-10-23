@@ -534,8 +534,62 @@ def build_poi(name, poi_dir, db, shapes, paint_table, uv_ids):
                 q = q[::-1]
             mo.tri([q[0], q[1], q[2]], wd, tex)
             mo.tri([q[0], q[2], q[3]], wd, tex)
-    return {"parts": parts, "missing": missing,
+    return {"parts": parts, "missing": missing, "containers": find_containers(blocks, names, size, db, (ox, dy, oz)),
             "offset": (ox, dy, oz), "ground": ground}
+
+
+def container_name(db, nm):
+    """方块是不是可翻的容器：名字 cnt 开头，或 blocks.xml 里 Class 带 Loot。返回官方 LootList（不是返回 None）"""
+    b = base_name(nm)
+    cls = db.get(b, "Class") or ""
+    if not (b.startswith("cnt") or "Loot" in cls):
+        return None
+    return db.get(b, "LootList") or None
+
+
+def find_containers(blocks, names, size, db, offset):
+    """楼里的容器方块 → [{block, loot, x, y, z, rot}]。坐标是楼的本地坐标（和 _full 网格一致，
+    方块底面中心，y 未减 ground）。多格的容器（冰箱、货架）连在一起的同名方块只算一个。"""
+    X, Y, Z = size
+    ox, dy, oz = offset
+    kinds = {}
+    cells = {}
+    for j, v in enumerate(blocks):
+        t = v & 0xFFFF
+        if not t:
+            continue
+        if t not in kinds:
+            nm = names.get(t, "")
+            kinds[t] = (nm, container_name(db, nm)) if nm else (nm, None)
+        if kinds[t][1]:
+            cells[j] = t
+    out = []
+    seen = set()
+    for j in sorted(cells):
+        if j in seen:
+            continue
+        t = cells[j]
+        comp, stack = [], [j]
+        seen.add(j)
+        while stack:
+            k = stack.pop()
+            comp.append(k)
+            x, y, z = k % X, (k // X) % Y, k // (X * Y)
+            for ddx, ddy, ddz in FACES:
+                nx, ny, nz = x + ddx, y + ddy, z + ddz
+                if 0 <= nx < X and 0 <= ny < Y and 0 <= nz < Z:
+                    n = nx + ny * X + nz * X * Y
+                    if n not in seen and cells.get(n) == t:
+                        seen.add(n)
+                        stack.append(n)
+        xs = [k % X for k in comp]
+        ys = [(k // X) % Y for k in comp]
+        zs = [k // (X * Y) for k in comp]
+        r = (blocks[j] >> 16) & 0x1F
+        out.append({"block": base_name(kinds[t][0]), "loot": kinds[t][1],
+                    "x": round((min(xs) + max(xs) + 1) / 2 + ox, 2), "y": min(ys) + dy,
+                    "z": round((min(zs) + max(zs) + 1) / 2 + oz, 2), "rot": r % 4})
+    return out
 
 
 
@@ -599,6 +653,8 @@ def run(assets, only=()):
     paint_table = load_paint_table(os.path.join(bdir, "painting.xml"))
     uv_ids = load_uv_ids(os.path.join(bdir, "ta_opaque.xml"))
     used = set()
+    cpath = os.path.join(poi_dir, "containers.json")
+    conts = json.load(open(cpath)) if os.path.exists(cpath) else {}
     for n in names:
         try:
             res = build_poi(n, poi_dir, db, shapes, paint_table, uv_ids)
@@ -611,11 +667,13 @@ def run(assets, only=()):
             if kind == 0:
                 used.update(mo.tex)
             tris += len(mo.idx) // 3
-        print(f"  {n}: {tris} 个三角形，{len({k[0] for k in res['parts']})} 块", flush=True)
+        conts[n] = {"ground": res["ground"], "list": res["containers"]}
+        print(f"  {n}: {tris} 个三角形，{len({k[0] for k in res['parts']})} 块，{len(res['containers'])} 个容器", flush=True)
     used.discard(-1)
     up = os.path.join(poi_dir, "full_textures.json")
     old = set(json.load(open(up))) if os.path.exists(up) else set()
     json.dump(sorted(used | old), open(up, "w"))
+    json.dump(conts, open(cpath, "w"), ensure_ascii=False)
     return used
 
 

@@ -146,5 +146,95 @@ class HordeDataTest(unittest.TestCase):
         self.assertEqual(build_data.blood_moon_total(stage, 0.5), 2)
 
 
+BUFFS_XML = """<buffs>
+  <buff name="buffInjuryBleeding" name_key="buffInjuryBleedingName" description_key="buffInjuryBleedingDesc" icon="ui_game_symbol_bleeding"/>
+  <buff name="buffOther" name_key="buffOtherName"/>
+</buffs>
+"""
+
+BUFF_LOC = {"buffInjuryBleedingName": "流血", "buffInjuryBleedingDesc": "正在失血", "buffOtherName": "别的"}
+
+
+class BuffDataTest(unittest.TestCase):
+    def test_parse_buffs_only_wanted(self):
+        out = build_data.parse_buffs(BUFFS_XML, BUFF_LOC, ["buffInjuryBleeding", "buffMissing"])
+        self.assertEqual(list(out), ["buffInjuryBleeding"])
+        self.assertEqual(out["buffInjuryBleeding"]["zh"], "流血")
+        self.assertEqual(out["buffInjuryBleeding"]["icon"], "ui_game_symbol_bleeding")
+
+    def test_status_buffs_from_config(self):
+        text = (Path(__file__).resolve().parents[1] / "scripts" / "config.gd").read_text(encoding="utf-8")
+        names = build_data.status_buffs_from_gd(text)
+        self.assertIn("buffInjuryBleeding", names)
+        self.assertIn("buffIllDysentery", names)
+
+
 if __name__ == "__main__":
     unittest.main()
+
+
+RECIPES_XML = """<recipes>
+  <recipe name="meleeToolStoneAxe" count="1" tags="learnable,tool">
+    <ingredient name="resourceRockSmall" count="2"/>
+    <ingredient name="resourceYuccaFibers" count="2"/>
+    <ingredient name="resourceWood" count="2"/>
+  </recipe>
+  <recipe name="campfire" count="1" craft_time="5">
+    <ingredient name="resourceRockSmall" count="5"/>
+  </recipe>
+  <recipe name="frameShapes:VariantHelper" count="1" craft_area="workbench" craft_time="2">
+    <ingredient name="resourceWood" count="4"/>
+  </recipe>
+  <recipe name="frameShapes:VariantHelper" count="1">
+    <ingredient name="resourceWood" count="4"/>
+  </recipe>
+  <recipe name="drinkJarBoiledWater" count="1" craft_area="campfire" craft_tool="toolCookingPot" craft_time="10">
+    <ingredient name="drinkJarRiverWater" count="1"/>
+  </recipe>
+  <recipe name="resourceForgedIron" count="1" material_based="true">
+    <wildcard_forge_category/>
+    <ingredient name="unit_iron" count="5"/>
+  </recipe>
+  <recipe name="meleeToolMissing" count="1"><ingredient name="resourceWood" count="1"/></recipe>
+  <recipe name="meleeToolStoneAxe" count="1"><ingredient name="resourceUnknown" count="1"/></recipe>
+</recipes>
+"""
+
+ITEMS_TIME_XML = """<items>
+  <item name="resourceBase"><property name="CraftingIngredientTime" value="0.5"/></item>
+  <item name="resourceWood"><property name="Extends" value="resourceBase"/></item>
+</items>
+"""
+
+
+class RecipesTest(unittest.TestCase):
+    def setUp(self):
+        self.items = {i: {"zh": i + "中文", "tags": ""} for i in [
+            "meleeToolStoneAxe", "resourceRockSmall", "resourceYuccaFibers", "resourceWood",
+            "frameShapes", "drinkJarBoiledWater", "drinkJarRiverWater", "toolCookingPot", "resourceForgedIron"]}
+        self.blocks = {"campfire"}
+
+    def test_filter_and_fields(self):
+        raw = build_data.parse_recipes_xml(RECIPES_XML)
+        self.assertEqual(len(raw), 8)
+        times = build_data.parse_ingredient_times(ITEMS_TIME_XML)
+        self.assertEqual(times["resourceWood"], 0.5)
+        out, dropped = build_data.build_recipes(raw, self.items, self.blocks, {"campfire": "篝火"}, times)
+        axe = out["meleeToolStoneAxe"]
+        self.assertTrue(axe["learnable"])
+        self.assertEqual(axe["cat"], "tool")
+        self.assertEqual(axe["area"], "")
+        self.assertEqual([i["id"] for i in axe["ingredients"]], ["resourceRockSmall", "resourceYuccaFibers", "resourceWood"])
+        # 没写 craft_time：2×1 + 2×1 + 2×0.5
+        self.assertEqual(axe["time"], 5.0)
+        self.assertTrue(out["campfire"]["block"])
+        self.assertEqual(out["campfire"]["zh"], "篝火")
+        self.assertEqual(out["frameShapes"]["area"], "workbench")
+        self.assertEqual(out["frameShapes@backpack"]["area"], "")
+        self.assertEqual(out["frameShapes"]["cat"], "build")
+        self.assertEqual(out["drinkJarBoiledWater"]["tool"], "toolCookingPot")
+        self.assertEqual(out["drinkJarBoiledWater"]["cat"], "food")
+        self.assertNotIn("resourceForgedIron", out)
+        self.assertNotIn("meleeToolMissing", out)
+        self.assertEqual(sum(dropped.values()), 3)
+        self.assertEqual(len(out), 5)

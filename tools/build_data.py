@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """官方 Data/Config → 游戏用 JSON。
 
-默认只生成 assets/data/items.json：
-  {id: {id, stack, value, durability, tags, zh}}
+生成 assets/data/ 下的表：
+  items.json    {id: {id, stack, value, durability, tags, zh}}
+  recipes.json  {key: {id, count, area, time, tool, tags, cat, zh, learnable, ingredients:[{id,count,zh}]}}
 只保留 assets/index/icon_to_model.json 里的物品，再加上 scripts/blocks.gd 的方块。
 Data_Config.zip 从云盘 /7day/小橘素材库/ 下载；令牌只读环境变量 XIAOJU_TOKEN。
 """
@@ -250,6 +251,32 @@ def build_items(items: dict, loc: dict, index_rows: list, blocks: list) -> dict:
     return out
 
 
+def status_buffs_from_gd(text: str) -> list:
+    """scripts/config.gd 的 STATUS 表里用到的官方 buff 名。"""
+    return sorted(set(re.findall(r'"buff"\s*:\s*"([^"]+)"', text)))
+
+
+def parse_buffs(text: str, loc: dict, wanted) -> dict:
+    """buffs.xml → {buff 名: {zh, desc, icon}}，只导 wanted 里的。"""
+    wanted = set(wanted)
+    out = {}
+    if not text:
+        return out
+    root = ET.fromstring(text)
+    for el in root.iter("buff"):
+        name = el.get("name") or ""
+        if name not in wanted:
+            continue
+        name_key = el.get("name_key") or name + "Name"
+        desc_key = el.get("description_key") or name + "Desc"
+        out[name] = {
+            "zh": loc.get(name_key) or loc.get(name) or "",
+            "desc": loc.get(desc_key) or "",
+            "icon": el.get("icon") or "",
+        }
+    return out
+
+
 def parse_gamestages(text: str) -> dict:
     root = ET.fromstring(text)
     out = {}
@@ -317,6 +344,156 @@ def map_entitygroups(groups: dict, available: set) -> dict:
     return out
 
 
+# —— 配方（recipes.xml）——
+
+## 合成面板的分类：按成品名前缀和 tags 判断，不针对具体物品
+RECIPE_CATS = ("tool", "weapon", "ammo", "medical", "food", "build", "other")
+
+
+def base_name(name: str) -> str:
+    """方块配方名可能带 ":VariantHelper" 之类的后缀，去掉后再和物品表比对。"""
+    name = (name or "").strip()
+    if ":" in name:
+        name = name.split(":", 1)[0]
+    return name
+
+
+def parse_ingredient_times(items_text: str) -> dict:
+    """items.xml 里每个物品的 CraftingIngredientTime（配方没写 craft_time 时用来估时间）。"""
+    root = ET.fromstring(items_text)
+    raw, parent = {}, {}
+    for el in root.findall("item"):
+        name = el.get("name")
+        if not name:
+            continue
+        for pr in el.findall("property"):
+            if pr.get("name") == "CraftingIngredientTime":
+                raw[name] = _float(pr.get("value"), 1.0)
+            elif pr.get("name") == "Extends":
+                parent[name] = pr.get("value", "")
+    out = {}
+    for name in set(raw) | set(parent):
+        cur, seen = name, set()
+        while cur and cur not in raw and cur not in seen:
+            seen.add(cur)
+            cur = parent.get(cur, "")
+        if cur in raw:
+            out[name] = raw[cur]
+    return out
+
+
+def parse_block_names(text: str) -> set:
+    if not text:
+        return set()
+    root = ET.fromstring(text)
+    return {el.get("name") for el in root.iter("block") if el.get("name")}
+
+
+def parse_recipes_xml(text: str) -> list:
+    """recipes.xml → [{name, count, area, time, tool, tags, ingredients}]，time 为 None 表示官方没写。"""
+    root = ET.fromstring(text)
+    out = []
+    for el in root.iter("recipe"):
+        name = el.get("name")
+        if not name:
+            continue
+        ings = []
+        for ing in el.findall("ingredient"):
+            iname = ing.get("name")
+            if iname:
+                ings.append({"id": iname, "count": max(1, _int(ing.get("count"), 1))})
+        t = el.get("craft_time")
+        out.append({
+            "name": name,
+            "count": max(1, _int(el.get("count"), 1)),
+            "area": (el.get("craft_area") or "").strip(),
+            "time": _float(t, 0.0) if t not in (None, "") else None,
+            "tool": base_name(el.get("craft_tool") or ""),
+            "tags": (el.get("tags") or "").strip(),
+            "ingredients": ings,
+            "forge": el.find("wildcard_forge_category") is not None,
+        })
+    return out
+
+
+def recipe_category(item_id: str, recipe_tags: str, item_tags: str) -> str:
+    low = item_id.lower()
+    tags = {t.strip().lower() for t in (recipe_tags + "," + item_tags).split(",") if t.strip()}
+    if low.startswith("ammo"):
+        return "ammo"
+    if low.startswith("meleetool") or low.startswith("tool") or "tool" in tags:
+        return "tool"
+    if low.startswith("melee") or low.startswith("gun") or "weapon" in tags:
+        return "weapon"
+    if low.startswith("medical") or "medical" in tags:
+        return "medical"
+    if low.startswith("food") or low.startswith("drink") or "food" in tags or "drink" in tags:
+        return "food"
+    if "block" in tags or "shapes" in low or low.endswith("block") or "building" in tags:
+        return "build"
+    return "other"
+
+
+def build_recipes(recipes: list, items: dict, block_names: set, loc: dict, ing_times: dict):
+    """只保留成品和全部材料都在物品表（items.json）或方块表（blocks.xml）里的配方。
+
+    返回 (表, 丢弃原因计数)。同名配方（不同工作站）用 名字@工作站 区分。
+    """
+    def known(i):
+        return i in items or i in block_names
+
+    def zh(i):
+        return items.get(i, {}).get("zh") or loc.get(i) or i
+
+    out, dropped = {}, {}
+    for r in recipes:
+        rid = base_name(r["name"])
+        reason = ""
+        if r["forge"] or any(i["id"].startswith("unit_") for i in r["ingredients"]):
+            reason = "锻造炉熔炼材料"
+        elif not known(rid):
+            reason = "成品不在物品表"
+        elif not r["ingredients"]:
+            reason = "没有材料"
+        else:
+            ings = []
+            for ing in r["ingredients"]:
+                iid = base_name(ing["id"])
+                if not known(iid):
+                    reason = "材料不在物品表"
+                    break
+                ings.append({"id": iid, "count": ing["count"], "zh": zh(iid)})
+        if reason:
+            dropped[reason] = dropped.get(reason, 0) + 1
+            continue
+        time = r["time"]
+        if time is None:
+            # 官方没写 craft_time：按材料的 CraftingIngredientTime（默认 1 秒）累加
+            time = sum(ing_times.get(i["id"], 1.0) * i["count"] for i in ings)
+        key = rid
+        if key in out:
+            key = f"{rid}@{r['area'] or 'backpack'}"
+            n = 2
+            while key in out:
+                key = f"{rid}@{r['area'] or 'backpack'}#{n}"
+                n += 1
+        tags = [t.strip() for t in r["tags"].split(",") if t.strip()]
+        out[key] = {
+            "id": rid,
+            "count": r["count"],
+            "area": r["area"],
+            "time": round(max(0.5, time), 2),
+            "tool": r["tool"],
+            "tags": tags,
+            "learnable": "learnable" in tags,
+            "cat": recipe_category(rid, r["tags"], items.get(rid, {}).get("tags", "")),
+            "zh": zh(rid),
+            "block": rid not in items,
+            "ingredients": ings,
+        }
+    return out, dropped
+
+
 def _api_base() -> str:
     return os.environ.get("XIAOJU_API", API_DEFAULT)
 
@@ -374,6 +551,17 @@ def read_config_zip(path: Path):
     return items, loc, gamestages, entitygroups
 
 
+def read_config_file(path: Path, filename: str) -> str:
+    """从 Data_Config.zip 里读一个 Config/xxx.xml，没有就返回空串。"""
+    with zipfile.ZipFile(path) as zf:
+        name = next((n for n in zf.namelist() if n.endswith("Config/" + filename)), None)
+        return zf.read(name).decode("utf-8-sig") if name else ""
+
+
+def read_buffs_xml(path: Path) -> str:
+    return read_config_file(path, "buffs.xml")
+
+
 def build_all(dest: Path, zip_path: Path, index_path: Path, only: str = "all") -> dict:
     items_xml, loc_csv, gs_xml, eg_xml = read_config_zip(zip_path)
     if only in ("items", "all"):
@@ -396,6 +584,17 @@ def build_all(dest: Path, zip_path: Path, index_path: Path, only: str = "all") -
         print(f"  → {out_path}")
     else:
         out = {}
+    if only in ("buffs", "all"):
+        wanted = status_buffs_from_gd((ROOT / "scripts" / "config.gd").read_text(encoding="utf-8"))
+        buffs = parse_buffs(read_buffs_xml(zip_path), load_localization(loc_csv), wanted)
+        out_dir = dest / "data"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        path = out_dir / "buffs.json"
+        path.write_text(json.dumps(buffs, ensure_ascii=False, indent=1), encoding="utf-8")
+        missing = [w for w in wanted if w not in buffs]
+        print(f"状态效果: 需要 {len(wanted)} 个，找到 {len(buffs)} 个 → {path}")
+        if missing:
+            print(f"  buffs.xml 里没有: {', '.join(missing)}（游戏里用 config.gd 的中文名）")
     if only in ("gamestages", "all"):
         stages = parse_gamestages(gs_xml)
         out_dir = dest / "data"
@@ -415,6 +614,23 @@ def build_all(dest: Path, zip_path: Path, index_path: Path, only: str = "all") -
         path = out_dir / "entitygroups.json"
         path.write_text(json.dumps(mapped, ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"僵尸组: {len(mapped)} 组，可用模型 {len(available)} 个 → {path}")
+    if only in ("recipes", "all"):
+        items_path = dest / "data" / "items.json"
+        if not items_path.exists():
+            sys.exit(f"找不到 {items_path}，先运行 --only items")
+        items_table = json.loads(items_path.read_text(encoding="utf-8"))
+        rec_xml = read_config_file(zip_path, "recipes.xml")
+        if not rec_xml:
+            sys.exit(f"{zip_path} 里没有 Config/recipes.xml")
+        raw = parse_recipes_xml(rec_xml)
+        blocks = parse_block_names(read_config_file(zip_path, "blocks.xml"))
+        recipes, dropped = build_recipes(raw, items_table, blocks, load_localization(loc_csv),
+                                         parse_ingredient_times(items_xml))
+        path = dest / "data" / "recipes.json"
+        path.write_text(json.dumps(recipes, ensure_ascii=False, indent=1), encoding="utf-8")
+        print(f"配方: 官方 {len(raw)} 条，保留 {len(recipes)} 条，丢弃 {sum(dropped.values())} 条 → {path}")
+        for reason, n in sorted(dropped.items(), key=lambda kv: -kv[1]):
+            print(f"  丢弃 {n} 条：{reason}")
     return out
 
 
@@ -423,7 +639,7 @@ def main() -> int:
     ap.add_argument("--dest", default=str(DEFAULT_DEST), help="assets 目录")
     ap.add_argument("--zip", default="", help="本地 Data_Config.zip（不传就从云盘下载）")
     ap.add_argument("--index", default="", help="icon_to_model.json（默认 assets/index/）")
-    ap.add_argument("--only", default="all", choices=["all", "items", "gamestages", "entitygroups"], help="只生成某张表")
+    ap.add_argument("--only", default="all", choices=["all", "items", "buffs", "gamestages", "entitygroups", "recipes"], help="只生成某张表")
     args = ap.parse_args()
     dest = Path(args.dest)
     zip_path = Path(args.zip) if args.zip else dest / "cache" / ZIP_NAME
