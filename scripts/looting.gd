@@ -177,6 +177,10 @@ func update_action(delta: float) -> void:
 		hud.set_action("打开\n%s" % crate.name)
 		return
 	var c := world.nearest_container(player_sys.player.position)
+	var door := _door_target(c)
+	if not door.is_empty():
+		hud.set_action("%s\n%s" % ["关上" if door.open else "打开", _door_name(door)])
+		return
 	if c.is_empty():
 		hud.set_action("")
 	elif c.searched and _has_items(c):
@@ -204,6 +208,10 @@ func action() -> void:
 		open_panel(crate)
 		return
 	var c := world.nearest_container(player_sys.player.position)
+	var door := _door_target(c)
+	if not door.is_empty():
+		_use_door(door)
+		return
 	if c.is_empty():
 		return
 	if c.searched:
@@ -214,6 +222,35 @@ func action() -> void:
 	_search_t = 0.0
 	Sfx.play("search", c.pos + Vector3.UP * 0.8)
 	_search_from = player_sys.player.position
+
+
+## 面前够得着的门；旁边也有容器时谁近用谁
+func _door_target(container: Dictionary) -> Dictionary:
+	var me: Vector3 = player_sys.player.position
+	var door := world.nearest_door(me, -player_sys.player.global_basis.z, C.DOOR_REACH)
+	if door.is_empty() or container.is_empty():
+		return door
+	var dd := Vector2(door.pos.x - me.x, door.pos.z - me.z).length()
+	var dc := Vector2(container.pos.x - me.x, container.pos.z - me.z).length() - float(container.r)
+	return door if dd < dc else {}
+
+
+func _door_name(door: Dictionary) -> String:
+	var d: Dictionary = world.interiors[door.interior].doors[door.door]
+	if d.hatch:
+		return "活板门"
+	return "铁门" if d.metal else "门"
+
+
+func _use_door(door: Dictionary) -> void:
+	# 关门时人站在门洞里就不关，免得卡进门板
+	if door.open and world.door_blocked_by(door.interior, door.door, player_sys.player.position, 0.35):
+		hud.toast("站在门口关不上")
+		return
+	world.toggle_door(door.interior, door.door)
+	if Sfx.has("door"):
+		Sfx.play("door", door.pos)
+	GameState.make_noise(door.pos, "door")
 
 
 func _finish_search(c: Dictionary) -> void:

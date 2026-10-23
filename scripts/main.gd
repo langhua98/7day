@@ -165,6 +165,7 @@ func start(fresh := true) -> void:
 		c.searched = false
 		c.erase("items")
 	world.clear_voxels()
+	world.door_load([])
 	for i in C.LOOT_COUNT / 2:
 		looting.spawn_loot(world.free_point(Vector3.ZERO, 4.0, 60.0))
 	if fresh:

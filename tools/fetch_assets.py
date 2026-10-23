@@ -985,6 +985,7 @@ SOUND_GROUPS = {
     "bandage": ("useactions", r"player_bandage\.wav", 1),
     "search": ("useactions", r"open_(cardboard|garbage|fridge|cupboard|trashcan|dumpster|backpack)\.wav", 7),
     "loot": ("ui", r"ui_loot_success\.wav", 1),
+    "door": ("useactions", r"\w*door\w*open\w*\.wav", 2),
     "amb_day": ("ambient_loops", r"a_windlight_lp\.wav", 1),
     "amb_night": ("ambient_loops", r"a_crickets_lp\.wav", 1),
     "amb_flies": ("ambient_loops", r"flies_lp\.wav", 1),

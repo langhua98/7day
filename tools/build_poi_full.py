@@ -20,6 +20,7 @@
 """
 import argparse
 import collections
+import gzip
 import json
 import math
 import os
@@ -392,6 +393,14 @@ def build_poi(name, poi_dir, db, shapes, paint_table, uv_ids):
         i = info(v & 0xFFFF)
         return bool(i) and (i["kind"] == "terrain" or i.get("full"))
 
+    kind_cache = {}
+
+    def col_kind(t):
+        """方块编号 → 碰撞类别（不看旋转）；None = 按形状几何算"""
+        if t not in kind_cache:
+            kind_cache[t] = block_col_kind(db, names.get(t, "air"), info(t))
+        return kind_cache[t]
+
     # 从楼外面的空气往里灌：只有挨着“外面”的方块才画（玩家进不了楼，封死的屋子里面看不到，省手机性能）。
     # 碎掉的窗户、敞开的门是空气，能灌进去，所以从破口还能看到屋里。
     n_all = X * Y * Z
@@ -400,7 +409,12 @@ def build_poi(name, poi_dir, db, shapes, paint_table, uv_ids):
 
     def passable(j):
         v = blocks[j] & 0xFFFF
-        return v == 0 or info(v) is None and not names.get(v, "").startswith("terrainFiller")
+        if v == 0:
+            return True
+        if info(v) is None:
+            return not names.get(v, "").startswith("terrainFiller")
+        # 梯子、不挡人的装饰也能钻过去（梯子井上面的屋子也要画出来）
+        return col_kind(v) in (COL_EMPTY, COL_LADDER)
 
     for x in range(X):
         for y in range(Y):
@@ -534,8 +548,12 @@ def build_poi(name, poi_dir, db, shapes, paint_table, uv_ids):
                 q = q[::-1]
             mo.tri([q[0], q[1], q[2]], wd, tex)
             mo.tri([q[0], q[2], q[3]], wd, tex)
-    return {"parts": parts, "missing": missing, "containers": find_containers(blocks, names, size, db, (ox, dy, oz)),
-            "offset": (ox, dy, oz), "ground": ground}
+    col, doors = build_collision(blocks, size, db, names, shapes, info, col_kind)
+    conts = find_containers(blocks, names, size, db, (ox, dy, oz))
+    for c in conts:
+        c["drawn"] = info(c.pop("_t")) is not None
+    return {"parts": parts, "missing": missing, "containers": conts, "col": col, "doors": doors,
+            "offset": (ox, dy, oz), "ground": ground, "size": size}
 
 
 def container_name(db, nm):
@@ -586,11 +604,186 @@ def find_containers(blocks, names, size, db, offset):
         ys = [(k // X) % Y for k in comp]
         zs = [k // (X * Y) for k in comp]
         r = (blocks[j] >> 16) & 0x1F
+        dim = multi_dim(db, kinds[t][0], r)
+        sx, sy, sz = max(max(xs) - min(xs) + 1, dim[0]), max(max(ys) - min(ys) + 1, dim[1]), max(max(zs) - min(zs) + 1, dim[2])
         out.append({"block": base_name(kinds[t][0]), "loot": kinds[t][1],
                     "x": round((min(xs) + max(xs) + 1) / 2 + ox, 2), "y": min(ys) + dy,
-                    "z": round((min(zs) + max(zs) + 1) / 2 + oz, 2), "rot": r % 4})
+                    "z": round((min(zs) + max(zs) + 1) / 2 + oz, 2), "rot": r % 4,
+                    "sx": sx, "sy": sy, "sz": sz, "_t": t})
     return out
 
+
+# —— 楼内碰撞（让玩家能走进楼、上楼梯、开门）——
+# 每格一个字节：
+#   0 空（空气、家具模型、不挡人的装饰）
+#   1..8 从格子底往上 n/8 米是实心（8 = 整格）
+#   9 上半格实心（倒扣的半块、吊顶）
+#   10..13 斜坡/楼梯，往 +x、-x、+z、-z 方向升高（游戏坐标，方块内 0→1 米）
+#   14 梯子（能穿过，站在里面能爬）
+#   15 门（关着是整格，开着是空；状态在游戏里）
+COL_EMPTY, COL_FULL, COL_TOP_HALF, COL_RAMP, COL_LADDER, COL_DOOR = 0, 8, 9, 10, 14, 15
+_SAMPLES = [(i + 0.5) / 4 for i in range(4)]
+
+
+def multi_dim(db, block_name, rot):
+    """多格方块（门、冰箱）的尺寸 MultiBlockDim "x,y,z"，转 90/270 度时 x、z 对调"""
+    v = db.get(base_name(block_name), "MultiBlockDim") or ""
+    try:
+        d = [max(1, int(s)) for s in v.split(",")]
+    except ValueError:
+        d = []
+    if len(d) != 3:
+        return (1, 1, 1)
+    return (d[2], d[1], d[0]) if rot % 2 == 1 else tuple(d)
+
+
+def block_col_kind(db, nm, bi):
+    """方块名 → 碰撞类别；返回 None 表示是画出来的形状方块，要按几何（含旋转）算"""
+    if not nm or nm == "air":
+        return COL_EMPTY
+    if nm.startswith("terrainFiller"):
+        return COL_FULL
+    b = base_name(nm)
+    cls = db.get(b, "Class") or ""
+    if bi is None and "Door" in cls:
+        return COL_DOOR
+    if cls == "Ladder" or (db.get(b, "Climbable") or "").lower() == "true" or b.lower().startswith("ladder"):
+        return COL_LADDER
+    collide = db.get(b, "Collide")
+    if collide is not None and "movement" not in collide.lower():
+        return COL_EMPTY
+    if bi is None:
+        # 没模型的容器在游戏里画成箱子，挡人；其他家具模型画不出来，就不挡（免得撞空气墙）
+        return COL_FULL if container_name(db, nm) else COL_EMPTY
+    if bi["kind"] == "terrain":
+        return COL_FULL
+    return None
+
+
+def shape_col(geo):
+    """转好的形状几何 → 碰撞类别：竖着往下打 4×4 根射线，看每根打到的最高、最低点"""
+    tris = [q for _, _, _, rt, _ in (geo or []) for q, _ in rt]
+    if not tris:
+        return COL_EMPTY
+    lo = min(p[1] for q in tris for p in q)
+    hi = max(p[1] for q in tris for p in q)
+    cols = {}
+    for su in _SAMPLES:
+        for sw in _SAMPLES:
+            ys = []
+            for a, b, c in tris:
+                d = (b[0] - a[0]) * (c[2] - a[2]) - (c[0] - a[0]) * (b[2] - a[2])
+                if abs(d) < 1e-7:
+                    continue   # 竖着的三角形
+                l1 = ((b[0] - su) * (c[2] - sw) - (c[0] - su) * (b[2] - sw)) / d
+                l2 = ((c[0] - su) * (a[2] - sw) - (a[0] - su) * (c[2] - sw)) / d
+                l3 = 1.0 - l1 - l2
+                if min(l1, l2, l3) < -1e-4:
+                    continue
+                ys.append(l1 * a[1] + l2 * b[1] + l3 * c[1])
+            if ys:
+                cols[(su, sw)] = (min(ys), max(ys))
+    if len(cols) < 4:
+        # 薄的东西（玻璃、竖板、栏杆、柱子）：够高就当整格挡住，矮的小东西不挡
+        return COL_FULL if hi - lo >= 0.5 else COL_EMPTY
+    if min(v[0] for v in cols.values()) >= 0.4:
+        return COL_TOP_HALF
+    tops = {k: v[1] for k, v in cols.items()}
+    top = lambda su, sw: tops.get((su, sw), 0.0)
+    mx = max(tops.values())
+    if mx - min(top(su, sw) for su in _SAMPLES for sw in _SAMPLES) > 0.3:
+        dx = sum(top(su, sw) * (1 if su > 0.5 else -1) for su in _SAMPLES for sw in _SAMPLES) / 8
+        dz = sum(top(su, sw) * (1 if sw > 0.5 else -1) for su in _SAMPLES for sw in _SAMPLES) / 8
+        if max(abs(dx), abs(dz)) > 0.25:
+            # 楼梯、斜坡（拐角楼梯取升得多的方向）
+            if abs(dx) >= abs(dz):
+                return COL_RAMP + (0 if dx > 0 else 1)
+            return COL_RAMP + (2 if dz > 0 else 3)
+    return max(1, min(COL_FULL, math.ceil(mx * 8 - 0.05)))
+
+
+def build_collision(blocks, size, db, names, shapes, info, col_kind):
+    """整栋楼每格的碰撞类别（bytearray，下标 x + y*X + z*X*Y）和门的列表"""
+    X, Y, Z = size
+    col = bytearray(X * Y * Z)
+    geo_cache = {}
+    door_cells = {}
+    for j, v in enumerate(blocks):
+        t = v & 0xFFFF
+        if not t:
+            continue
+        k = col_kind(t)
+        if k is None:
+            r = (v >> 16) & 0x1F
+            key = (info(t)["model"], r)
+            if key not in geo_cache:
+                geo_cache[key] = shape_col(shapes.rotated(key[0], r))
+            k = geo_cache[key]
+        if k == COL_DOOR:
+            door_cells[j] = t
+        col[j] = k
+    doors = []
+    seen = set()
+    for j in sorted(door_cells):
+        if j in seen:
+            continue
+        t = door_cells[j]
+        comp, stack = [], [j]
+        seen.add(j)
+        while stack:
+            k = stack.pop()
+            comp.append(k)
+            x, y, z = k % X, (k // X) % Y, k // (X * Y)
+            for ddx, ddy, ddz in FACES:
+                nx, ny, nz = x + ddx, y + ddy, z + ddz
+                if 0 <= nx < X and 0 <= ny < Y and 0 <= nz < Z:
+                    n = nx + ny * X + nz * X * Y
+                    if n not in seen and door_cells.get(n) == t:
+                        seen.add(n)
+                        stack.append(n)
+        xs = [k % X for k in comp]
+        ys = [(k // X) % Y for k in comp]
+        zs = [k // (X * Y) for k in comp]
+        x0, y0, z0, x1, y1, z1 = min(xs), min(ys), min(zs), max(xs), max(ys), max(zs)
+        nm = names.get(t, "")
+        r = (blocks[j] >> 16) & 0x1F
+        dim = multi_dim(db, nm, r)
+        # 只存了门的根方块时，按 MultiBlockDim 往上补满（门一般 1×2）
+        y1 = max(y1, min(Y - 1, y0 + dim[1] - 1))
+        for y in range(y0, y1 + 1):
+            for z in range(z0, z1 + 1):
+                for x in range(x0, x1 + 1):
+                    i = x + y * X + z * X * Y
+                    if col[i] == COL_EMPTY:
+                        col[i] = COL_DOOR
+
+        def solid(x, y, z):
+            if 0 <= x < X and 0 <= y < Y and 0 <= z < Z:
+                return 4 <= col[x + y * X + z * X * Y] <= COL_TOP_HALF
+            return False
+        # 门板沿哪个方向：比一格宽就沿宽的方向；否则看两边哪边是墙
+        if x1 > x0:
+            axis = "x"
+        elif z1 > z0:
+            axis = "z"
+        else:
+            wx = solid(x0 - 1, y0, z0) + solid(x0 + 1, y0, z0)
+            wz = solid(x0, y0, z0 - 1) + solid(x0, y0, z0 + 1)
+            axis = "x" if wx > wz or (wx == wz and r % 2 == 0) else "z"
+        low = base_name(nm).lower()
+        doors.append({"block": base_name(nm), "x0": x0, "y0": y0, "z0": z0, "x1": x1, "y1": y1, "z1": z1,
+                      "axis": axis, "metal": any(w in low for w in ("metal", "steel", "vault", "iron", "security", "jail")),
+                      "hatch": "hatch" in low})
+    return col, doors
+
+
+def write_col(path, res):
+    """碰撞格子：b"poic" u16 X Y Z、i16 偏移 x y z，然后 gzip 压缩的 X*Y*Z 字节（下标 x + y*X + z*X*Y）"""
+    X, Y, Z = res["size"]
+    ox, dy, oz = res["offset"]
+    with open(path, "wb") as f:
+        f.write(b"poic" + struct.pack("<HHHhhh", X, Y, Z, ox, dy, oz))
+        f.write(gzip.compress(bytes(res["col"]), 6))
 
 
 # 地面方块 → 地面贴图（assets/terrain/）
@@ -662,13 +855,15 @@ def run(assets, only=()):
             print(f"  {n}: 读不了（{e}），跳过")
             continue
         write_full(os.path.join(poi_dir, n + ".full"), res)
+        write_col(os.path.join(poi_dir, n + ".col"), res)
         tris = 0
         for (ch, kind, _), mo in res["parts"].items():
             if kind == 0:
                 used.update(mo.tex)
             tris += len(mo.idx) // 3
-        conts[n] = {"ground": res["ground"], "list": res["containers"]}
-        print(f"  {n}: {tris} 个三角形，{len({k[0] for k in res['parts']})} 块，{len(res['containers'])} 个容器", flush=True)
+        conts[n] = {"ground": res["ground"], "list": res["containers"], "doors": res["doors"], "col": True}
+        print(f"  {n}: {tris} 个三角形，{len({k[0] for k in res['parts']})} 块，{len(res['containers'])} 个容器，"
+              f"{len(res['doors'])} 扇门", flush=True)
     used.discard(-1)
     up = os.path.join(poi_dir, "full_textures.json")
     old = set(json.load(open(up))) if os.path.exists(up) else set()

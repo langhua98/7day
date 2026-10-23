@@ -254,14 +254,11 @@ func _shoot_ray(eye: Vector3, dir: Vector3, st: Dictionary) -> void:
 	var t := 0.5
 	while t < reach:
 		var p := eye + dir * t
-		if p.y < 0.0 or (p.y < 30.0 and world.line_blocked(p, p)):
-			wall_t = t
+		if world.solid_at(p):
+			wall_t = t   # 地面、楼、楼里的墙和楼板、自己摆的方块
 			break
-		if world.blocked(Vector3(p.x, 0, p.z), 0.0) and p.y < 1.4:
+		if p.y < 1.4 and world.blocked(Vector3(p.x, 0, p.z), 0.0):
 			wall_t = t   # 车、箱子这种矮的东西
-			break
-		if world.has_voxel(World.cell_of(p)):
-			wall_t = t   # 自己摆的方块
 			break
 		t += 0.25
 	# 僵尸：当成竖着的胶囊

@@ -257,7 +257,9 @@ func try_attack() -> float:
 		var d := _pending_damage
 		_pending_damage = 0.0
 		return d
-	if _attack_cd <= 0.0 and _windup < 0.0 and _stagger <= 0.0 and distance_to_target() <= GameConfig.ZOMBIE_REACH:
+	# 玩家在楼上（隔着楼板）够不着
+	if _attack_cd <= 0.0 and _windup < 0.0 and _stagger <= 0.0 and distance_to_target() <= GameConfig.ZOMBIE_REACH \
+			and absf(target.global_position.y - global_position.y) < 1.5:
 		_windup = GameConfig.ZOMBIE_WINDUP
 		Sfx.play(_voice + "attack", global_position + Vector3.UP * 1.6)
 	return 0.0

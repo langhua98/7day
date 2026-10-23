@@ -60,6 +60,7 @@ func save() -> void:
 		"seed": main.world_seed,
 		"searched": searched,
 		"blocks": world.voxel_save(),
+		"doors": world.door_save(),
 	}
 	d.merge(time_sys.save_data())
 	d.merge(player_sys.save_data())
@@ -92,6 +93,7 @@ func continue_game() -> void:
 		if int(i) < world.containers.size():
 			world.containers[int(i)].searched = true
 	world.voxel_load(d.get("blocks", []))
+	world.door_load(d.get("doors", []))
 	main.looting.load_data(d)
 	main.respawn.load_data(d)
 	player_sys.load_data(d)

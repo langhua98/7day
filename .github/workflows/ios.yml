@@ -101,7 +101,9 @@ jobs:
           "$GODOT" --headless --import
 
       - name: 运行数据管线测试
-        run: python3 tests/test_build_data.py
+        run: |
+          python3 tests/test_build_data.py
+          python3 tests/test_poi_interior.py
 
       - name: 运行无头测试
         run: |
@@ -120,6 +122,8 @@ jobs:
           "$GODOT" --headless --path . res://tests/test_status.tscn
           "$GODOT" --headless --path . res://tests/test_injury.tscn
           "$GODOT" --headless --path . res://tests/test_respawn.tscn
+          "$GODOT" --headless --path . -s tests/test_poi_containers.gd
+          "$GODOT" --headless --path . -s tests/test_poi_interior.gd
 
       - name: 导出 Xcode 工程
         env:
