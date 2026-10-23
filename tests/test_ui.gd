@@ -30,6 +30,33 @@ func _ready() -> void:
 	check(aim.get_center().y < attack.get_center().y, "瞄准在攻击上方")
 	check(action.get_center().x < aim.get_center().x, "搜索在瞄准左侧")
 
+	# 吃鸡手游布局：跳在开火右上，开镜在开火左上，换弹在开火左边，左手小开火键在左半屏
+	var fire_left: Rect2 = hud._fire_left.get_global_rect()
+	var half_w := hud.get_viewport().get_visible_rect().size.x * 0.5
+	check(jump.get_center().x > attack.get_center().x and jump.get_center().y < attack.get_center().y, "跳在开火右上")
+	check(aim.get_center().x < attack.get_center().x and aim.get_center().y < attack.get_center().y, "开镜在开火左上")
+	check(reload.get_center().x < attack.get_center().x, "换弹在开火左边")
+	check(fire_left.get_center().x < half_w, "左手开火键在左半屏")
+	check(bag.get_center().x < half_w and bag.get_center().y > attack.get_center().y, "背包在底部偏左")
+	var all_btns := {"开火": attack, "开镜": aim, "换弹": reload, "跳": jump, "搜索": action,
+		"背包": bag, "设置": pause, "左开火": fire_left, "摇杆": hud._joy_base.get_global_rect()}
+	var names := all_btns.keys()
+	for i in names.size():
+		for j in range(i + 1, names.size()):
+			check(not all_btns[names[i]].intersects(all_btns[names[j]]), "%s和%s不能重叠" % [names[i], names[j]])
+	for n in names:
+		var r: Rect2 = all_btns[n]
+		check(r.size.x >= 80 and r.size.y >= 80, "%s至少 80 像素（44pt）" % n)
+
+	# 左手开火 + 右手开火：两根手指都按着，松开一根还在开火
+	hud._touch_down(20, fire_left.get_center())
+	check(hud.attack_held, "按住左手开火应开火")
+	hud._touch_down(21, attack.get_center())
+	hud._touch_up(20)
+	check(hud.attack_held, "松开左手、右手还按着应继续开火")
+	hud._touch_up(21)
+	check(not hud.attack_held, "两只手都松开应停火")
+
 	hud._touch_down(1, aim.get_center())
 	check(hud.aim_held, "按住瞄准应生效")
 	hud._touch_up(1)

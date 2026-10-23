@@ -1,6 +1,6 @@
 class_name Hud
 extends CanvasLayer
-## 界面 + 触屏操作：左半屏摇杆移动，右半屏拖动转视角，右下角攻击键，底部快捷栏。
+## 界面 + 触屏操作（只做 iPhone）：按键布局照吃鸡手游，左半屏摇杆移动，右半屏拖动转视角。
 
 signal start_pressed
 signal restart_pressed
@@ -57,7 +57,9 @@ var settings := {"sensitivity": 1.0, "brightness": 1.0, "volume": 1.0, "music": 
 const SETTINGS_PATH := "user://settings.cfg"
 
 var _joy_id := -1
-var _attack_id := -1
+## 按着开火键的手指（右边大开火键和左边小开火键都算）
+var _attack_ids := {}
+var _fire_left := Button.new()
 var _joy_origin := Vector2.ZERO
 var _look_id := -1
 ## 能拖动转视角的手指上一帧位置：空白处的右半屏、攻击键、瞄准键都算（边开火边转）
@@ -118,14 +120,20 @@ func _ready() -> void:
 		bar.add_theme_stylebox_override("fill", fill)
 		bar.add_theme_stylebox_override("background", bg)
 		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if bar == _hp_bar:
+			continue  # 血条放底部中间、武器栏下面（吃鸡手游的位置）
 		tl.add_child(bar)
+	_hp_bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_hp_bar.position = Vector2(-200, -26)
+	_hp_bar.size = Vector2(400, 12)
+	_safe.add_child(_hp_bar)
 	_effects.add_theme_font_size_override("font_size", 24)
 	_effects.add_theme_color_override("font_color", Color(1, 0.55, 0.45))
 	tl.add_child(_effects)
 
 	_kills.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_kills.position = Vector2(-260, 18)
-	_kills.size = Vector2(230, 40)
+	_kills.position = Vector2(-370, 26)
+	_kills.size = Vector2(240, 40)
 	_kills.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_safe.add_child(_kills)
 
@@ -177,57 +185,39 @@ func _ready() -> void:
 	_hotbar.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_hotbar.offset_left = 0
 	_hotbar.offset_right = 0
-	_hotbar.offset_top = -150
-	_hotbar.offset_bottom = -40
-	_hotbar.add_theme_constant_override("separation", 8)
+	_hotbar.offset_top = -118
+	_hotbar.offset_bottom = -34
+	_hotbar.add_theme_constant_override("separation", 6)
 	_safe.add_child(_hotbar)
 
-	_attack_btn.text = "攻击"
-	_attack_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	_attack_btn.position = Vector2(-240, -220)
-	_attack_btn.size = Vector2(180, 180)
-	_attack_btn.add_theme_font_size_override("font_size", 36)
-	# 攻击、背包、快捷栏都在 _input 里按触点自己处理：
-	# 系统自带的按钮只认第一根手指，一边走路一边按攻击会没反应
-	_attack_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_safe.add_child(_attack_btn)
-
-	_aim_btn.text = "瞄准"
-	_aim_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	_aim_btn.position = Vector2(-240, -350)
-	_aim_btn.size = Vector2(180, 100)
-	_aim_btn.add_theme_font_size_override("font_size", 32)
-	_aim_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 按键布局照吃鸡手游（和平精英 / PUBG Mobile）的默认布局：
+	# 右边大开火键，开火键右上是跳，左上是开镜，左边是换弹；左手边摇杆上方一个小开火键；
+	# 底部中间武器栏，下面血条，左边背包；右上角设置；拾取 / 搜索在屏幕右中。
+	# 这些按钮都在 _input 里按触点自己处理：系统按钮只认第一根手指，边走边打会没反应。
+	_round(_attack_btn, "开火", Control.PRESET_BOTTOM_RIGHT, Vector2(-300, -330), 160, 34)
+	_round(_jump_btn, "跳", Control.PRESET_BOTTOM_RIGHT, Vector2(-130, -400), 110, 28)
+	_round(_aim_btn, "开镜", Control.PRESET_BOTTOM_RIGHT, Vector2(-440, -440), 110, 26)
+	_round(_reload_btn, "换弹", Control.PRESET_BOTTOM_RIGHT, Vector2(-440, -270), 100, 24)
+	_round(_fire_left, "开火", Control.PRESET_BOTTOM_LEFT, Vector2(50, -440), 110, 24)
 	_aim_btn.visible = false
-	_safe.add_child(_aim_btn)
+	_reload_btn.visible = false
 
 	# 搜索 / 拾取：走近容器或地上的东西才出现
 	_action_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	_action_btn.position = Vector2(-420, -350)
-	_action_btn.size = Vector2(160, 100)
-	_action_btn.add_theme_font_size_override("font_size", 26)
+	_action_btn.position = Vector2(-620, -560)
+	_action_btn.size = Vector2(200, 84)
+	_action_btn.add_theme_font_size_override("font_size", 24)
 	_action_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_action_btn.clip_text = true
 	_action_btn.visible = false
 	_safe.add_child(_action_btn)
 
-	# 换弹、跳：按钮也在 _input 里按触点处理
-	for pair in [[_reload_btn, "换弹", Vector2(-240, -470), Vector2(180, 90)], [_jump_btn, "跳", Vector2(-420, -470), Vector2(160, 90)]]:
-		var b: Button = pair[0]
-		b.text = pair[1]
-		b.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-		b.position = pair[2]
-		b.size = pair[3]
-		b.add_theme_font_size_override("font_size", 28)
-		b.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_safe.add_child(b)
-	_reload_btn.visible = false
 	# 子弹数：弹匣里 / 背包里
 	_ammo.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_ammo.position = Vector2(-300, -206)
+	_ammo.position = Vector2(-300, -166)
 	_ammo.size = Vector2(600, 44)
 	_ammo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_ammo.add_theme_font_size_override("font_size", 40)
+	_ammo.add_theme_font_size_override("font_size", 34)
 	_ammo.add_theme_font_override("font", Hud.number_font())
 	_ammo.visible = false
 	_safe.add_child(_ammo)
@@ -256,10 +246,9 @@ func _ready() -> void:
 	_root.add_child(_progress_label)
 
 	_bag_btn.text = "背包"
-	_bag_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	# 苹果建议触控区至少 44pt，画布 720 高时大约 80 像素
-	_bag_btn.position = Vector2(-180, 64)
-	_bag_btn.size = Vector2(150, 84)
+	_bag_btn.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_bag_btn.position = Vector2(-400, -118)
+	_bag_btn.size = Vector2(100, 84)
 	_bag_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_safe.add_child(_bag_btn)
 
@@ -308,10 +297,10 @@ func _ready() -> void:
 	_joy_knob.size = Vector2(76, 76)
 	_reset_joystick()
 
-	_pause_btn.text = "暂停"
+	_pause_btn.text = "设置"
 	_pause_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_pause_btn.position = Vector2(-350, 64)
-	_pause_btn.size = Vector2(150, 84)
+	_pause_btn.position = Vector2(-110, 10)
+	_pause_btn.size = Vector2(100, 80)
 	_pause_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_safe.add_child(_pause_btn)
 
@@ -322,6 +311,25 @@ func _ready() -> void:
 	_safe.move_child(_bag_panel, -1)
 	get_viewport().size_changed.connect(_update_safe_area)
 	_update_safe_area()
+
+
+## 吃鸡手游那样的圆形半透明按钮
+func _round(b: Button, text: String, preset: int, pos: Vector2, diameter: float, font: int) -> void:
+	b.text = text
+	b.set_anchors_preset(preset)
+	b.position = pos
+	b.size = Vector2(diameter, diameter)
+	b.add_theme_font_size_override("font_size", font)
+	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for state in ["normal", "hover", "pressed", "focus"]:
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0, 0, 0, 0.32)
+		sb.border_color = Color(1, 1, 1, 0.55)
+		sb.set_border_width_all(3)
+		sb.set_corner_radius_all(int(diameter * 0.5))
+		sb.anti_aliasing = true
+		b.add_theme_stylebox_override(state, sb)
+	_safe.add_child(b)
 
 
 func _make_theme() -> Theme:
@@ -417,7 +425,7 @@ func _build_start_panel() -> void:
 	btn.text = "新的一局"
 	v.add_child(btn)
 	var help := Label.new()
-	help.text = "左半屏拖动移动 · 右半屏拖动看 · 按住攻击 · 走近垃圾桶、车、箱子按「搜索」· 地上的东西按「拾取」"
+	help.text = "左半屏拖动移动 · 右半屏拖动看 · 按住开火（按住拖动也能转视角）· 走近垃圾桶、车、箱子按「搜索」· 地上的东西按「拾取」"
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	help.modulate = Color(1, 1, 1, 0.6)
 	help.add_theme_font_size_override("font_size", 20)
@@ -648,7 +656,7 @@ func apply_safe_insets(ins: Vector4) -> void:
 
 func _reset_joystick() -> void:
 	var vp := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2(1280, 720)
-	var home := Vector2(safe_insets.x + JOY_RADIUS + 70, vp.y - safe_insets.w - JOY_RADIUS - 70)
+	var home := Vector2(safe_insets.x + JOY_RADIUS + 40, vp.y - safe_insets.w - JOY_RADIUS - 70)
 	_joy_base.position = home - _joy_base.size * 0.5
 	_joy_knob.position = home - _joy_knob.size * 0.5
 	_joy_base.modulate.a = 0.6
@@ -661,7 +669,7 @@ func _slot(id: String, list: Array, with_name := false) -> Control:
 		if e.id == id:
 			entry = e
 	var b := Button.new()
-	b.custom_minimum_size = Vector2(110, 110 if not with_name else 140)
+	b.custom_minimum_size = Vector2(84, 84) if not with_name else Vector2(110, 140)
 	b.icon = Assets.icon(id)
 	b.expand_icon = true
 	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -757,7 +765,8 @@ func _panel_open() -> bool:
 
 func _press_attack(pressed: bool) -> void:
 	attack_held = pressed
-	_attack_btn.modulate = Color(1.6, 0.7, 0.6) if pressed else Color.WHITE
+	for fire in [_attack_btn, _fire_left]:
+		fire.modulate = Color(1.6, 0.7, 0.6) if pressed else Color.WHITE
 
 
 func _flash(control: Control) -> void:
@@ -795,8 +804,8 @@ func _in_game() -> bool:
 
 
 func _release_touches() -> void:
+	_attack_ids.clear()
 	_press_attack(false)
-	_attack_id = -1
 	_drag_last.clear()
 	_aim_id = -1
 	aim_held = false
@@ -814,11 +823,12 @@ func _touch_down(index: int, pos: Vector2) -> void:
 		aim_held = true
 		_aim_btn.modulate = Color(1.6, 0.7, 0.6)
 		return
-	if _attack_btn.get_global_rect().grow(20).has_point(pos):
-		_attack_id = index
-		_drag_last[index] = pos  # 按住攻击再拖动可以边打边转视角
-		_press_attack(true)
-		return
+	for fire in [_attack_btn, _fire_left]:
+		if (fire as Control).get_global_rect().grow(16).has_point(pos):
+			_attack_ids[index] = true
+			_drag_last[index] = pos  # 按住开火再拖动可以边打边转视角
+			_press_attack(true)
+			return
 	if _reload_btn.visible and _reload_btn.get_global_rect().grow(10).has_point(pos):
 		_press_button(_reload_btn)
 		reload_pressed.emit()
@@ -863,9 +873,9 @@ func _touch_up(index: int) -> void:
 		_aim_id = -1
 		aim_held = false
 		_aim_btn.modulate = Color.WHITE
-	elif index == _attack_id:
-		_attack_id = -1
-		_press_attack(false)
+	elif _attack_ids.has(index):
+		_attack_ids.erase(index)
+		_press_attack(not _attack_ids.is_empty())
 	elif index == _joy_id:
 		_joy_id = -1
 		move = Vector2.ZERO
