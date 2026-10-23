@@ -240,6 +240,21 @@ func roll_sickness(chance: float) -> bool:
 	return false
 
 
+## 重生（3c）：搬到 pos，血、饱食、水按 frac 比例，体力回满，停止下落
+func revive(pos: Vector3, frac: float) -> void:
+	player.position = world.push_out(pos, 0.35) if world else pos
+	if world:
+		player.position.y = world.floor_under(player.position + Vector3.UP * 0.5, 0.3)
+	hp = C.MAX_HP * frac
+	food = C.MAX_FOOD * frac
+	water = C.MAX_WATER * frac
+	stamina = stamina_max()
+	_vy = 0.0
+	_recoil = 0.0
+	_sprinting = false
+	_grounded = true
+
+
 func save_data() -> Dictionary:
 	return {
 		"hp": hp, "food": food, "water": water, "stamina": stamina,

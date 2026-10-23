@@ -197,6 +197,19 @@ func take_slot(i: int) -> Dictionary:
 	return s
 
 
+## 死亡：拿走身上全部物品（含手上的），返回非空格子，背包清空
+func take_all() -> Array:
+	var out: Array = []
+	for i in _slots.size():
+		if not _slots[i].is_empty():
+			out.append(_slots[i])
+			_slots[i] = {}
+	_reindex()
+	equip("")
+	changed.emit()
+	return out
+
+
 ## 格子变了以后重算汇总：id → 总数、拾取顺序、武器品质
 func _reindex() -> void:
 	inventory.clear()

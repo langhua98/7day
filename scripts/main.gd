@@ -13,6 +13,7 @@ var combat: CombatSystem
 var spawner: SpawnerSystem
 var horde: Horde
 var looting: LootingSystem
+var respawn: RespawnSystem
 var save_game: SaveGame
 var time_sys: TimeOfDay
 var rng := RandomNumberGenerator.new()
@@ -55,6 +56,11 @@ func _ready() -> void:
 	looting = LootingSystem.new()
 	looting.setup(self, world, player_sys, inventory, hud, rng)
 	looting.build()
+
+	respawn = RespawnSystem.new()
+	respawn.setup(self, world, player_sys, inventory, looting, hud)
+	respawn.build()
+	GameState.player_respawned.connect(_on_respawned)
 
 	spawner = SpawnerSystem.new()
 	spawner.setup(self, world, player_sys, hud, looting, rng)
@@ -130,6 +136,7 @@ func start(fresh := true) -> void:
 	spawner.reset()
 	horde.reset()
 	looting.reset()
+	respawn.reset()
 	time_sys.reset()
 	player_sys.reset()
 	inventory.reset()
@@ -148,6 +155,7 @@ func start(fresh := true) -> void:
 			inventory.give_all_items()
 		else:
 			inventory.give_starter_kit()
+		respawn.on_start(true)
 	# 开局在面前放一件近战武器，马上就能看到手里的模型
 	var weapons: Array = Assets.loot_pool.get(Assets.Kind.MELEE, [])
 	if not weapons.is_empty() and not C.TEST_ALL_ITEMS:
@@ -165,6 +173,27 @@ func start(fresh := true) -> void:
 	elif fresh:
 		hud.toast("第 1 天。找武器、找吃的，天黑前做好准备。")
 		save_game.save()
+
+
+## 死了：PERMADEATH 下结算删档；否则停住游戏，黑屏后在睡袋醒来（respawn.gd）
+func _die() -> void:
+	if C.PERMADEATH:
+		_end()
+		return
+	running = false
+	combat.running = false
+	looting.running = false
+	hud.container_panel.close_panel()
+	respawn.die()
+
+
+func _on_respawned(_pos: Vector3) -> void:
+	if not GameState.running:
+		return
+	running = true
+	combat.running = true
+	looting.running = true
+	save_game.save()
 
 
 func _end() -> void:
@@ -203,6 +232,7 @@ func _process(delta: float) -> void:
 	horde.update(delta, blood_moon, day)
 	looting.update_loot(delta)
 	looting.update_action(delta)
+	respawn.update(delta)
 	player_sys.update_survival(delta, time_sys.hours - hours_before)
 	atmosphere.update_sky(time_sys.hours)
 	atmosphere.update_music(delta, night, blood_moon, spawner.zombie_root)
@@ -216,4 +246,4 @@ func _process(delta: float) -> void:
 	hud.set_status(day, hour, player_sys.hp, player_sys.food, spawner.kills, near, night,
 		day % C.BLOOD_MOON_EVERY == 0 or blood_moon, blood_moon, GameState.next_blood_moon_day())
 	if player_sys.hp <= 0.0:
-		_end()
+		_die()

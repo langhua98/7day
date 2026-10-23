@@ -101,9 +101,22 @@ const STATUS := {
 		"desc": "每秒掉 0.7 血。用绷带或急救包止血。", "hp_sec": -0.7},
 	"dysentery": {"zh": "腹泻", "short": "泻", "buff": "buffIllDysentery", "bad": true, "hours": 1.25,
 		"desc": "水分掉得快 3.5 倍。喝金棒茶或用急救包治好。", "mult": {"water_drain": 3.5}},
+	"near_death_trauma": {"zh": "濒死创伤", "short": "创伤", "buff": "buffNearDeathTrauma", "bad": true, "hours": 24.0,
+		"desc": "刚死过一次，体力上限 −20。一个游戏天后消失。", "add": {"stamina_max": -20.0}},
 	"caffeine": {"zh": "咖啡因", "short": "咖", "buff": "buffCoffeeStaminaRegen", "hours": 1.5,
 		"desc": "体力恢复 ×2.2。", "mult": {"stamina_regen": 2.2}},
 }
+
+## 死亡与重生（3c）
+## true = 老规矩：死了就结算、删档；false = 黑屏后在睡袋（没有就在出生点）醒来
+const PERMADEATH := false
+## 死后黑屏几秒；醒来时血、饱食、水是满值的多少
+const DEATH_BLACKOUT := 2.0
+const RESPAWN_STATS := 0.5
+## 每死一次存活天数减几天（官方 daysAliveChangeWhenKilled），游戏阶段跟着降
+const DAYS_ALIVE_LOST_ON_DEATH := 2
+## 睡袋（官方方块 bedroll），同时只能有一个
+const BEDROLL_ID := "bedroll"
 
 const FIST_DAMAGE := 8.0
 const MELEE_RANGE := 2.3
