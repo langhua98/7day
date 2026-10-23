@@ -63,7 +63,15 @@ python3 tools/fetch_assets.py --zombies all --music 12   # 想要更多
 project.godot          Godot 项目
 scenes/main.tscn       主场景
 scripts/asset_db.gd    读取素材、物品分类（自动加载为 Assets）
-scripts/main.gd        世界、昼夜、刷怪、战斗、背包
+scripts/game_state.gd  全局信号和共享状态（自动加载为 GameState）
+scripts/main.gd        组装世界和系统，连接信号
+scripts/player.gd      移动、视角、体力、生存数值
+scripts/inventory.gd   背包、装备、弹匣
+scripts/combat.gd      近战、枪械、换弹、爆炸、摆放/拆方块
+scripts/spawner.gd     僵尸刷新、回收、击杀
+scripts/looting.gd     地上物品、翻容器
+scripts/atmosphere.gd  天空、太阳、环境光、音乐、血月横幅
+scripts/save_game.gd   存档和读档
 scripts/zombie.gd      僵尸（代码驱动骨骼走路）
 scripts/fp_arms.gd     第一人称手臂和手持武器
 scripts/blocks.gd      建造方块（种类、耐久、贴图）
