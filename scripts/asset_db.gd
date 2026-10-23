@@ -291,6 +291,17 @@ func _classify(row: Dictionary) -> void:
 		row.kind = Kind.RESOURCE
 
 
+## 测试模式补全道具：没有图标/模型的官方物品也建一行，背包里至少能看到名字
+func ensure_item(id: String, zh: String, en := "") -> Dictionary:
+	if items_by_id.has(id):
+		return items_by_id[id]
+	var row := {"id": id, "zh": zh, "en": en, "model": "", "icon": _icon_files.get(id.to_lower(), ""),
+		"kind": Kind.OTHER, "power": 0.0}
+	_classify(row)
+	items_by_id[id] = row
+	return row
+
+
 func display_name(id: String) -> String:
 	var row: Dictionary = items_by_id.get(id, {})
 	if row.is_empty():

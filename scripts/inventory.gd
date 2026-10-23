@@ -209,9 +209,8 @@ func consume(id: String, msg: String) -> void:
 func give_all_items(top_up := false) -> void:
 	# 测试模式：官方物品表里的东西全部进背包，数量按类别给
 	for id in Data.items:
-		if not Assets.items_by_id.has(id):
-			continue
-		var row: Dictionary = Assets.items_by_id[id]
+		var info: Dictionary = Data.items[id]
+		var row: Dictionary = Assets.ensure_item(id, str(info.get("zh", id)))
 		var kind: int = row.kind
 		var want := 20
 		if kind in [Assets.Kind.GUN, Assets.Kind.MELEE]:
