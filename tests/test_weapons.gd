@@ -25,6 +25,14 @@ func _ready() -> void:
 		failures.append("9mm 子弹应能同时算 Ball 和 HP")
 	if Data.items.get("gunHandgunT1Pistol", {}).get("magazine", 0) != 15:
 		failures.append("items.json 应包含官方 MagazineSize")
+	if Weapons.default_ammo("gunHandgunT1Pistol") != "ammo9mmBulletBall":
+		failures.append("手枪默认弹应为 9mm Ball")
+	if absf(float(Weapons.ammo_mods("ammo9mmBulletHP").get("entity", 0.0)) - 1.25) > 0.001:
+		failures.append("HP 弹伤害倍率应为 1.25")
+	if absf(float(Weapons.ammo_mods("ammo9mmBulletAP").get("entity", 0.0)) - 0.9) > 0.001:
+		failures.append("AP 弹伤害倍率应为 0.9")
+	if Weapons.ammo_label("ammo9mmBulletHP") != "9mm HP":
+		failures.append("HUD 弹种名应为 9mm HP")
 	if failures.is_empty():
 		print("PASS test_weapons")
 		get_tree().quit(0)

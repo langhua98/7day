@@ -76,6 +76,66 @@ static func ammo_count(inventory: Dictionary, gun_id: String) -> int:
 	return n
 
 
+## 弹匣默认装的普通弹
+static func default_ammo(gun_id: String) -> String:
+	var prefix: String = stats(gun_id).ammo
+	match prefix:
+		"ammoShotgun":
+			return "ammoShotgunShell"
+		"ammoRocket":
+			return "ammoRocketHE"
+		"ammoArrow":
+			return "ammoArrowStone"
+		"ammoCrossbowBolt":
+			return "ammoCrossbowBoltStone"
+	if prefix == "":
+		return ""
+	return prefix + "BulletBall"
+
+
+## 弹药变体的伤害倍率（entity）和破块倍率（block）
+static func ammo_mods(ammo_id: String) -> Dictionary:
+	if "BreachingSlug" in ammo_id:
+		return {"label": "破门", "entity": 0.9, "block": 2.5}
+	if "Slug" in ammo_id:
+		return {"label": "独头", "entity": 1.5, "block": 0.8}
+	if "BulletHP" in ammo_id or ammo_id.ends_with("HP"):
+		return {"label": "HP", "entity": 1.25, "block": 0.8}
+	if "BulletAP" in ammo_id or ammo_id.ends_with("AP"):
+		return {"label": "AP", "entity": 0.9, "block": 2.0}
+	if "Flaming" in ammo_id:
+		return {"label": "燃烧", "entity": 1.1, "block": 1.0}
+	if "Exploding" in ammo_id:
+		return {"label": "爆炸", "entity": 1.0, "block": 1.5}
+	if "SteelAP" in ammo_id:
+		return {"label": "钢AP", "entity": 1.0, "block": 2.0}
+	if "Iron" in ammo_id:
+		return {"label": "铁", "entity": 1.2, "block": 1.0}
+	return {"label": "普通", "entity": 1.0, "block": 1.0}
+
+
+static func ammo_label(ammo_id: String) -> String:
+	if ammo_id == "":
+		return ""
+	var caliber := "子弹"
+	if "9mm" in ammo_id:
+		caliber = "9mm"
+	elif "762" in ammo_id:
+		caliber = "7.62"
+	elif "44Magnum" in ammo_id:
+		caliber = ".44"
+	elif "Shotgun" in ammo_id:
+		caliber = "12号"
+	elif "CrossbowBolt" in ammo_id:
+		caliber = "弩箭"
+	elif "Arrow" in ammo_id:
+		caliber = "箭"
+	elif "Rocket" in ammo_id:
+		caliber = "火箭"
+	var mods := ammo_mods(ammo_id)
+	return caliber + " " + str(mods.get("label", "普通"))
+
+
 ## 捡到一盒子弹给几发
 static func pickup_count(id: String, rng: RandomNumberGenerator) -> int:
 	if id.begins_with("ammoRocket"):

@@ -199,7 +199,7 @@ func _hit_block(dmg: float) -> void:
 
 ## 开枪：每颗弹丸从镜头沿准星方向射出，先打中的是僵尸还是墙
 func _fire(row: Dictionary) -> void:
-	var st := Weapons.stats(inventory.equipped)
+	var st := Weapons.stats(inventory.equipped).duplicate()
 	if _reload_left > 0.0:
 		return
 	var left: int = inventory.mags.get(inventory.equipped, 0)
@@ -212,6 +212,9 @@ func _fire(row: Dictionary) -> void:
 			hud.toast("没子弹了，翻翻警车和武器包")
 		return
 	inventory.mags[inventory.equipped] = left - 1
+	var ammo_id: String = inventory.mags_type.get(inventory.equipped, "")
+	var mods := Weapons.ammo_mods(ammo_id)
+	st.damage = float(st.damage) * float(mods.get("entity", 1.0))
 	attack_cd = st.rate
 	arms.swing(7.0)
 	Fx.muzzle(arms, arms.muzzle_position())
@@ -322,17 +325,23 @@ func _finish_reload() -> void:
 	if C.TEST_INFINITE:
 		# 测试模式：直接装满，不扣背包里的子弹
 		inventory.mags[inventory.equipped] = st.mag
+		if not inventory.mags_type.has(inventory.equipped):
+			inventory.mags_type[inventory.equipped] = Weapons.default_ammo(inventory.equipped)
 		return
-	for id in Weapons.ammo_in(inventory.inventory, inventory.equipped):
-		if need <= 0:
-			break
-		var take: int = min(need, inventory.inventory[id])
-		inventory.inventory[id] -= take
-		need -= take
-		inventory.mags[inventory.equipped] = inventory.mags.get(inventory.equipped, 0) + take
-		if inventory.inventory[id] <= 0:
-			inventory.inventory.erase(id)
-			inventory.pickup_order.erase(id)
+	var ammo_list := Weapons.ammo_in(inventory.inventory, inventory.equipped)
+	if ammo_list.is_empty():
+		return
+	# 优先用玩家在背包里点过的弹种，否则用背包里最多的那种
+	var ammo_id: String = inventory.ammo_choice.get(inventory.equipped, "")
+	if ammo_id == "" or inventory.inventory.get(ammo_id, 0) <= 0 or not ammo_id.begins_with(st.ammo):
+		ammo_id = ammo_list[0]
+	var take: int = mini(need, inventory.inventory[ammo_id])
+	inventory.inventory[ammo_id] -= take
+	inventory.mags[inventory.equipped] = inventory.mags.get(inventory.equipped, 0) + take
+	inventory.mags_type[inventory.equipped] = ammo_id
+	if inventory.inventory[ammo_id] <= 0:
+		inventory.inventory.erase(ammo_id)
+		inventory.pickup_order.erase(ammo_id)
 	inventory.refresh()
 
 
@@ -343,6 +352,9 @@ func _update_ammo_hud() -> void:
 		return
 	var text := "%d / %s" % [inventory.mags.get(inventory.equipped, 0),
 		"∞" if C.TEST_INFINITE else str(Weapons.ammo_count(inventory.inventory, inventory.equipped))]
+	var label := Weapons.ammo_label(inventory.mags_type.get(inventory.equipped, ""))
+	if label != "":
+		text += "  " + label
 	if _reload_left > 0.0:
 		text = "换弹中…"
 	hud.set_ammo(text)
