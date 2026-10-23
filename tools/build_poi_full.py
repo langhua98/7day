@@ -107,6 +107,15 @@ class Blocks:
         self.b = {}
         for bl in ET.parse(path).getroot().iter("block"):
             props = {pr.get("name"): pr.get("value") for pr in bl.findall("property") if pr.get("name")}
+            # 新版的功能块是 <property class="Loot"><property name="LootList" …/></property>，
+            # 记成 "@Loot" 和 "Loot.LootList"
+            for pr in bl.findall("property"):
+                cls = pr.get("class")
+                if cls:
+                    props["@" + cls] = "1"
+                    for sub in pr.findall("property"):
+                        if sub.get("name"):
+                            props[cls + "." + sub.get("name")] = sub.get("value")
             self.b[bl.get("name")] = props
 
     def get(self, name, key, depth=0):
@@ -548,6 +557,7 @@ def build_poi(name, poi_dir, db, shapes, paint_table, uv_ids):
                 q = q[::-1]
             mo.tri([q[0], q[1], q[2]], wd, tex)
             mo.tri([q[0], q[2], q[3]], wd, tex)
+    diagnose(name, blocks, names, db, shapes, info)
     col, doors = build_collision(blocks, size, db, names, shapes, info, col_kind)
     conts = find_containers(blocks, names, size, db, (ox, dy, oz))
     for c in conts:
@@ -556,13 +566,78 @@ def build_poi(name, poi_dir, db, shapes, paint_table, uv_ids):
             "offset": (ox, dy, oz), "ground": ground, "size": size}
 
 
+def diagnose(name, blocks, names, db, shapes, info):
+    """打印这栋楼的方块有多少能画出来、画不出来的原因（排查完整版为空用）"""
+    count = collections.Counter(v & 0xFFFF for v in blocks if v & 0xFFFF)
+    why = collections.Counter()
+    miss_model = collections.Counter()
+    miss_block = collections.Counter()
+    for t, n in count.items():
+        nm = names.get(t, "")
+        if info(t) is not None:
+            why["能画"] += n
+            continue
+        b = base_name(nm)
+        sh = shape_of(nm)
+        if not nm:
+            why["名表里没有"] += n
+        elif nm.startswith("terrainFiller"):
+            why["terrainFiller"] += n
+        elif b not in db.b:
+            why["blocks.xml 里没有"] += n
+            miss_block[b] += n
+        elif sh is not None and sh not in shapes.defs:
+            why["shapes.xml 里没有形状"] += n
+            miss_model["形状 " + sh] += n
+        else:
+            model = shapes.defs.get(sh, {}).get("Model") if sh else db.get(b, "Model")
+            shape = db.get(b, "Shape")
+            if sh or (model or "").startswith("@:Shapes/") or shape == "New":
+                why["缺形状模型 glb"] += n
+                miss_model[os.path.basename(model or "Cube.fbx")] += n
+            else:
+                why["模型方块（%s）" % (shape or "?")] += n
+    print(f"  {name}: 方块表 {len(db.b)} 种，形状表 {len(shapes.defs)} 种，形状模型 {len(shapes.files)} 个；"
+          f"非空格 {sum(count.values())}，" + "，".join(f"{k} {v}" for k, v in why.most_common()), flush=True)
+    # 容器、门的方块名（排查楼里认不出箱子和门）
+    kinds = []
+    for t, n in count.most_common():
+        nm = names.get(t, "")
+        b = base_name(nm)
+        cls = db.get(b, "Class") or ""
+        low = b.lower()
+        if "cnt" in low or "loot" in low or "door" in low or "hatch" in low or "Loot" in cls or "Door" in cls:
+            kinds.append(f"{nm}[{cls or '-'}|{db.get(b, 'Shape') or '-'}|{db.get(b, 'LootList') or '-'}|画{'是' if info(t) else '否'}]×{n}")
+    if kinds:
+        print("    容器/门方块：" + "，".join(kinds[:25]))
+    if miss_block:
+        print("    blocks.xml 里没有：" + "，".join(f"{k}×{v}" for k, v in miss_block.most_common(8)))
+    if miss_model:
+        print("    缺模型：" + "，".join(f"{k}×{v}" for k, v in miss_model.most_common(8)))
+        print("    已有模型举例：" + "，".join(sorted(shapes.files)[:8]))
+
+
 def container_name(db, nm):
-    """方块是不是可翻的容器：名字 cnt 开头，或 blocks.xml 里 Class 带 Loot。返回官方 LootList（不是返回 None）"""
+    """方块是不是可翻的容器：名字 cnt 开头，或 Class / 功能块带 Loot。
+    返回官方 LootList；新版很多容器（…RandomLootHelper）没写 LootList，就返回方块名。不是容器返回 None"""
     b = base_name(nm)
     cls = db.get(b, "Class") or ""
-    if not (b.startswith("cnt") or "Loot" in cls):
+    if not (b.startswith("cnt") or "Loot" in cls or db.get(b, "@Loot")):
         return None
-    return db.get(b, "LootList") or None
+    low = b.lower()
+    if "filler" in low or "empty" in low:
+        return None   # 柜子的装饰填充块、空书架，不能翻
+    return db.get(b, "LootList") or db.get(b, "Loot.LootList") or b
+
+
+def is_door(db, nm):
+    """门、活板门（不含掉人的陷阱板 TrapDoor、假柜门）"""
+    b = base_name(nm)
+    low = b.lower()
+    cls = db.get(b, "Class") or ""
+    if cls == "TrapDoor" or "trap" in low or "fake" in low:
+        return False
+    return "Door" in cls or bool(db.get(b, "@Door")) or "door" in low or "hatch" in low
 
 
 def find_containers(blocks, names, size, db, offset):
@@ -645,7 +720,7 @@ def block_col_kind(db, nm, bi):
         return COL_FULL
     b = base_name(nm)
     cls = db.get(b, "Class") or ""
-    if bi is None and "Door" in cls:
+    if bi is None and is_door(db, nm):
         return COL_DOOR
     if cls == "Ladder" or (db.get(b, "Climbable") or "").lower() == "true" or b.lower().startswith("ladder"):
         return COL_LADDER
@@ -841,6 +916,7 @@ def run(assets, only=()):
     names = sorted(f[:-4] for f in os.listdir(poi_dir) if f.endswith(".tts"))
     if only:
         names = [n for n in names if n in only]
+    print("  方块文件：" + "，".join(f"{f} {os.path.getsize(os.path.join(bdir, f)) // 1024}KB" for f in need), flush=True)
     db = Blocks(os.path.join(bdir, "blocks.xml"))
     shapes = Shapes(os.path.join(bdir, "shapes.xml"), os.path.join(assets, "shapes"))
     paint_table = load_paint_table(os.path.join(bdir, "painting.xml"))
