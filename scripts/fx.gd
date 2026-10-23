@@ -142,6 +142,9 @@ static func muzzle(parent: Node3D, local: Vector3, size := 1.0) -> void:
 	light.light_color = Color(1.0, 0.72, 0.38)
 	light.light_energy = 4.0
 	light.omni_range = 8.0
+	light.distance_fade_enabled = true
+	light.distance_fade_begin = 30.0
+	light.distance_fade_length = 5.0
 	root.add_child(light)
 	var tw := root.create_tween()
 	tw.set_parallel(true)

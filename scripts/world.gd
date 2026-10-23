@@ -61,6 +61,15 @@ var _poi_mat: ShaderMaterial
 var _cells := PackedByteArray()   # 楼的占地图，(MAP*2)² 格，1 = 挡路
 var _grid := {}         # 粗网格加速查询：格子 -> 障碍物下标
 const GRID := 8.0
+## 合批：不能交互的重复道具按「模型 + 街区格」攒起来，最后每组一个 MultiMesh
+const BATCH_CELL := 38.0
+var _batching := false
+var _batch := {}        # "模型|格x|格z" -> {name, cell, xfs: [Transform3D]}
+## 自己摆的方块按 16 米一块、每种方块一个 MultiMesh
+const VOXEL_CHUNK := 16
+var _vox_chunks := {}   # "x|z|方块名" -> {mmi, cells: {格子: true}}
+var _vox_dirty := {}
+var _vox_flush_queued := false
 
 ## 画质档位（0 省电 / 1 均衡 / 2 高清）
 var quality := 1
@@ -100,12 +109,16 @@ func _ready() -> void:
 func build(seed_value: int) -> void:
 	rng.seed = seed_value
 	_flat_groups.clear()
+	_batch.clear()
+	_batching = true
 	_build_ground()
 	_build_blocks()
 	_build_streets()
 	_build_border()
 	_scatter_decals()
 	_flush_flats()
+	_batching = false
+	_flush_batches()
 	_rebuild_grid()
 
 
@@ -115,8 +128,8 @@ func apply_quality(level: int, preset: Dictionary) -> void:
 	for e in _prop_lod:
 		if not is_instance_valid(e.node):
 			continue
-		var mi: MeshInstance3D = e.node
-		mi.visibility_range_end = _range_for_kind(e.kind, preset)
+		var mi: GeometryInstance3D = e.node
+		mi.visibility_range_end = _range_for_kind(e.kind, preset) + e.get("pad", 0.0)
 		mi.visibility_range_end_margin = 5.0
 	for e in _poi_lod:
 		if e.get("shadow_only", false):
@@ -124,8 +137,8 @@ func apply_quality(level: int, preset: Dictionary) -> void:
 		var mi: MeshInstance3D = e.node
 		mi.visibility_range_end = preset.poi_range
 	for e in _decal_lod:
-		var mi: MeshInstance3D = e.node
-		mi.visibility_range_end = preset.decal_range
+		var mi: GeometryInstance3D = e.node
+		mi.visibility_range_end = preset.decal_range + e.get("pad", 0.0)
 
 
 ## 按玩家位置开关近处楼和道具的投影。远处不投影，手机阴影贴图只画身边。
@@ -145,11 +158,11 @@ func update_shadows(player_pos: Vector3, level: int) -> void:
 	for e in _prop_lod:
 		if not is_instance_valid(e.node):
 			continue
-		var mi: MeshInstance3D = e.node
+		var mi: GeometryInstance3D = e.node
 		var on: bool = prop_d > 0.0 and (e.kind in ["car", "prop", "loot"])
 		if on:
 			var q := Vector2(mi.global_position.x, mi.global_position.z)
-			on = p.distance_to(q) <= prop_d
+			on = p.distance_to(q) <= prop_d + e.get("pad", 0.0)
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if on else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
@@ -402,25 +415,80 @@ func can_place(c: Vector3i) -> bool:
 func add_voxel(c: Vector3i, id: String, hp := -1.0) -> void:
 	if voxels.has(c):
 		return
-	if _voxel_root == null:
-		_voxel_root = Node3D.new()
-		_voxel_root.name = "Voxels"
-		add_child(_voxel_root)
-	var node := Blocks.make_node(id)
-	node.position = Vector3(c)
-	_voxel_root.add_child(node)
-	voxels[c] = {"id": id, "hp": hp if hp > 0.0 else float(Blocks.info(id).get("hp", 100.0)), "node": node}
+	voxels[c] = {"id": id, "hp": hp if hp > 0.0 else float(Blocks.info(id).get("hp", 100.0))}
+	_vox_mark(c, id, true)
 	if c.y <= 1:
 		var k := Vector2i(c.x, c.z)
 		_low[k] = _low.get(k, 0) + 1
 
 
+
+## 方块不再一块一个节点：同一块区域同一种方块合成一个 MultiMesh，下一帧统一重建
+func _vox_key(c: Vector3i, id: String) -> String:
+	return "%d|%d|%s" % [floori(float(c.x) / VOXEL_CHUNK), floori(float(c.z) / VOXEL_CHUNK), id]
+
+
+func _vox_mark(c: Vector3i, id: String, on: bool) -> void:
+	var key := _vox_key(c, id)
+	if not _vox_chunks.has(key):
+		if not on:
+			return
+		_vox_chunks[key] = {"mmi": null, "cells": {}, "id": id}
+	var ch: Dictionary = _vox_chunks[key]
+	if on:
+		ch.cells[c] = true
+	else:
+		ch.cells.erase(c)
+	_vox_dirty[key] = true
+	if not _vox_flush_queued:
+		_vox_flush_queued = true
+		_flush_voxels.call_deferred()
+
+
+## 立刻把改过的方块区域重建一遍（摆/拆方块后的那一帧末尾自动调用）
+func _flush_voxels() -> void:
+	_vox_flush_queued = false
+	if _voxel_root == null:
+		_voxel_root = Node3D.new()
+		_voxel_root.name = "Voxels"
+		add_child(_voxel_root)
+	for key in _vox_dirty:
+		var ch: Dictionary = _vox_chunks.get(key, {})
+		if ch.is_empty():
+			continue
+		if ch.cells.is_empty():
+			if ch.mmi:
+				(ch.mmi as Node).queue_free()
+			_vox_chunks.erase(key)
+			continue
+		if ch.mmi == null:
+			var mmi := MultiMeshInstance3D.new()
+			mmi.material_override = Blocks.material()
+			_voxel_root.add_child(mmi)
+			ch.mmi = mmi
+			var mm := MultiMesh.new()
+			mm.transform_format = MultiMesh.TRANSFORM_3D
+			mm.mesh = Blocks.mesh(ch.id)
+			mmi.multimesh = mm
+		var m: MultiMesh = (ch.mmi as MultiMeshInstance3D).multimesh
+		m.instance_count = ch.cells.size()
+		var k := 0
+		for c in ch.cells:
+			m.set_instance_transform(k, Transform3D(Basis.IDENTITY, Vector3(c)))
+			k += 1
+	_vox_dirty.clear()
+
+
+## 测试和 bench 用：现在有几个方块绘制组
+func voxel_draw_groups() -> int:
+	return _vox_chunks.size()
+
 func remove_voxel(c: Vector3i) -> String:
 	var v: Dictionary = voxels.get(c, {})
 	if v.is_empty():
 		return ""
-	(v.node as Node).queue_free()
 	voxels.erase(c)
+	_vox_mark(c, v.id, false)
 	if c.y <= 1:
 		var k := Vector2i(c.x, c.z)
 		_low[k] = _low.get(k, 1) - 1
@@ -546,6 +614,18 @@ func place(name: String, pos: Vector3, rot := 0.0, solid := true) -> Node3D:
 	if info.is_empty():
 		return null
 	var e: Dictionary = models[name]
+	var kind: String = e.get("kind", "prop")
+	var size: Vector3 = info.size
+	if _batching and not (kind in ["loot", "car"]):
+		# 不能翻的道具不建独立节点，攒进 MultiMesh（几百个路障变成几十次绘制）
+		if solid and kind == "prop" and size.x * size.z > 0.08:
+			_add_obstacle(Vector2(pos.x, pos.z), Vector2(size.x, size.z) * 0.5 * 0.9, rot, size.y > 2.5)
+		var cell := Vector2i(floori(pos.x / BATCH_CELL), floori(pos.z / BATCH_CELL))
+		var bkey := "%s|%d|%d" % [name, cell.x, cell.y]
+		if not _batch.has(bkey):
+			_batch[bkey] = {"name": name, "cell": cell, "xfs": []}
+		_batch[bkey].xfs.append(Transform3D(Basis(Vector3.UP, rot), pos) * info.xf)
+		return null
 	var mi := MeshInstance3D.new()
 	mi.mesh = info.mesh
 	mi.transform = info.xf
@@ -556,8 +636,6 @@ func place(name: String, pos: Vector3, rot := 0.0, solid := true) -> Node3D:
 	holder.rotation.y = rot
 	holder.add_child(mi)
 	add_child(holder)
-	var size: Vector3 = info.size
-	var kind: String = e.get("kind", "prop")
 	# 远了就不画：具体距离由画质档位决定，先按均衡档放
 	mi.visibility_range_end = _range_for_kind(kind, GameConfig.QUALITY_PRESETS[1])
 	mi.visibility_range_end_margin = 5.0
@@ -571,6 +649,38 @@ func place(name: String, pos: Vector3, rot := 0.0, solid := true) -> Node3D:
 			"searched": false, "r": max(size.x, size.z) * 0.5, "kind": kind})
 	return holder
 
+
+
+
+## 把攒下的道具按组建成 MultiMeshInstance3D。节点放在组的中心，visibility_range 按中心算距离
+func _flush_batches() -> void:
+	for bkey in _batch:
+		var b: Dictionary = _batch[bkey]
+		var info := _info(b.name)
+		var e: Dictionary = models[b.name]
+		var kind: String = e.get("kind", "prop")
+		var center := Vector3((b.cell.x + 0.5) * BATCH_CELL, 0.0, (b.cell.y + 0.5) * BATCH_CELL)
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = info.mesh
+		mm.instance_count = b.xfs.size()
+		for k in b.xfs.size():
+			var xf: Transform3D = b.xfs[k]
+			xf.origin -= center
+			mm.set_instance_transform(k, xf)
+		var mmi := MultiMeshInstance3D.new()
+		mmi.name = "Batch_" + b.name
+		mmi.multimesh = mm
+		mmi.position = center
+		mmi.material_override = _material(e.get("texture", ""))
+		# 组有半格大，可见距离放宽半格，保证近处的一个都不少
+		mmi.visibility_range_end = _range_for_kind(kind, GameConfig.QUALITY_PRESETS[1]) + BATCH_CELL * 0.5
+		mmi.visibility_range_end_margin = 5.0
+		# 投影由 update_shadows 按玩家距离开关
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(mmi)
+		_prop_lod.append({"node": mmi, "kind": kind, "pad": BATCH_CELL * 0.5})
+	_batch.clear()
 
 func size_of(name: String) -> Vector3:
 	var info := _info(name)
@@ -1050,20 +1160,39 @@ func _scatter_decals() -> void:
 		m.alpha_scissor_threshold = 0.35
 		m.roughness = 1.0
 		mats.append(m)
+	# 地面污渍地面污渍按「贴图 + 街区格」合成 MultiMesh，不再一块一个节点
+	var quad := PlaneMesh.new()
+	quad.size = Vector2.ONE
+	var groups := {}
 	for i in GameConfig.DECAL_COUNT:
 		var p := Vector3(rng.randf_range(-EDGE, EDGE), 0.03 + (i % 5) * 0.001, rng.randf_range(-EDGE, EDGE))
-		var mi := MeshInstance3D.new()
-		var pm := PlaneMesh.new()
 		var s := rng.randf_range(0.8, 2.6)
-		pm.size = Vector2(s, s)
-		mi.mesh = pm
-		mi.position = p
-		mi.rotation.y = rng.randf() * TAU
-		mi.material_override = mats[rng.randi_range(0, mats.size() - 1)]
-		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		mi.visibility_range_end = GameConfig.QUALITY_PRESETS[1].decal_range
-		add_child(mi)
-		_decal_lod.append({"node": mi})
+		var rot := rng.randf() * TAU
+		var m := rng.randi_range(0, mats.size() - 1)
+		var cell := Vector2i(floori(p.x / BATCH_CELL), floori(p.z / BATCH_CELL))
+		var key := Vector3i(m, cell.x, cell.y)
+		if not groups.has(key):
+			groups[key] = []
+		groups[key].append(Transform3D(Basis(Vector3.UP, rot).scaled(Vector3(s, 1.0, s)), p))
+	for key in groups:
+		var xfs: Array = groups[key]
+		var center := Vector3((key.y + 0.5) * BATCH_CELL, 0.0, (key.z + 0.5) * BATCH_CELL)
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = quad
+		mm.instance_count = xfs.size()
+		for k in xfs.size():
+			var xf: Transform3D = xfs[k]
+			xf.origin -= center
+			mm.set_instance_transform(k, xf)
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		mmi.position = center
+		mmi.material_override = mats[key.x]
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mmi.visibility_range_end = GameConfig.QUALITY_PRESETS[1].decal_range + BATCH_CELL * 0.5
+		add_child(mmi)
+		_decal_lod.append({"node": mmi, "pad": BATCH_CELL * 0.5})
 
 
 # —— 车和杂物的碰撞 ——
