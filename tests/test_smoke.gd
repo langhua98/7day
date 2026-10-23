@@ -96,6 +96,34 @@ func _run() -> void:
 	main._vy = -5.0
 	main._update_player(1.0 / 60.0)
 	check(main._land_dip > 0.0, "落地应产生镜头下压")
+
+	# 有素材时顺便跑一遍枪和近战的持握/挥动，合并 PR #5 的手臂关键帧后不要报错
+	var gun_id := ""
+	for row in Assets.items:
+		if row.kind == Assets.Kind.GUN:
+			gun_id = row.id
+			break
+	if gun_id != "":
+		main.inventory[gun_id] = 1
+		main.mags[gun_id] = 30
+		main._equip(gun_id)
+		for i in 20:
+			main._update_player(1.0 / 60.0)
+			main.arms._update_pose(1.0 / 60.0)
+		check(main.equipped == gun_id, "持枪姿势不应报错")
+	var melee_id := ""
+	for row in Assets.items:
+		if row.kind == Assets.Kind.MELEE:
+			melee_id = row.id
+			break
+	if melee_id != "":
+		main.inventory[melee_id] = 1
+		main._equip(melee_id)
+		main.arms.swing(6.0)
+		for i in 60:
+			main._update_player(1.0 / 60.0)
+			main.arms._update_pose(1.0 / 60.0)
+		check(main.equipped == melee_id, "近战挥动姿势不应报错")
 	_finish()
 
 
