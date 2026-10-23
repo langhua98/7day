@@ -80,6 +80,26 @@ const REGEN_WATER_ABOVE := 50.0
 ## 被僵尸打中后开始流血的几率
 const BLEED_CHANCE := 0.3
 
+## 受伤与感染（3b），高度单位米，时间单位游戏小时
+## 摔落：超过 FALL_SAFE 米开始掉血，每多 1 米掉 FALL_DAMAGE_PER_M
+const FALL_SAFE := 3.0
+const FALL_DAMAGE_PER_M := 15.0
+## 3–4 米 50% 扭伤；4 米以上必骨折
+const SPRAIN_HEIGHT := 3.0
+const SPRAIN_CHANCE := 0.5
+const FRACTURE_HEIGHT := 4.0
+## 大块头僵尸（类型 HP 倍率 ≥ 这个值）打中有几率骨折
+const BIG_ZOMBIE_HP_MULT := 1.5
+const BIG_HIT_FRACTURE_CHANCE := 0.1
+## 被僵尸打中感染几率；感染度从 1% 开始，每游戏小时涨多少，到 100% 死亡
+const INFECTION_CHANCE := 0.1
+const INFECTION_START := 1
+const INFECTION_PER_HOUR := 1.0
+const INFECTION_MAX := 100
+## 药品降低的感染度（抗生素直接治好）
+const HERBAL_ANTIBIOTICS_CURE := 25
+const HONEY_INFECTION_CURE := 5
+
 ## 状态效果表：id → 定义。所有持续状态都走 scripts/status_effects.gd。
 ##   zh 中文名  short 图标牌上的字  desc 说明  buff 官方 buffs.xml 名（有就用官方中文名）
 ##   hours 默认持续游戏小时（0 = 一直有，直到移除）  stack 能否叠加（max_stack 上限）
@@ -103,6 +123,22 @@ const STATUS := {
 		"desc": "水分掉得快 3.5 倍。喝金棒茶或用急救包治好。", "mult": {"water_drain": 3.5}},
 	"caffeine": {"zh": "咖啡因", "short": "咖", "buff": "buffCoffeeStaminaRegen", "hours": 1.5,
 		"desc": "体力恢复 ×2.2。", "mult": {"stamina_regen": 2.2}},
+	# 3b 受伤与感染
+	"sprain": {"zh": "扭伤", "short": "扭", "buff": "buffLegSprained", "bad": true, "hours": 24.0,
+		"desc": "移速 −25%，1 游戏天自己好。用夹板固定好得快。", "mult": {"move_speed": 0.75}},
+	"sprain_splinted": {"zh": "扭伤（已固定）", "short": "固定", "buff": "buffLegSplinted", "bad": true, "hours": 6.0,
+		"desc": "夹板固定了扭伤，移速 −10%，6 游戏小时后好。", "mult": {"move_speed": 0.9}},
+	"fracture": {"zh": "骨折", "short": "骨折", "buff": "buffLegBroken", "bad": true,
+		"desc": "移速 −50%，不能冲刺和跳。不会自己好，用夹板或石膏。",
+		"mult": {"move_speed": 0.5}, "flags": ["no_sprint", "no_jump"]},
+	"fracture_splinted": {"zh": "打夹板", "short": "夹板", "buff": "buffLegSplinted", "bad": true, "hours": 72.0,
+		"desc": "骨折打了夹板，移速 −25%，不能冲刺，3 游戏天后好。打石膏只要 1 天。",
+		"mult": {"move_speed": 0.75}, "flags": ["no_sprint"]},
+	"fracture_cast": {"zh": "打石膏", "short": "石膏", "buff": "buffLegCast", "bad": true, "hours": 24.0,
+		"desc": "骨折打了石膏，移速 −15%，1 游戏天后好。", "mult": {"move_speed": 0.85}},
+	"infection": {"zh": "感染", "short": "感染", "buff": "buffInfectionMain", "bad": true, "unit": "%",
+		"stack": true, "max_stack": 100,
+		"desc": "感染度每游戏小时 +1%，到 100% 会死。草药抗生素 −25%，蜂蜜 −5%，抗生素治好。"},
 }
 
 const FIST_DAMAGE := 8.0

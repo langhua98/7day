@@ -340,6 +340,12 @@ func apply_effect(id: String, kind: int) -> void:
 		msg += "，血止住了"
 	if e.get("cure", false) and player_sys.cure_sickness():
 		msg += "，肚子好了"
+	if e.get("splint", false):
+		msg += player_sys.apply_splint()
+	if e.get("cast", false):
+		msg += player_sys.apply_cast()
+	if e.has("infection"):
+		msg += player_sys.treat_infection(int(e.infection))
 	if e.has("buff"):
 		player_sys.add_buff(float(e.buff))
 		msg += "，精神一振"

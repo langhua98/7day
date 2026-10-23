@@ -51,7 +51,7 @@ func update(delta: float, day: int, night: bool, horde: bool) -> void:
 		alive += 1
 		var dmg: float = z.try_attack()
 		if dmg > 0.0:
-			player_sys.take_damage(dmg, "zombie", C.BLEED_CHANCE)
+			player_sys.zombie_hit(dmg, z.type)
 		# 离太远的僵尸回收掉，在身边重新刷
 		if z.distance_to_target() > C.ZOMBIE_DESPAWN:
 			z.queue_free()

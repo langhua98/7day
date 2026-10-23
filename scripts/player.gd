@@ -30,6 +30,10 @@ var _land_dip := 0.0
 var aiming := false
 var _step_d := 0.0
 var _grounded := true
+## 这次离地以来到过的最高点（算摔落高度）
+var _air_top := 0.0
+## 感染度不满 1% 的零头（游戏小时累计）
+var _infect_acc := 0.0
 
 
 func setup(parent: Node3D, world_ref: World, hud_ref: Hud, rng_ref: RandomNumberGenerator) -> void:
@@ -72,6 +76,8 @@ func reset() -> void:
 	aiming = false
 	_step_d = 0.0
 	_grounded = true
+	_air_top = 0.0
+	_infect_acc = 0.0
 
 
 func update(delta: float) -> void:
@@ -106,13 +112,19 @@ func update(delta: float) -> void:
 	if _vy > 0.0 and world.ceiling_hit(player.position, 0.3, 1.8):
 		_vy = 0.0
 	var floor_y := world.floor_under(player.position, 0.3)
+	var was_grounded := _grounded
 	_grounded = player.position.y <= floor_y + 0.01
+	if not _grounded:
+		_air_top = maxf(_air_top, player.position.y)
 	if _grounded:
 		if _vy < -3.0:
 			Sfx.play("land", Vector3.INF, -6.0)
 			_land_dip = minf(C.LAND_DIP_MAX, -_vy * 0.012)
 		player.position.y = floor_y
 		_vy = 0.0
+		if not was_grounded:
+			land(_air_top - floor_y)
+		_air_top = floor_y
 	# 后坐力：先往上跳再回弹，只有一小部分留在准星上
 	_recoil = lerp(_recoil, 0.0, 1.0 - exp(-delta * C.RECOIL_RECOVERY))
 	player.rotation.y = yaw
@@ -154,18 +166,122 @@ func update_survival(delta: float, dh: float) -> void:
 	Status.toggle("starving", food <= 0.0)
 	Status.toggle("thirsty", water < C.THIRSTY_BELOW)
 	Status.toggle("dehydrated", water <= 0.0)
+	_update_infection(dh)
 	var d: Dictionary = Status.tick(delta, dh)
 	hp += float(d.hp)
 	food = clampf(food + float(d.food), 0.0, C.MAX_FOOD)
 	water = clampf(water + float(d.water), 0.0, C.MAX_WATER)
 	if food > C.REGEN_FOOD_ABOVE and water > C.REGEN_WATER_ABOVE and not Status.losing_hp():
 		hp = minf(C.MAX_HP, hp + C.HP_REGEN_PER_HOUR * dh)
+	# 感染到 100% 就死
+	if infection() >= C.INFECTION_MAX:
+		hp = 0.0
 	# 状态条每秒刷新 4 次就够
 	_hud_t -= delta
 	if _hud_t <= 0.0:
 		_hud_t = 0.25
 		hud.set_survival(water, "")
 		hud.set_effects(Status.active())
+
+
+## 落地：h 是这次下落的高度（米）。超过 3 米掉血，3–4 米可能扭伤，4 米以上骨折
+func land(h: float) -> void:
+	if h <= C.FALL_SAFE:
+		return
+	take_damage((h - C.FALL_SAFE) * C.FALL_DAMAGE_PER_M, "fall")
+	if h > C.FRACTURE_HEIGHT:
+		break_leg()
+	elif h > C.SPRAIN_HEIGHT and rng.randf() < C.SPRAIN_CHANCE:
+		sprain_leg()
+
+
+## 扭伤（已经骨折就不叠扭伤）
+func sprain_leg() -> void:
+	if has_fracture():
+		return
+	if not Status.has("sprain"):
+		hud.toast("你扭伤了腿！用夹板固定")
+	Status.remove("sprain_splinted")
+	Status.add("sprain")
+
+
+## 骨折：之前的扭伤、夹板、石膏都作废
+func break_leg() -> void:
+	for id in ["sprain", "sprain_splinted", "fracture_splinted", "fracture_cast"]:
+		Status.remove(id)
+	if not Status.has("fracture"):
+		hud.toast("你的腿骨折了！用夹板或石膏")
+		Input.vibrate_handheld(200)
+	Status.add("fracture")
+
+
+func has_fracture() -> bool:
+	return Status.has("fracture") or Status.has("fracture_splinted") or Status.has("fracture_cast")
+
+
+## 被僵尸打中：流血、感染、大块头还可能打断腿
+func zombie_hit(amount: float, zombie_type: String) -> void:
+	take_damage(amount, "zombie", C.BLEED_CHANCE)
+	if rng.randf() < C.INFECTION_CHANCE:
+		infect()
+	var t: Dictionary = C.ZOMBIE_TYPES.get(zombie_type, {})
+	if float(t.get("hp", 1.0)) >= C.BIG_ZOMBIE_HP_MULT and rng.randf() < C.BIG_HIT_FRACTURE_CHANCE:
+		break_leg()
+
+
+## 感染：已经感染就不变，否则从 1% 开始
+func infect() -> void:
+	if Status.has("infection"):
+		return
+	hud.toast("伤口感染了！找抗生素")
+	_infect_acc = 0.0
+	Status.set_stacks("infection", C.INFECTION_START)
+
+
+func infection() -> int:
+	return Status.stacks("infection")
+
+
+## 感染度每游戏小时涨 1%，到 100% 死亡
+func _update_infection(dh: float) -> void:
+	if not Status.has("infection"):
+		_infect_acc = 0.0
+		return
+	_infect_acc += C.INFECTION_PER_HOUR * dh
+	if _infect_acc >= 1.0:
+		var n := floori(_infect_acc)
+		_infect_acc -= n
+		Status.set_stacks("infection", mini(C.INFECTION_MAX, infection() + n))
+
+
+## 用药改感染度，amount 负数是降低；返回提示（没感染返回空）
+func treat_infection(amount: int) -> String:
+	if not Status.has("infection") or amount >= 0:
+		return ""
+	var n := infection() + amount
+	Status.set_stacks("infection", n)
+	return "，感染治好了" if n <= 0 else "，感染降到 %d%%" % n
+
+
+## 夹板：扭伤 → 已固定 6 小时；骨折 → 打夹板 3 天
+func apply_splint() -> String:
+	if Status.remove("fracture"):
+		Status.add("fracture_splinted")
+		return "，腿打上了夹板"
+	if Status.remove("sprain"):
+		Status.add("sprain_splinted")
+		return "，扭伤固定好了"
+	return ""
+
+
+## 石膏：骨折（含打夹板的）→ 打石膏 1 天；扭伤也能用
+func apply_cast() -> String:
+	if Status.remove("fracture") or Status.remove("fracture_splinted"):
+		Status.add("fracture_cast")
+		return "，腿打上了石膏"
+	if Status.remove("sprain") or Status.remove("sprain_splinted"):
+		return "，扭伤好了"
+	return ""
 
 
 func jump() -> void:
@@ -233,6 +349,7 @@ func save_data() -> Dictionary:
 	return {
 		"hp": hp, "food": food, "water": water, "stamina": stamina,
 		"pos": [player.position.x, player.position.z], "y": player.position.y, "yaw": yaw,
+		"infect_acc": _infect_acc,
 	}
 
 
@@ -241,10 +358,13 @@ func load_data(d: Dictionary) -> void:
 	food = float(d.get("food", C.MAX_FOOD))
 	water = float(d.get("water", C.MAX_WATER))
 	stamina = float(d.get("stamina", 100.0))
+	_infect_acc = float(d.get("infect_acc", 0.0))
 	if d.has("pos"):
 		player.position = world.push_out(Vector3(d.pos[0], float(d.get("y", 0.0)), d.pos[1]), 0.35)
 		player.position.y = world.floor_under(player.position + Vector3.UP * 0.5, 0.3)
 	yaw = float(d.get("yaw", 0.0))
 	player.rotation.y = yaw
+	_air_top = player.position.y
+	_grounded = true
 	camera.rotation.x = pitch
 	GameState.player = player
