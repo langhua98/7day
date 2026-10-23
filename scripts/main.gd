@@ -183,6 +183,7 @@ func _process(delta: float) -> void:
 	if not running:
 		atmosphere.update_sky(time_sys.hours)
 		return
+	var hours_before := time_sys.hours
 	time_sys.update(delta)
 	var day := time_sys.day
 	var hour := fmod(time_sys.hours, 24.0)
@@ -199,7 +200,7 @@ func _process(delta: float) -> void:
 	horde.update(delta, blood_moon, day)
 	looting.update_loot(delta)
 	looting.update_action(delta)
-	player_sys.update_survival(delta)
+	player_sys.update_survival(delta, time_sys.hours - hours_before)
 	atmosphere.update_sky(time_sys.hours)
 	atmosphere.update_music(delta, night, blood_moon, spawner.zombie_root)
 	atmosphere.update_banner(day, hour, night, blood_moon)

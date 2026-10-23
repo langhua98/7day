@@ -36,6 +36,11 @@ func _day_length() -> float:
 	return C.FAST_DAY_SECONDS if C.TEST_FAST_TIME else C.DAY_LENGTH_MIN * 60.0
 
 
+## 一游戏小时等于多少真实秒（状态效果换算旧存档用）
+func seconds_per_hour() -> float:
+	return _day_length() / 24.0
+
+
 func update(delta: float) -> void:
 	var old_day := day
 	hours += delta * 24.0 / _day_length()

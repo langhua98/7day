@@ -16,6 +16,7 @@ GameState="*res://scripts/game_state.gd"
 Assets="*res://scripts/asset_db.gd"
 Sfx="*res://scripts/sfx.gd"
 Data="*res://scripts/data.gd"
+Status="*res://scripts/status_effects.gd"
 
 [display]
 

@@ -70,6 +70,7 @@ scripts/time_of_day.gd 昼夜推进、无尽时间和血月周期
 scripts/horde.gd       血月刷怪阶段、总数和同时上限
 scripts/weapons.gd     枪械弹匣/射速/换弹，官方 items.xml 优先
 scripts/player.gd      移动、视角、体力、生存数值
+scripts/status_effects.gd 状态效果（自动加载为 Status）：饥饿、口渴、流血、腹泻、咖啡因，按游戏小时
 scripts/inventory.gd   背包、装备、弹匣
 scripts/combat.gd      近战、枪械、换弹、爆炸、摆放/拆方块
 scripts/spawner.gd     僵尸刷新、回收、击杀
