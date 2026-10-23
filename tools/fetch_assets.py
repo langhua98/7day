@@ -17,6 +17,8 @@
     assets/world/*.obj/.png            （市中心场景：车辆、可翻找的容器、杂物、地面和楼的贴图）
     assets/index/world_models.json     （场景模型的类别、中文名、战利品类型）
     assets/poi/*.poimesh/.xml          （市中心建筑，再用 tools/build_poi.gd 转成 .res）
+    assets/poi/*.tts/.nim → *.full     （完整方块数据，tools/build_poi_full.py 生成路口几栋楼的完整网格）
+    assets/blocks/*.xml、assets/shapes/*.glb（游戏的方块表、形状表、刷漆表和形状模型）
     assets/blocks/c_*.png n_*.png      （楼用到的方块贴图和法线，atlas.json 是贴图编号 → 层号；
                                         tools/build_poi.gd 再打包成 assets/poi/atlas_*.res）
     assets/terrain/*.png               （地面贴图：颜色、法线、粗糙度）
@@ -572,10 +574,10 @@ def fetch_world(dest):
 
 
 def fetch_poi(dest):
-    """市中心建筑（七日杀的 POI 预制体）：取远景网格 .mesh 和属性 .xml。
-    .mesh（存成 .poimesh）之后由 tools/build_poi.gd 在 Godot 里转成 assets/poi/*.res。"""
+    """市中心建筑（七日杀的 POI 预制体）：取远景网格 .mesh、属性 .xml，以及完整方块数据 .tts 和方块名表 .blocks.nim
+    （存成 .nim）。.mesh（存成 .poimesh）之后由 tools/build_poi.gd 在 Godot 里转成 assets/poi/*.res。"""
     out_dir = os.path.join(dest, "poi")
-    if os.path.isdir(out_dir) and any(f.endswith(".poimesh") for f in os.listdir(out_dir)):
+    if os.path.isdir(out_dir) and any(f.endswith(".tts") for f in os.listdir(out_dir)):
         print("市中心建筑: 已有，跳过")
         return
     zf = open_remote_zip(f"{DRIVE_ROOT}/建筑POI/POIs_downtown_67.zip")
@@ -586,9 +588,13 @@ def fetch_poi(dest):
     n = 0
     for i in zf.infolist():
         base = os.path.basename(i.filename)
-        if re.fullmatch(r"[A-Za-z0-9_]+\.(mesh|xml)", base):
+        if re.fullmatch(r"[A-Za-z0-9_]+\.(mesh|xml|tts|blocks\.nim)", base):
             # .mesh 和 Godot 自己的网格格式重名，改个扩展名免得 Godot 误读
-            out = os.path.join(out_dir, base[:-5] + ".poimesh" if base.endswith(".mesh") else base)
+            if base.endswith(".mesh"):
+                base = base[:-5] + ".poimesh"
+            elif base.endswith(".blocks.nim"):
+                base = base[:-11] + ".nim"
+            out = os.path.join(out_dir, base)
             with zf.open(i) as src, open(out, "wb") as dst:
                 shutil.copyfileobj(src, dst)
             n += base.endswith(".mesh")
@@ -681,16 +687,66 @@ def _unpack_normal(im, size):
     return Image.merge("RGB", (a, g, Image.frombytes("L", im.size, bytes(zs))))
 
 
+# 市中心路口那几栋用完整方块数据生成（窗户、楼梯、屋檐都有），其余的楼用远景网格
+FULL_POIS = ["skyscraper_01", "skyscraper_04", "hotel_ostrich", "courthouse_med_01"]
+CONFIG_ZIP = "小橘素材库/Data_Config.zip"
+SHAPES_ZIP = "小橘素材库/shapes_by_name.zip"
+
+
+def fetch_full_buildings(dest):
+    """游戏的方块表、形状表、刷漆表和形状模型，然后用 tools/build_poi_full.py 生成完整的楼（assets/poi/*.full）"""
+    bdir = os.path.join(dest, "blocks")
+    sdir = os.path.join(dest, "shapes")
+    os.makedirs(bdir, exist_ok=True)
+    if not all(os.path.exists(os.path.join(bdir, f)) for f in ("blocks.xml", "shapes.xml", "painting.xml")):
+        zf = open_remote_zip(f"{DRIVE_ROOT}/{CONFIG_ZIP}")
+        if zf is None:
+            print("云盘里没有 Data_Config.zip，楼只用远景网格")
+            return
+        for i in zf.infolist():
+            base = os.path.basename(i.filename)
+            if base in ("blocks.xml", "shapes.xml", "painting.xml"):
+                with zf.open(i) as src, open(os.path.join(bdir, base), "wb") as dst:
+                    shutil.copyfileobj(src, dst)
+    if not os.path.exists(os.path.join(bdir, "ta_opaque.xml")):
+        it = find(list_dir(f"{DRIVE_ROOT}/{BLOCK_MAP}"), "ta_opaquexml")
+        if it:
+            with request(f"/items/{it['id']}/content") as r, open(os.path.join(bdir, "ta_opaque.xml"), "wb") as f:
+                f.write(r.read())
+    if not (os.path.isdir(sdir) and any(f.endswith(".glb") for f in os.listdir(sdir))):
+        zf = open_remote_zip(f"{DRIVE_ROOT}/{SHAPES_ZIP}")
+        if zf is None:
+            print("云盘里没有 shapes_by_name.zip，楼只用远景网格")
+            return
+        os.makedirs(sdir, exist_ok=True)
+        # 只给 build_poi_full.py 读，不让 Godot 导入
+        open(os.path.join(sdir, ".gdignore"), "w").close()
+        for i in zf.infolist():
+            # “按模型文件名/” 下每个模型一个 glb，文件名 = shapes.xml 里 Model 指向的 fbx 名
+            if "按模型文件名/" in i.filename and i.filename.endswith(".glb"):
+                with zf.open(i) as src, open(os.path.join(sdir, os.path.basename(i.filename)), "wb") as dst:
+                    shutil.copyfileobj(src, dst)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import build_poi_full
+    print("完整的楼:")
+    build_poi_full.run(dest, FULL_POIS)
+
+
 def fetch_blocks(dest):
     out_dir = os.path.join(dest, "blocks")
     index_out = os.path.join(out_dir, "atlas.json")
+    poi_dir = os.path.join(dest, "poi")
+    extra = os.path.join(poi_dir, "full_textures.json")
     if os.path.exists(index_out):
         with open(index_out, encoding="utf-8") as f:
-            done = "blocks" in json.load(f)
-        if done:
+            old = json.load(f)
+        have = set(old.get("ids", {}))
+        need = {str(i) for i in json.load(open(extra))} if os.path.exists(extra) else set()
+        need -= set(map(str, old.get("missing", [])))
+        if "blocks" in old and need <= have:
             print("方块贴图: 已有，跳过（删掉 assets/blocks/atlas.json 可重新取）")
             return
-        print("方块贴图: 旧版没有建造方块，重新取")
+        print("方块贴图: 有新的贴图要取，重新取")
     try:
         from PIL import Image
     except ImportError:
@@ -708,8 +764,9 @@ def fetch_blocks(dest):
         if "<uv " in line:
             a = dict(re.findall(r'(\w+)="([^"]*)"', line))
             uv[int(a["id"])] = (int(a["index"]), int(a.get("blockw", 1)), int(a.get("blockh", 1)))
-    poi_dir = os.path.join(dest, "poi")
     used = _poi_tex_ids(poi_dir) if os.path.isdir(poi_dir) else set()
+    if os.path.exists(extra):
+        used |= set(json.load(open(extra)))   # 完整的楼用到的贴图
     try:
         build = _build_block_textures()
     except Exception as e:  # 查不到就用纯色，不影响楼
@@ -1001,7 +1058,7 @@ def main():
     ap.add_argument("--zombies", default=",".join(DEFAULT_ZOMBIES), help="逗号分隔的僵尸名，或 all")
     ap.add_argument("--music", type=int, default=6, help="每类音乐取几段")
     ap.add_argument("--all-icons", action="store_true", help="取全部图标（默认只取游戏会用到的）")
-    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,poi,blocks,terrain,effects,music,sounds,sky")
+    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,poi,full,blocks,terrain,effects,music,sounds,sky")
     args = ap.parse_args()
     skip = set(filter(None, args.skip.split(",")))
     dest = os.path.abspath(args.dest)
@@ -1021,6 +1078,8 @@ def main():
         fetch_world(dest)
     if "poi" not in skip:
         fetch_poi(dest)
+    if "full" not in skip:
+        fetch_full_buildings(dest)
     if "blocks" not in skip:
         fetch_blocks(dest)
     if "terrain" not in skip:
