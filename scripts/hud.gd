@@ -67,6 +67,7 @@ var _aim_id := -1
 var _cross_tween: Tween
 var _hit_tween: Tween
 const JOY_RADIUS := 90.0
+const JOY_DEADZONE := 0.12
 const QUALITY_COLORS := [Color(0.7, 0.7, 0.7), Color(0.65, 0.45, 0.25), Color(0.9, 0.8, 0.2),
 	Color(0.3, 0.8, 0.3), Color(0.3, 0.55, 1.0), Color(0.7, 0.35, 1.0)]
 
@@ -161,14 +162,14 @@ func _ready() -> void:
 
 	# 底部快捷栏
 	_hotbar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_hotbar.position = Vector2(-330, -104)
+	_hotbar.position = Vector2(-330, -150)
 	_hotbar.add_theme_constant_override("separation", 8)
 	_root.add_child(_hotbar)
 
 	_attack_btn.text = "攻击"
 	_attack_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	_attack_btn.position = Vector2(-210, -230)
-	_attack_btn.size = Vector2(170, 170)
+	_attack_btn.position = Vector2(-240, -220)
+	_attack_btn.size = Vector2(180, 180)
 	_attack_btn.add_theme_font_size_override("font_size", 36)
 	# 攻击、背包、快捷栏都在 _input 里按触点自己处理：
 	# 系统自带的按钮只认第一根手指，一边走路一边按攻击会没反应
@@ -177,8 +178,8 @@ func _ready() -> void:
 
 	_aim_btn.text = "瞄准"
 	_aim_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	_aim_btn.position = Vector2(-430, -230)
-	_aim_btn.size = Vector2(150, 110)
+	_aim_btn.position = Vector2(-240, -350)
+	_aim_btn.size = Vector2(180, 100)
 	_aim_btn.add_theme_font_size_override("font_size", 32)
 	_aim_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_aim_btn.visible = false
@@ -186,8 +187,8 @@ func _ready() -> void:
 
 	# 搜索 / 拾取：走近容器或地上的东西才出现
 	_action_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	_action_btn.position = Vector2(-420, -280)
-	_action_btn.size = Vector2(190, 110)
+	_action_btn.position = Vector2(-420, -350)
+	_action_btn.size = Vector2(160, 100)
 	_action_btn.add_theme_font_size_override("font_size", 26)
 	_action_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_action_btn.clip_text = true
@@ -195,7 +196,7 @@ func _ready() -> void:
 	_root.add_child(_action_btn)
 
 	# 换弹、跳：按钮也在 _input 里按触点处理
-	for pair in [[_reload_btn, "换弹", Vector2(-420, -400), Vector2(160, 100)], [_jump_btn, "跳", Vector2(-190, -380), Vector2(130, 110)]]:
+	for pair in [[_reload_btn, "换弹", Vector2(-240, -470), Vector2(180, 90)], [_jump_btn, "跳", Vector2(-420, -470), Vector2(160, 90)]]:
 		var b: Button = pair[0]
 		b.text = pair[1]
 		b.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
@@ -206,9 +207,9 @@ func _ready() -> void:
 		_root.add_child(b)
 	_reload_btn.visible = false
 	# 子弹数：弹匣里 / 背包里
-	_ammo.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	_ammo.position = Vector2(-230, -280)
-	_ammo.size = Vector2(210, 44)
+	_ammo.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_ammo.position = Vector2(-110, -200)
+	_ammo.size = Vector2(220, 44)
 	_ammo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_ammo.add_theme_font_size_override("font_size", 40)
 	_ammo.add_theme_font_override("font", Hud.number_font())
@@ -240,7 +241,7 @@ func _ready() -> void:
 
 	_bag_btn.text = "背包"
 	_bag_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_bag_btn.position = Vector2(-160, 70)
+	_bag_btn.position = Vector2(-220, 70)
 	_bag_btn.size = Vector2(130, 64)
 	_bag_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_bag_btn)
@@ -289,7 +290,7 @@ func _ready() -> void:
 
 	_pause_btn.text = "暂停"
 	_pause_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_pause_btn.position = Vector2(-300, 70)
+	_pause_btn.position = Vector2(-360, 70)
 	_pause_btn.size = Vector2(120, 64)
 	_pause_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_pause_btn)
@@ -479,12 +480,14 @@ func _build_pause_panel() -> void:
 
 
 func set_paused(on: bool) -> void:
+	if on:
+		_release_touches()
 	_pause_panel.visible = on
-	_press_attack(false)
 	get_tree().paused = on
 
 
 func show_start(can_continue: bool) -> void:
+	_release_touches()
 	_continue_btn.visible = can_continue
 	_start_panel.visible = true
 	_end_panel.visible = false
@@ -509,7 +512,7 @@ func set_start_info(text: String) -> void:
 
 
 func show_end(text: String) -> void:
-	attack_held = false
+	_release_touches()
 	_end_label.text = text
 	_end_panel.visible = true
 
@@ -686,6 +689,23 @@ func _press_attack(pressed: bool) -> void:
 	_attack_btn.modulate = Color(1.6, 0.7, 0.6) if pressed else Color.WHITE
 
 
+func _flash(control: Control) -> void:
+	control.modulate = Color(1.5, 1.3, 0.9)
+	var tw := create_tween()
+	tw.tween_property(control, "modulate", Color.WHITE, 0.12)
+
+
+func _release_touches() -> void:
+	_press_attack(false)
+	_aim_id = -1
+	aim_held = false
+	_aim_btn.modulate = Color.WHITE
+	_joy_id = -1
+	move = Vector2.ZERO
+	_reset_joystick()
+	_look_id = -1
+
+
 func _touch_down(index: int, pos: Vector2) -> void:
 	if _aim_btn.visible and _aim_btn.get_global_rect().grow(12).has_point(pos):
 		_aim_id = index
@@ -697,23 +717,28 @@ func _touch_down(index: int, pos: Vector2) -> void:
 		_press_attack(true)
 		return
 	if _reload_btn.visible and _reload_btn.get_global_rect().grow(10).has_point(pos):
+		_flash(_reload_btn)
 		reload_pressed.emit()
 		return
 	if _jump_btn.get_global_rect().grow(10).has_point(pos):
+		_flash(_jump_btn)
 		jump_pressed.emit()
 		return
 	if _action_btn.visible and _action_btn.get_global_rect().grow(12).has_point(pos):
+		_flash(_action_btn)
 		action_pressed.emit()
 		return
-	if _pause_btn.get_global_rect().has_point(pos):
+	if _pause_btn.get_global_rect().grow(10).has_point(pos):
 		set_paused(true)
 		return
-	if _bag_btn.get_global_rect().has_point(pos):
+	if _bag_btn.get_global_rect().grow(10).has_point(pos):
 		_bag_panel.visible = true
-		_press_attack(false)
+		_release_touches()
+		_flash(_bag_btn)
 		return
 	for slot in _hotbar.get_children():
 		if (slot as Control).get_global_rect().has_point(pos):
+			_flash(slot)
 			item_used.emit(slot.get_meta("item"))
 			return
 	var half := get_viewport().get_visible_rect().size.x * 0.5
@@ -758,7 +783,11 @@ func _input(event: InputEvent) -> void:
 			if d.length() > JOY_RADIUS:
 				d = d.normalized() * JOY_RADIUS
 			_joy_knob.position = _joy_origin + d - _joy_knob.size * 0.5
-			move = Vector2(d.x, -d.y) / JOY_RADIUS
+			var raw := Vector2(d.x, -d.y) / JOY_RADIUS
+			if raw.length() <= JOY_DEADZONE:
+				move = Vector2.ZERO
+			else:
+				move = raw.normalized() * clampf((raw.length() - JOY_DEADZONE) / (1.0 - JOY_DEADZONE), 0.0, 1.0)
 		elif event.index == _look_id:
 			look_delta += event.position - _look_last
 			_look_last = event.position
