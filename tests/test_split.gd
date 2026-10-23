@@ -57,16 +57,22 @@ func _run() -> void:
 	main.player_sys.take_damage(10.0, "test")
 	check_close(main.player_sys.hp, C.MAX_HP - 10.0, 0.01, "受伤应扣血")
 
-	# 存档写入版本号，并能读回玩家状态
+	# 存档写入版本号、时间、血月次数，并能读回玩家状态
 	main.player_sys.hp = 77.0
+	main.time_sys.set_time(7 * 24.0 + 3.9)
+	main.time_sys.blood_moons_survived = 2
 	main.save_game.save()
 	var d: Dictionary = main.save_game.read_save()
 	check_eq(d.get("version", -1), 2, "存档应有 version=2")
 	check_close(float(d.get("hp", 0.0)), 77.0, 0.01, "存档 hp 应正确")
+	check_eq(int(d.get("blood_moons_survived", -1)), 2, "存档应保存血月次数")
 	main.player_sys.hp = 1.0
 	main.save_game.continue_game()
 	check_close(main.player_sys.hp, 77.0, 0.01, "读档应恢复 hp")
 	check(main.running, "读档后应继续运行")
+	check_eq(main.time_sys.day, 8, "读档应恢复第 8 天")
+	check_eq(main.time_sys.blood_moons_survived, 2, "读档应恢复血月次数")
+	check(main.time_sys.blood_moon, "第 8 天 03:54 读档应处于血月")
 
 	# 旧版存档没有 version 和新字段，也要能读
 	var old := {

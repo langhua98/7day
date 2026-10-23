@@ -13,14 +13,11 @@ var combat: CombatSystem
 var spawner: SpawnerSystem
 var looting: LootingSystem
 var save_game: SaveGame
+var time_sys: TimeOfDay
 var rng := RandomNumberGenerator.new()
 
 var running := false
-var game_hours := C.START_HOUR   # 从第 1 天 0 点起算的小时数
 var world_seed := 0
-var _last_hour := -1
-var _last_day := 0
-var _was_night := false
 
 
 func _ready() -> void:
@@ -35,6 +32,8 @@ func _ready() -> void:
 	world = World.new()
 	add_child(world)
 	world.build(world_seed)
+
+	time_sys = TimeOfDay.new()
 
 	hud = Hud.new()
 	add_child(hud)
@@ -67,7 +66,7 @@ func _ready() -> void:
 	inventory.combat = combat
 
 	save_game = SaveGame.new()
-	save_game.setup(self, world, player_sys, inventory, combat, spawner, atmosphere, hud)
+	save_game.setup(self, world, player_sys, inventory, combat, spawner, atmosphere, hud, time_sys)
 
 	hud.start_pressed.connect(start)
 	hud.restart_pressed.connect(start)
@@ -88,17 +87,14 @@ func _ready() -> void:
 	_apply_settings(hud.settings)
 	hud.show_start(save.has("hours"))
 
-	GameState.reset()
-	GameState.hours = game_hours
-	GameState.day = 1
-	GameState.gamestage = 1
+	time_sys.reset()
 	var info := "素材：物品 %d 个（武器、食物、药品等 %d 个可拾取），僵尸 %d 种，音乐 %d 段" % [
 		Assets.items.size(), _count_loot(), Assets.zombie_models.size(),
 		Assets.music.values().reduce(func(a, l): return a + l.size(), 0)]
 	if not Assets.errors.is_empty():
 		info += "\n注意：" + "；".join(Assets.errors)
 	hud.set_start_info(info)
-	atmosphere.update_sky(game_hours)
+	atmosphere.update_sky(time_sys.hours)
 
 
 func _apply_settings(st: Dictionary) -> void:
@@ -127,19 +123,12 @@ func _count_loot() -> int:
 func start(fresh := true) -> void:
 	spawner.reset()
 	looting.reset()
-	game_hours = C.START_HOUR
+	time_sys.reset()
 	player_sys.reset()
 	inventory.reset()
 	combat.reset()
 	atmosphere.reset()
-	GameState.reset()
-	GameState.hours = game_hours
-	GameState.day = 1
-	GameState.gamestage = 1
 	GameState.running = true
-	_last_hour = int(C.START_HOUR)
-	_last_day = 1
-	_was_night = false
 
 	for c in world.containers:
 		c.searched = false
@@ -167,53 +156,30 @@ func start(fresh := true) -> void:
 		save_game.save()
 
 
-func _end(win: bool) -> void:
+func _end() -> void:
 	running = false
 	GameState.running = false
 	combat.running = false
 	looting.running = false
 	save_game.delete_save()
 	Sfx.stop_loops()
-	if not win:
-		Sfx.play("death")
-	music.request("Exp" if win else "Sus", 99.0)
-	var day := int(game_hours / 24.0) + 1
-	if win:
-		hud.show_end("你活过了第七天的血月！\n击杀 %d 只僵尸" % spawner.kills)
-	else:
-		hud.show_end("你死在了第 %d 天\n击杀 %d 只僵尸" % [day, spawner.kills])
+	Sfx.play("death")
+	music.request("Sus", 99.0)
+	hud.show_end("你死在了第 %d 天\n活过 %d 次血月，击杀 %d 只僵尸" % [
+		time_sys.day, time_sys.blood_moons_survived, spawner.kills])
 
 
 # —— 每帧 ——
 
 func _process(delta: float) -> void:
 	if not running:
-		atmosphere.update_sky(game_hours)
+		atmosphere.update_sky(time_sys.hours)
 		return
-	game_hours += delta * 24.0 / C.DAY_SECONDS
-	var day := int(game_hours / 24.0) + 1
-	var hour := fmod(game_hours, 24.0)
-	var night := hour >= C.NIGHT_START or hour < C.NIGHT_END
-	var horde := (day == C.HORDE_DAY and hour >= C.NIGHT_START) or (day == C.HORDE_DAY + 1 and hour < C.NIGHT_END)
-	GameState.hours = game_hours
-	GameState.day = day
-	GameState.gamestage = day
-	var hour_int := int(hour)
-	if hour_int != _last_hour:
-		_last_hour = hour_int
-		GameState.hour_changed.emit(day, hour)
-	if day != _last_day:
-		_last_day = day
-		GameState.day_started.emit(day)
-	if night and not _was_night:
-		GameState.night_started.emit()
-	elif not night and _was_night:
-		GameState.dawn.emit()
-	_was_night = night
-
-	if day > C.HORDE_DAY and hour >= C.NIGHT_END:
-		_end(true)
-		return
+	time_sys.update(delta)
+	var day := time_sys.day
+	var hour := fmod(time_sys.hours, 24.0)
+	var night := time_sys.night
+	var horde := time_sys.blood_moon
 
 	player_sys.update(delta)
 	looting.update(delta)
@@ -222,7 +188,7 @@ func _process(delta: float) -> void:
 	looting.update_loot(delta)
 	looting.update_action(delta)
 	player_sys.update_survival(delta)
-	atmosphere.update_sky(game_hours)
+	atmosphere.update_sky(time_sys.hours)
 	atmosphere.update_music(delta, night, horde, spawner.zombie_root)
 	atmosphere.update_banner(day, hour, night, horde)
 	save_game.update(delta)
@@ -231,6 +197,7 @@ func _process(delta: float) -> void:
 	for z in spawner.zombie_root.get_children():
 		if not z.dead and z.distance_to_target() < C.TENSION_DISTANCE:
 			near += 1
-	hud.set_status(day, hour, player_sys.hp, player_sys.food, spawner.kills, near, night)
+	hud.set_status(day, hour, player_sys.hp, player_sys.food, spawner.kills, near, night,
+		day % C.BLOOD_MOON_EVERY == 0 or horde, horde, GameState.next_blood_moon_day())
 	if player_sys.hp <= 0.0:
-		_end(false)
+		_end()

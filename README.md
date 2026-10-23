@@ -8,7 +8,7 @@
 - 走近地上的物品自动捡起。捡到更好的武器会自动换上；食物、饮料、药品在底部快捷栏或「背包」里点一下使用。
 - **现在是测试模式**：背包里就有全部武器、吃的、喝的、药和建造方块，每种子弹 300 发，读旧存档也会补齐；子弹和方块用不完。点「背包」随便换着试，点子弹会换上用这种子弹的枪。正式玩时把 `scripts/config.gd` 里的 `TEST_ALL_ITEMS` 和 `TEST_INFINITE` 改成 `false`。
 - 建造：在背包里点一种方块（木框、木块、圆石、石板、混凝土、钢）拿在手上，准星对着地面或别的方块，会出现一个白框，点「攻击」就摆一块 1 米的方块。空手或拿近战武器打方块能拆掉。方块能挡僵尸，也能跳上去往高处搭。
-- 一天 5 分钟。夜里（22:00–06:00）僵尸会跑；第 7 天夜里是血月尸潮，撑到第 8 天早上 6 点就赢。
+- 一天 24 分钟。白天 04:00–22:00，夜里僵尸会跑；每 7 天一次血月（22:00–04:00），活过之后游戏继续，无尽生存。
 - 音乐跟着局势切换：探索 Exp、紧张 Sus、战斗 Cbt、血月 Bld。
 
 数值（一天多长、僵尸血量、伤害等）都在 `scripts/config.gd`，第一人称手臂的摆放在 `scripts/fp_arms.gd` 顶部。
@@ -63,8 +63,10 @@ python3 tools/fetch_assets.py --zombies all --music 12   # 想要更多
 project.godot          Godot 项目
 scenes/main.tscn       主场景
 scripts/asset_db.gd    读取素材、物品分类（自动加载为 Assets）
+scripts/data.gd        读取官方配置 JSON（自动加载为 Data）
 scripts/game_state.gd  全局信号和共享状态（自动加载为 GameState）
 scripts/main.gd        组装世界和系统，连接信号
+scripts/time_of_day.gd 昼夜推进、无尽时间和血月周期
 scripts/player.gd      移动、视角、体力、生存数值
 scripts/inventory.gd   背包、装备、弹匣
 scripts/combat.gd      近战、枪械、换弹、爆炸、摆放/拆方块
@@ -79,4 +81,5 @@ scripts/hud.gd         界面和触屏操作
 scripts/music.gd       音乐切换
 scripts/config.gd      数值
 tools/fetch_assets.py  从云盘同步素材
+tools/build_data.py    官方 Data_Config.zip → assets/data/*.json
 ```

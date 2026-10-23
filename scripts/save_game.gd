@@ -12,11 +12,13 @@ var combat: CombatSystem
 var spawner: SpawnerSystem
 var atmosphere: Atmosphere
 var hud: Hud
+var time_sys: TimeOfDay
 var _save_t := 0.0
 
 
 func setup(parent: Node3D, world_ref: World, player_ref: PlayerSystem, inv_ref: InventorySystem,
-		combat_ref: CombatSystem, spawner_ref: SpawnerSystem, atmosphere_ref: Atmosphere, hud_ref: Hud) -> void:
+		combat_ref: CombatSystem, spawner_ref: SpawnerSystem, atmosphere_ref: Atmosphere, hud_ref: Hud,
+		time_ref: TimeOfDay) -> void:
 	main = parent
 	world = world_ref
 	player_sys = player_ref
@@ -25,6 +27,7 @@ func setup(parent: Node3D, world_ref: World, player_ref: PlayerSystem, inv_ref: 
 	spawner = spawner_ref
 	atmosphere = atmosphere_ref
 	hud = hud_ref
+	time_sys = time_ref
 
 
 static func read_save() -> Dictionary:
@@ -53,10 +56,10 @@ func save() -> void:
 	var d := {
 		"version": 2,
 		"seed": main.world_seed,
-		"hours": main.game_hours,
 		"searched": searched,
 		"blocks": world.voxel_save(),
 	}
+	d.merge(time_sys.save_data())
 	d.merge(player_sys.save_data())
 	d.merge(inventory.save_data())
 	d["kills"] = spawner.kills
@@ -77,10 +80,7 @@ func continue_game() -> void:
 		main.start()
 		return
 	main.start(false)
-	main.game_hours = float(d.hours)
-	GameState.hours = main.game_hours
-	GameState.day = int(main.game_hours / 24.0) + 1
-	GameState.gamestage = GameState.day
+	time_sys.load_data(d)
 	for i in d.get("searched", []):
 		if int(i) < world.containers.size():
 			world.containers[int(i)].searched = true
@@ -88,6 +88,6 @@ func continue_game() -> void:
 	player_sys.load_data(d)
 	inventory.load_data(d)
 	spawner.load_data(d)
-	atmosphere.set_night_announced(GameState.day, fmod(main.game_hours, 24.0))
-	atmosphere.update_sky(main.game_hours)
-	hud.toast("继续第 %d 天" % GameState.day)
+	atmosphere.set_night_announced(time_sys.day, fmod(time_sys.hours, 24.0))
+	atmosphere.update_sky(time_sys.hours)
+	hud.toast("继续第 %d 天" % time_sys.day)
