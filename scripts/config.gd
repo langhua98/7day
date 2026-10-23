@@ -35,6 +35,8 @@ const LOOK_SENSITIVITY := 0.0045
 ## 测试模式：开局背包里就有全部武器、吃的喝的、药，每种子弹 300 发，不用去捡。正式玩时改成 false
 const TEST_ALL_ITEMS := true
 const TEST_AMMO := 300
+## 测试模式：僵尸照常出现、追人，但不会抬手打主角。正式玩时改成 false
+const TEST_ZOMBIES_NO_ATTACK := true
 
 const MAX_HP := 100.0
 const MAX_FOOD := 100.0
