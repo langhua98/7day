@@ -1,0 +1,6847 @@
+{
+"meleeToolRepairT0StoneAxe": {
+"mesh": "@:Other/Items/Weapons/Melee/Axe/stone_axePrefab.prefab",
+"icon": "meleeToolRepairT0StoneAxe",
+"tint": null
+},
+"meleeToolRepairT0TazasStoneAxe": {
+"mesh": "@:Other/Items/Weapons/Melee/Axe/stone_axePrefab.prefab",
+"icon": "meleeToolRepairT0StoneAxe",
+"tint": "ffb0b0"
+},
+"meleeToolRepairT1ClawHammer": {
+"mesh": "@:Other/Items/Tools/hammerPrefab.prefab",
+"icon": "meleeToolRepairT1ClawHammer",
+"tint": null
+},
+"meleeToolRepairT3Nailgun": {
+"mesh": "@:Other/Items/Tools/nailgunPrefab.prefab",
+"icon": "meleeToolRepairT3Nailgun",
+"tint": null
+},
+"meleeToolAxeT1IronFireaxe": {
+"mesh": "@:Other/Items/Weapons/Melee/Axe/fireaxe_ironPrefab.prefab",
+"icon": "meleeToolAxeT1IronFireaxe",
+"tint": null
+},
+"meleeToolAxeT2SteelAxe": {
+"mesh": "@:Other/Items/Weapons/Melee/Axe/steelAxePrefab.prefab",
+"icon": "meleeToolAxeT2SteelAxe",
+"tint": null
+},
+"meleeToolPickT1IronPickaxe": {
+"mesh": "@:Other/Items/Tools/pickaxe_ironPrefab.prefab",
+"icon": "meleeToolPickT1IronPickaxe",
+"tint": null
+},
+"meleeToolPickT2SteelPickaxe": {
+"mesh": "@:Other/Items/Tools/pickaxe_steelPrefab.prefab",
+"icon": "meleeToolPickT2SteelPickaxe",
+"tint": null
+},
+"meleeToolShovelT0StoneShovel": {
+"mesh": "@:Other/Items/Tools/shovel_stonePrefab.prefab",
+"icon": "meleeToolShovelT0StoneShovel",
+"tint": null
+},
+"meleeToolShovelT1IronShovel": {
+"mesh": "@:Other/Items/Tools/shovel_ironPrefab.prefab",
+"icon": "meleeToolShovelT1IronShovel",
+"tint": null
+},
+"meleeToolShovelT2SteelShovel": {
+"mesh": "@:Other/Items/Tools/shovel_steelPrefab.prefab",
+"icon": "meleeToolShovelT1IronShovel",
+"tint": "a0a0ff"
+},
+"meleeToolAxeT3Chainsaw": {
+"mesh": "@:Other/Items/Weapons/Melee/Chainsaw/chainsawPrefab.prefab",
+"icon": "meleeToolAxeT3Chainsaw",
+"tint": null
+},
+"meleeToolPickT3Auger": {
+"mesh": "@:Other/Items/Tools/Auger/augerPrefab.prefab",
+"icon": "meleeToolPickT3Auger",
+"tint": null
+},
+"meleeToolSalvageT1Wrench": {
+"mesh": "@:Other/Items/Tools/wrenchPrefab.prefab",
+"icon": "meleeToolSalvageT1Wrench",
+"tint": null
+},
+"meleeToolSalvageT2Ratchet": {
+"mesh": "@:Other/Items/Tools/ratchetPrefab.prefab",
+"icon": "meleeToolSalvageT2Ratchet",
+"tint": null
+},
+"meleeToolSalvageT3ImpactDriver": {
+"mesh": "@:Other/Items/Tools/impactDriverPrefab.prefab",
+"icon": "meleeToolSalvageT3ImpactDriver",
+"tint": null
+},
+"meleeWpnBladeT0BoneKnife": {
+"mesh": "@:Other/Items/Weapons/Melee/Knives/boneShivPrefab.prefab",
+"icon": "meleeWpnBladeT0BoneKnife",
+"tint": null
+},
+"meleeWpnBladeT1HuntingKnife": {
+"mesh": "@:Other/Items/Weapons/Melee/Knives/hunting_knifePrefab.prefab",
+"icon": "meleeWpnBladeT1HuntingKnife",
+"tint": null
+},
+"meleeWpnBladeT1CandyKnife": {
+"mesh": "@:Other/Items/Weapons/Melee/Candycane/candycaneShivPrefab.prefab",
+"icon": "meleeWpnBladeT1CandyKnife",
+"tint": null
+},
+"meleeWpnBladeT3Machete": {
+"mesh": "@:Other/Items/Weapons/Melee/Knives/machetePrefab.prefab",
+"icon": "meleeWpnBladeT3Machete",
+"tint": null
+},
+"meleeWpnClubT0WoodenClub": {
+"mesh": "@:Other/Items/Weapons/Melee/ClubWood/clubWoodPrefab.prefab",
+"icon": "meleeWpnClubT0WoodenClub",
+"tint": null
+},
+"meleeWpnClubT1BaseballBat": {
+"mesh": "@:Other/Items/Weapons/Melee/Bat/bat_Prefab.prefab",
+"icon": "meleeWpnClubT1BaseballBat",
+"tint": null
+},
+"meleeWpnClubT1CandyClub": {
+"mesh": "@:Other/Items/Weapons/Melee/Candycane/candycanePrefab.prefab",
+"icon": "meleeWpnClubT1CandyClub",
+"tint": null
+},
+"meleeWpnClubT3SteelClub": {
+"mesh": "@:Other/Items/Weapons/Melee/ClubIron/clubIronPrefab.prefab",
+"icon": "meleeWpnClubT3SteelClub",
+"tint": null
+},
+"meleeWpnBatonT0PipeBaton": {
+"mesh": "@:Other/Items/Weapons/Melee/PipeBaton/pipeBatonPrefab.prefab",
+"icon": "meleeWpnBatonT0PipeBaton",
+"tint": null
+},
+"meleeWpnBatonT2StunBaton": {
+"mesh": "@:Other/Items/Weapons/Melee/TaserBaton/TaserBatonPrefab.prefab",
+"icon": "meleeWpnBatonT2StunBaton",
+"tint": null
+},
+"meleeWpnSpearT0StoneSpear": {
+"mesh": "@:Other/Items/Weapons/Melee/Spear/spear_stone_Prefab.prefab",
+"icon": "meleeWpnSpearT0StoneSpear",
+"tint": null
+},
+"meleeWpnSpearT1IronSpear": {
+"mesh": "@:Other/Items/Weapons/Melee/Spear/spear_iron_Prefab.prefab",
+"icon": "meleeWpnSpearT1IronSpear",
+"tint": null
+},
+"meleeWpnSpearT3SteelSpear": {
+"mesh": "@:Other/Items/Weapons/Melee/Spear/spear_steel_Prefab.prefab",
+"icon": "meleeWpnSpearT3SteelSpear",
+"tint": null
+},
+"meleeWpnSledgeT0StoneSledgehammer": {
+"mesh": "@:Other/Items/Weapons/Melee/SledgeHammer/stoneSledgeHammerPrefab.prefab",
+"icon": "meleeWpnSledgeT0StoneSledgehammer",
+"tint": null
+},
+"meleeWpnSledgeT1IronSledgehammer": {
+"mesh": "@:Other/Items/Weapons/Melee/SledgeHammer/ironSledgehammerPrefab.prefab",
+"icon": "meleeWpnSledgeT1IronSledgehammer",
+"tint": null
+},
+"meleeWpnSledgeT3SteelSledgehammer": {
+"mesh": "@:Other/Items/Weapons/Melee/SledgeHammer/steelSledgehammerPrefab.prefab",
+"icon": "meleeWpnSledgeT3SteelSledgehammer",
+"tint": null
+},
+"meleeWpnKnucklesT0LeatherKnuckles": {
+"mesh": "@:Other/Items/Weapons/Melee/KnuckleWraps/knuckleWrapsRight_Prefab.prefab",
+"icon": "meleeWpnKnucklesT0LeatherKnuckles",
+"tint": null
+},
+"meleeWpnKnucklesT1IronKnuckles": {
+"mesh": "@:Other/Items/Weapons/Melee/Knuckles/knucklesRight_Prefab.prefab",
+"icon": "meleeWpnKnucklesT1IronKnuckles",
+"tint": null
+},
+"meleeWpnKnucklesT3SteelKnuckles": {
+"mesh": "@:Other/Items/Weapons/Melee/Knuckles/knucklesSpikedRight_Prefab.prefab",
+"icon": "meleeWpnKnucklesT3SteelKnuckles",
+"tint": null
+},
+"meleeToolFlashlight02": {
+"mesh": "@:Other/Items/Tools/flashlight02Prefab.prefab",
+"icon": "meleeToolFlashlight02",
+"tint": null
+},
+"meleeToolTorch": {
+"mesh": "@:Other/Items/Tools/torch02_unlitPrefab.prefab",
+"icon": "meleeToolTorch",
+"tint": null
+},
+"meleeToolWireTool": {
+"mesh": "@:Other/Items/Tools/wire_strippersPrefab.prefab",
+"icon": "meleeToolWireTool",
+"tint": null
+},
+"meleeToolPaintTool": {
+"mesh": "@:Other/Items/Tools/paintbrushPrefab.prefab",
+"icon": "meleeToolPaintTool",
+"tint": null
+},
+"gunHandgunT0PipePistol": {
+"mesh": "@:Other/Items/Weapons/Ranged/PipeRevolver/pipeRevolverPrefab.prefab",
+"icon": "gunHandgunT0PipePistol",
+"tint": null
+},
+"gunHandgunT1Pistol": {
+"mesh": "@:Other/Items/Weapons/Ranged/Pistol/PistolPrefab.prefab",
+"icon": "gunHandgunT1Pistol",
+"tint": null
+},
+"gunHandgunT3SMG5": {
+"mesh": "@:Other/Items/Weapons/Ranged/SMG/smgPrefab.prefab",
+"icon": "gunHandgunT3SMG5",
+"tint": null
+},
+"gunHandgunT2Magnum44": {
+"mesh": "@:Other/Items/Weapons/Ranged/Magnums/magnumPrefab.prefab",
+"icon": "gunHandgunT2Magnum44",
+"tint": null
+},
+"gunHandgunT3DesertVulture": {
+"mesh": "@:Other/Items/Weapons/Ranged/Desert Eagle/desertEaglePrefab.prefab",
+"icon": "gunHandgunT3DesertVulture",
+"tint": null
+},
+"gunShotgunT0PipeShotgun": {
+"mesh": "@:Other/Items/Weapons/Ranged/PipeShotgun/pipeShotgunPrefab.prefab",
+"icon": "gunShotgunT0PipeShotgun",
+"tint": null
+},
+"gunShotgunT1DoubleBarrel": {
+"mesh": "@:Other/Items/Weapons/Ranged/DoubleBarrelShotgun/doubleBarrelShotgunPrefab.prefab",
+"icon": "gunShotgunT1DoubleBarrel",
+"tint": null
+},
+"gunShotgunT2PumpShotgun": {
+"mesh": "@:Other/Items/Weapons/Ranged/Pump Shotgun/pumpShotgunPrefab.prefab",
+"icon": "gunShotgunT2PumpShotgun",
+"tint": null
+},
+"gunShotgunT3AutoShotgun": {
+"mesh": "@:Other/Items/Weapons/Ranged/Auto Shotgun/autoShotgunPrefab.prefab",
+"icon": "gunShotgunT3AutoShotgun",
+"tint": null
+},
+"gunRifleT0PipeRifle": {
+"mesh": "@:Other/Items/Weapons/Ranged/PipeRifle/PipeRiflePrefab.prefab",
+"icon": "gunRifleT0PipeRifle",
+"tint": null
+},
+"gunRifleT1HuntingRifle": {
+"mesh": "@:Other/Items/Weapons/Ranged/HuntingRifle/HuntingRiflePrefab.prefab",
+"icon": "gunRifleT1HuntingRifle",
+"tint": null
+},
+"gunRifleT2LeverActionRifle": {
+"mesh": "@:Other/Items/Weapons/Ranged/LeverActionRifle/leverActionRiflePrefab.prefab",
+"icon": "gunRifleT2LeverActionRifle",
+"tint": null
+},
+"gunRifleT3SniperRifle": {
+"mesh": "@:Other/Items/Weapons/Ranged/Sharp Shooter/sharpShooterGunPrefab.prefab",
+"icon": "gunRifleT3SniperRifle",
+"tint": null
+},
+"gunMGT0PipeMachineGun": {
+"mesh": "@:Other/Items/Weapons/Ranged/PipeMachinegun/PipeMachinegunPrefab.prefab",
+"icon": "gunMGT0PipeMachineGun",
+"tint": null
+},
+"gunMGT1AK47": {
+"mesh": "@:Other/Items/Weapons/Ranged/AK47/ak47Prefab.prefab",
+"icon": "gunMGT1AK47",
+"tint": null
+},
+"gunMGT2TacticalAR": {
+"mesh": "@:Other/Items/Weapons/Ranged/Tactical Assault Rifle/tacticalAssaultRiflePrefab.prefab",
+"icon": "gunMGT2TacticalAR",
+"tint": null
+},
+"gunMGT3M60": {
+"mesh": "@:Other/Items/Weapons/Ranged/MachineGun/m60MachinegunPrefab.prefab",
+"icon": "gunMGT3M60",
+"tint": null
+},
+"gunExplosivesT3RocketLauncher": {
+"mesh": "@:Other/Items/Weapons/Ranged/RocketLauncher/rocketlauncherPrefab.prefab",
+"icon": "gunExplosivesT3RocketLauncher",
+"tint": null
+},
+"gunBowT0PrimitiveBow": {
+"mesh": "@:Other/Items/Weapons/Ranged/Bows/WoodenBow/WoodenBowPrefab.prefab",
+"icon": "gunBowT0PrimitiveBow",
+"tint": null
+},
+"gunBowT1WoodenBow": {
+"mesh": "@:Other/Items/Weapons/Ranged/Bows/advancedBow/advancedWoodenBow/advancedWoodenBowPrefab.prefab",
+"icon": "gunBowT1WoodenBow",
+"tint": null
+},
+"gunBowT3CompoundBow": {
+"mesh": "@:Other/Items/Weapons/Ranged/Bows/advancedBow/advancedCompoundBow/advancedCompoundBowPrefab.prefab",
+"icon": "gunBowT3CompoundBow",
+"tint": null
+},
+"gunBowT1IronCrossbow": {
+"mesh": "@:Other/Items/Weapons/Ranged/IronCrossBow/ironCrossBowPrefab.prefab",
+"icon": "gunBowT1IronCrossbow",
+"tint": null
+},
+"gunBowT3CompoundCrossbow": {
+"mesh": "@:Other/Items/Weapons/Ranged/Bows/advancedBow/advancedCompoundCrossbow/advancedCompoundCrossbowPrefab.prefab",
+"icon": "gunBowT3CompoundCrossbow",
+"tint": null
+},
+"gunBotT1JunkSledge": {
+"mesh": "@:Other/Items/Weapons/Melee/Junk Sledge/junkSledgeHeld_Prefab.prefab",
+"icon": "gunBotT1JunkSledge",
+"tint": null
+},
+"gunBotT2JunkTurret": {
+"mesh": "@:Other/Items/Weapons/Ranged/JunkTurret/junkTurret_Prefab.prefab",
+"icon": "gunBotT2JunkTurret",
+"tint": null
+},
+"gunBotT3JunkDrone": {
+"mesh": "@:Other/Items/Weapons/Ranged/Junk Drone/junkDroneHeld_Prefab.prefab",
+"icon": "gunBotT3JunkDrone",
+"tint": null
+},
+"ammoProjectileZombieVomit": {
+"mesh": "@:Other/Items/Weapons/Ranged/Vomit/vomitBulbPrefab.prefab",
+"icon": "missingIcon",
+"tint": null
+},
+"ammoProjectileZombieVomitFeral": {
+"mesh": "@:Other/Items/Weapons/Ranged/Vomit/vomitBulbPrefab.prefab",
+"icon": "missingIcon",
+"tint": null
+},
+"ammoProjectileZombieVomitRadiated": {
+"mesh": "@:Other/Items/Weapons/Ranged/Vomit/vomitBulbPrefab.prefab",
+"icon": "missingIcon",
+"tint": null
+},
+"ammoProjectileZombieMutated": {
+"mesh": "@:Other/Items/Weapons/Ranged/Vomit/vomitRadPrefab.prefab",
+"icon": "missingIcon",
+"tint": null
+},
+"ammoProjectileZombieMutatedFast": {
+"mesh": "@:Other/Items/Weapons/Ranged/Vomit/vomitRadPrefab.prefab",
+"icon": "ammoProjectileZombieMutatedFast",
+"tint": null
+},
+"ammoProjectileZombieBoulder": {
+"mesh": "@:Other/Items/Weapons/Ranged/Boulder/BoulderThrownPrefab.prefab",
+"icon": "missingIcon",
+"tint": null
+},
+"ammoProjectileZombieBoulderFeral": {
+"mesh": "@:Other/Items/Weapons/Ranged/Boulder/BoulderThrownPrefab.prefab",
+"icon": "missingIcon",
+"tint": null
+},
+"ammoProjectileZombieBoulderCharged": {
+"mesh": "@:Other/Items/Weapons/Ranged/Boulder/BoulderThrownPrefab.prefab",
+"icon": "missingIcon",
+"tint": null
+},
+"ammoProjectileZombieBoulderInfernal": {
+"mesh": "@:Other/Items/Weapons/Ranged/Boulder/BoulderThrownPrefab.prefab",
+"icon": "missingIcon",
+"tint": null
+},
+"ammoProjectileVultureVomit": {
+"mesh": "@:Other/Items/Weapons/Ranged/Vomit/vomitBulbPrefab.prefab",
+"icon": "missingIcon",
+"tint": null
+},
+"ammo9mmBulletBall": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammo9mmBulletBall",
+"tint": null
+},
+"ammo9mmBulletHP": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammo9mmBulletHP",
+"tint": null
+},
+"ammo9mmBulletAP": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammo9mmBulletAP",
+"tint": null
+},
+"ammo44MagnumBulletBall": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammo44MagnumBulletBall",
+"tint": null
+},
+"ammo44MagnumBulletHP": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammo44MagnumBulletHP",
+"tint": null
+},
+"ammo44MagnumBulletAP": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammo44MagnumBulletAP",
+"tint": null
+},
+"ammo762mmBulletBall": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammo762mmBulletBall",
+"tint": null
+},
+"ammo762mmBulletHP": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammo762mmBulletHP",
+"tint": null
+},
+"ammo762mmBulletAP": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammo762mmBulletAP",
+"tint": null
+},
+"ammoShotgunShell": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoShotgunShell",
+"tint": null
+},
+"ammoShotgunSlug": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoShotgunSlug",
+"tint": null
+},
+"ammoShotgunBreachingSlug": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoShotgunBreachingSlug",
+"tint": null
+},
+"ammoJunkTurretRegular": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoJunkTurretRegular",
+"tint": null
+},
+"ammoJunkTurretShell": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoJunkTurretShell",
+"tint": null
+},
+"ammoJunkTurretAP": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoJunkTurretAP",
+"tint": null
+},
+"ammoRocketHE": {
+"mesh": "@:Other/Items/Weapons/Ranged/RocketLauncher/rocketPrefab.prefab",
+"icon": "ammoRocketHE",
+"tint": null
+},
+"ammoRocketFrag": {
+"mesh": "@:Other/Items/Weapons/Ranged/RocketLauncher/rocketPrefab.prefab",
+"icon": "ammoRocketFrag",
+"tint": null
+},
+"ammoGasCan": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoGasCan",
+"tint": null
+},
+"ammoArrowStone": {
+"mesh": "@:Other/Items/Weapons/Ranged/Bows/Arrows/arrow_stonePrefab.prefab",
+"icon": "ammoArrowStone",
+"tint": null
+},
+"ammoArrowIron": {
+"mesh": "@:Other/Items/Weapons/Ranged/Bows/Arrows/arrow_ironPrefab.prefab",
+"icon": "ammoArrowIron",
+"tint": null
+},
+"ammoArrowSteelAP": {
+"mesh": "@:Other/Items/Weapons/Ranged/Bows/Arrows/arrow_steelPrefab.prefab",
+"icon": "ammoArrowSteelAP",
+"tint": null
+},
+"ammoArrowFlaming": {
+"mesh": "@:Other/Items/Weapons/Ranged/Bows/Arrows/arrow_flamingPrefab.prefab",
+"icon": "ammoArrowFlaming",
+"tint": null
+},
+"ammoArrowExploding": {
+"mesh": "@:Other/Items/Weapons/Ranged/Bows/Arrows/arrow_explodingPrefab.prefab",
+"icon": "ammoArrowExploding",
+"tint": null
+},
+"ammoCrossbowBoltStone": {
+"mesh": "@:Other/Items/Weapons/Ranged/Bows/Arrows/bolt_stonePrefab.prefab",
+"icon": "ammoCrossbowBoltStone",
+"tint": null
+},
+"ammoCrossbowBoltIron": {
+"mesh": "@:Other/Items/Weapons/Ranged/Bows/Arrows/bolt_ironPrefab.prefab",
+"icon": "ammoCrossbowBoltIron",
+"tint": null
+},
+"ammoCrossbowBoltSteelAP": {
+"mesh": "@:Other/Items/Weapons/Ranged/Bows/Arrows/bolt_steelPrefab.prefab",
+"icon": "ammoCrossbowBoltSteelAP",
+"tint": null
+},
+"ammoCrossbowBoltFlaming": {
+"mesh": "@:Other/Items/Weapons/Ranged/Bows/Arrows/bolt_flamingPrefab.prefab",
+"icon": "ammoCrossbowBoltFlaming",
+"tint": null
+},
+"ammoCrossbowBoltExploding": {
+"mesh": "@:Other/Items/Weapons/Ranged/Bows/Arrows/bolt_explodingPrefab.prefab",
+"icon": "ammoCrossbowBoltExploding",
+"tint": null
+},
+"ammoBundleMaster": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammo9mmBulletBall",
+"tint": null
+},
+"ammoBundle9mmBulletBall": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammo9mmBulletBall",
+"tint": null
+},
+"ammoBundle9mmBulletHP": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammo9mmBulletHP",
+"tint": null
+},
+"ammoBundle9mmBulletAP": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammo9mmBulletAP",
+"tint": null
+},
+"ammoBundle44MagnumBulletBall": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammo44MagnumBulletBall",
+"tint": null
+},
+"ammoBundle44MagnumBulletHP": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammo44MagnumBulletHP",
+"tint": null
+},
+"ammoBundle44MagnumBulletAP": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammo44MagnumBulletAP",
+"tint": null
+},
+"ammoBundle762mmBulletBall": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammo762mmBulletBall",
+"tint": null
+},
+"ammoBundle762mmBulletHP": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammo762mmBulletHp",
+"tint": null
+},
+"ammoBundle762mmBulletAP": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammo762mmBulletAP",
+"tint": null
+},
+"ammoBundleShotgunShell": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoShotgunShell",
+"tint": null
+},
+"ammoBundleShotgunSlug": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoShotgunSlug",
+"tint": null
+},
+"ammoBundleShotgunBreachingSlug": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoShotgunBreachingSlug",
+"tint": null
+},
+"ammoBundleJunkTurretRegular": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoJunkTurretRegular",
+"tint": null
+},
+"ammoBundleJunkTurretShell": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoJunkTurretShell",
+"tint": null
+},
+"ammoBundleJunkTurretAP": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoJunkTurretAP",
+"tint": null
+},
+"ammoBundleArrowStone": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoArrowStone",
+"tint": null
+},
+"ammoBundleArrowIron": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoArrowIron",
+"tint": null
+},
+"ammoBundleArrowSteelAP": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoArrowSteelAP",
+"tint": null
+},
+"ammoBundleArrowFlaming": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoArrowFlaming",
+"tint": null
+},
+"ammoBundleArrowExploding": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoArrowExploding",
+"tint": null
+},
+"ammoBundleCrossbowBoltStone": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoCrossbowBoltStone",
+"tint": null
+},
+"ammoBundleCrossbowBoltIron": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoCrossbowBoltIron",
+"tint": null
+},
+"ammoBundleCrossbowBoltSteelAP": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoCrossbowBoltSteelAP",
+"tint": null
+},
+"ammoBundleCrossbowBoltFlaming": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoCrossbowBoltFlaming",
+"tint": null
+},
+"ammoBundleCrossbowBoltExploding": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoCrossbowBoltExploding",
+"tint": null
+},
+"resourceRockSmallBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceRockSmall",
+"tint": null
+},
+"resourceWoodBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceWood",
+"tint": null
+},
+"resourceScrapIronBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceScrapIron",
+"tint": null
+},
+"resourcePotassiumNitratePowderBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourcePotassiumNitratePowder",
+"tint": null
+},
+"resourceLeadBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceScrapLead",
+"tint": null
+},
+"resourceScrapBrassBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceScrapBrass",
+"tint": null
+},
+"resourceCoalBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceCoal",
+"tint": null
+},
+"resourceOilShaleBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceOilShale",
+"tint": null
+},
+"ammoGasCanBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "ammoGasCan",
+"tint": null
+},
+"resourceGunPowderBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceGunPowder",
+"tint": null
+},
+"thrownAmmoPipeBomb": {
+"mesh": "@:Other/Items/Weapons/Ranged/PipeBomb/PipeBombPrefab.prefab",
+"icon": "thrownAmmoPipeBomb",
+"tint": null
+},
+"thrownGrenadeContact": {
+"mesh": "@:Other/Items/Weapons/Ranged/Grenade/GrenadePrefab.prefab",
+"icon": "thrownGrenadeContact",
+"tint": null
+},
+"thrownGrenade": {
+"mesh": "@:Other/Items/Weapons/Ranged/Grenade/GrenadePrefab.prefab",
+"icon": "thrownGrenade",
+"tint": null
+},
+"thrownTimedCharge": {
+"mesh": "@:Other/Items/Weapons/Ranged/TimedCharge/timedChargePrefab.prefab",
+"icon": "thrownTimedCharge",
+"tint": null
+},
+"thrownDynamite": {
+"mesh": "@:Other/Items/Weapons/Ranged/Dynamite/dynamitePrefab.prefab",
+"icon": "thrownDynamite",
+"tint": null
+},
+"thrownAmmoMolotovCocktail": {
+"mesh": "@:Other/Items/Weapons/Ranged/Molotov/molotov_thrownPrefab.prefab",
+"icon": "thrownAmmoMolotovCocktail",
+"tint": null
+},
+"ammoDartIron": {
+"mesh": "@:Entities/Electrical/steel_dartPrefab.prefab",
+"icon": "ammoDartIron",
+"tint": null
+},
+"partsMaster": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "missingIcon",
+"tint": null
+},
+"gunMGT1AK47Parts": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "gunMGT1AK47Parts",
+"tint": null
+},
+"gunHandgunT1PistolParts": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "gunHandgunT1PistolParts",
+"tint": null
+},
+"gunRifleT1HuntingRifleParts": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "gunRifleT1HuntingRifleParts",
+"tint": null
+},
+"gunShotgunT1DoubleBarrelParts": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "gunShotgunT1DoubleBarrelParts",
+"tint": null
+},
+"gunBowT1WoodenBowParts": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "gunBowT1WoodenBowParts",
+"tint": null
+},
+"gunExplosivesT3RocketLauncherParts": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "gunExplosivesT3RocketLauncherParts",
+"tint": null
+},
+"gunBotRoboticsParts": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "gunBotRoboticsParts",
+"tint": null
+},
+"meleeWpnBatonT2StunBatonParts": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "meleeWpnBatonT2StunBatonParts",
+"tint": null
+},
+"meleeWpnKnucklesT3SteelKnucklesParts": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "meleeWpnKnucklesT3SteelKnucklesParts",
+"tint": null
+},
+"meleeWpnBladeT3MacheteParts": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "meleeWpnBladeT3MacheteParts",
+"tint": null
+},
+"meleeWpnSpearT3SteelSpearParts": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "meleeWpnSpearT3SteelSpearParts",
+"tint": null
+},
+"meleeWpnClubT3SteelClubParts": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "meleeWpnClubT3SteelClubParts",
+"tint": null
+},
+"meleeWpnSledgeT3SteelSledgehammerParts": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "meleeWpnSledgeT3SteelSledgehammerParts",
+"tint": null
+},
+"meleeToolAllSteelParts": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "meleeToolAllSteelParts",
+"tint": null
+},
+"armorParts": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorParts",
+"tint": null
+},
+"meleeToolAxeT3ChainsawParts": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "meleeToolAxeT3ChainsawParts",
+"tint": null
+},
+"vehicleWheels": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "vehicleWheels",
+"tint": null
+},
+"vehicleMinibikeChassis": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "vehicleMinibikeChassis",
+"tint": null
+},
+"vehicleMinibikeHandlebars": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "vehicleMinibikeHandlebars",
+"tint": null
+},
+"vehicleMinibikePlaceable": {
+"mesh": "@:Entities/Vehicles/VBikeMini/VBikeMiniP.prefab",
+"icon": "vehicleMinibikePlaceable",
+"tint": null
+},
+"vehicleBicycleChassis": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "vehicleBicycleChassis",
+"tint": null
+},
+"vehicleBicycleHandlebars": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "vehicleBicycleHandlebars",
+"tint": null
+},
+"vehicleBicyclePlaceable": {
+"mesh": "@:Entities/Vehicles/VBikeMountain/VBikeMountainP.prefab",
+"icon": "vehicleBicyclePlaceable",
+"tint": null
+},
+"vehicleMotorcycleChassis": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "vehicleMotorcycleChassis",
+"tint": null
+},
+"vehicleMotorcycleHandlebars": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "vehicleMotorcycleHandlebars",
+"tint": null
+},
+"vehicleMotorcyclePlaceable": {
+"mesh": "@:Entities/Vehicles/VMotorcycle/VMotorcycleP.prefab",
+"icon": "vehicleMotorcyclePlaceable",
+"tint": null
+},
+"vehicleTruck4x4Chassis": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "vehicleTruck4x4Chassis",
+"tint": null
+},
+"vehicleTruck4x4Accessories": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "vehicleTruck4x4Accessories",
+"tint": null
+},
+"vehicleTruck4x4Placeable": {
+"mesh": "@:Entities/Vehicles/VTruck4x4/VTruck4x4P.prefab",
+"icon": "vehicleTruck4x4Placeable",
+"tint": null
+},
+"vehicleGyroCopterChassis": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "vehicleGyroCopterChassis",
+"tint": null
+},
+"vehicleGyroCopterAccessories": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "vehicleGyroCopterAccessories",
+"tint": null
+},
+"vehicleGyrocopterPlaceable": {
+"mesh": "@:Entities/Vehicles/VGyrocopter/VGyrocopterP.prefab",
+"icon": "vehicleGyrocopterPlaceable",
+"tint": null
+},
+"armorPrimitiveMaster": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorLumberjackHelmet",
+"tint": null
+},
+"armorPrimitiveHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPrimitiveHelmet",
+"tint": null
+},
+"armorPrimitiveOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPrimitiveOutfit",
+"tint": null
+},
+"armorPrimitiveGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPrimitiveGloves",
+"tint": null
+},
+"armorPrimitiveBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPrimitiveBoots",
+"tint": null
+},
+"armorLightMaster": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorLumberjackHelmet",
+"tint": null
+},
+"armorLumberjackHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorLumberjackHelmet",
+"tint": null
+},
+"armorLumberjackOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorLumberjackOutfit",
+"tint": null
+},
+"armorLumberjackGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorLumberjackGloves",
+"tint": null
+},
+"armorLumberjackBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorLumberjackBoots",
+"tint": null
+},
+"armorPreacherHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPreacherHelmet",
+"tint": null
+},
+"armorPreacherOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPreacherOutfit",
+"tint": null
+},
+"armorPreacherGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPreacherGloves",
+"tint": null
+},
+"armorPreacherBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPreacherBoots",
+"tint": null
+},
+"armorRogueHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorRogueHelmet",
+"tint": null
+},
+"armorRogueOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorRogueOutfit",
+"tint": null
+},
+"armorRogueGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorRogueGloves",
+"tint": null
+},
+"armorRogueBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorRogueBoots",
+"tint": null
+},
+"armorAthleticHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorAthleticHelmet",
+"tint": null
+},
+"armorAthleticOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorAthleticOutfit",
+"tint": null
+},
+"armorAthleticGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorAthleticGloves",
+"tint": null
+},
+"armorAthleticBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorAthleticBoots",
+"tint": null
+},
+"armorEnforcerHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorEnforcerHelmet",
+"tint": null
+},
+"armorEnforcerOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorEnforcerOutfit",
+"tint": null
+},
+"armorEnforcerGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorEnforcerGloves",
+"tint": null
+},
+"armorEnforcerBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorEnforcerBoots",
+"tint": null
+},
+"armorMediumMaster": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorAssassinHelmet",
+"tint": null
+},
+"armorFarmerHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorFarmerHelmet",
+"tint": null
+},
+"armorFarmerOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorFarmerOutfit",
+"tint": null
+},
+"armorFarmerGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorFarmerGloves",
+"tint": null
+},
+"armorFarmerBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorFarmerBoots",
+"tint": null
+},
+"armorBikerHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorBikerHelmet",
+"tint": null
+},
+"armorBikerOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorBikerOutfit",
+"tint": null
+},
+"armorBikerGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorBikerGloves",
+"tint": null
+},
+"armorBikerBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorBikerBoots",
+"tint": null
+},
+"armorScavengerHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorScavengerHelmet",
+"tint": null
+},
+"armorScavengerOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorScavengerOutfit",
+"tint": null
+},
+"armorScavengerGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorScavengerGloves",
+"tint": null
+},
+"armorScavengerBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorScavengerBoots",
+"tint": null
+},
+"armorRangerHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorRangerHelmet",
+"tint": null
+},
+"armorRangerOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorRangerOutfit",
+"tint": null
+},
+"armorRangerGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorRangerGloves",
+"tint": null
+},
+"armorRangerBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorRangerBoots",
+"tint": null
+},
+"armorCommandoHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorCommandoHelmet",
+"tint": null
+},
+"armorCommandoOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorCommandoOutfit",
+"tint": null
+},
+"armorCommandoGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorCommandoGloves",
+"tint": null
+},
+"armorCommandoBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorCommandoBoots",
+"tint": null
+},
+"armorAssassinHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorAssassinHelmet",
+"tint": null
+},
+"armorAssassinOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorAssassinOutfit",
+"tint": null
+},
+"armorAssassinGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorAssassinGloves",
+"tint": null
+},
+"armorAssassinBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorAssassinBoots",
+"tint": null
+},
+"armorHeavyMaster": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorRaiderHelmet",
+"tint": null
+},
+"armorMinerHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorMinerHelmet",
+"tint": null
+},
+"armorMinerOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorMinerOutfit",
+"tint": null
+},
+"armorMinerGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorMinerGloves",
+"tint": null
+},
+"armorMinerBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorMinerBoots",
+"tint": null
+},
+"armorNomadHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorNomadHelmet",
+"tint": null
+},
+"armorNomadOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorNomadOutfit",
+"tint": null
+},
+"armorNomadGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorNomadGloves",
+"tint": null
+},
+"armorNomadBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorNomadBoots",
+"tint": null
+},
+"armorNerdHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorNerdHelmet",
+"tint": null
+},
+"armorNerdOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorNerdOutfit",
+"tint": null
+},
+"armorNerdGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorNerdGloves",
+"tint": null
+},
+"armorNerdBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorNerdBoots",
+"tint": null
+},
+"armorRaiderHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorRaiderHelmet",
+"tint": null
+},
+"armorRaiderOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorRaiderOutfit",
+"tint": null
+},
+"armorRaiderGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorRaiderGloves",
+"tint": null
+},
+"armorRaiderBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorRaiderBoots",
+"tint": null
+},
+"armorSantaHatHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorSantaHatHelmet",
+"tint": null
+},
+"armorDLCMaster": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorRaiderHelmet",
+"tint": null
+},
+"armorDesertHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorDesertHelmet",
+"tint": null
+},
+"armorDesertOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorDesertOutfit",
+"tint": null
+},
+"armorDesertGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorDesertGloves",
+"tint": null
+},
+"armorDesertBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorDesertBoots",
+"tint": null
+},
+"armorHoarderHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorHoarderHelmet",
+"tint": null
+},
+"armorHoarderOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorHoarderOutfit",
+"tint": null
+},
+"armorHoarderGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorHoarderGloves",
+"tint": null
+},
+"armorHoarderBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorHoarderBoots",
+"tint": null
+},
+"armorMarauderHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorMarauderHelmet",
+"tint": null
+},
+"armorMarauderOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorMarauderOutfit",
+"tint": null
+},
+"armorMarauderGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorMarauderGloves",
+"tint": null
+},
+"armorMarauderBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorMarauderBoots",
+"tint": null
+},
+"armorPirateHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPirateHelmet",
+"tint": null
+},
+"armorPirateOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPirateOutfit",
+"tint": null
+},
+"armorPirateGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPirateGloves",
+"tint": null
+},
+"armorPirateBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPirateBoots",
+"tint": null
+},
+"armorHellreaverHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorHellreaverHelmet",
+"tint": null
+},
+"armorHellreaverOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorHellreaverOutfit",
+"tint": null
+},
+"armorHellreaverGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorHellreaverGloves",
+"tint": null
+},
+"armorHellreaverBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorHellreaverBoots",
+"tint": null
+},
+"armorButcherHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorButcherHelmet",
+"tint": null
+},
+"armorButcherOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorButcherOutfit",
+"tint": null
+},
+"armorButcherGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorButcherGloves",
+"tint": null
+},
+"armorButcherBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorButcherBoots",
+"tint": null
+},
+"armorClassicSurvivorHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorClassicSurvivorHelmet",
+"tint": null
+},
+"armorClassicSurvivorOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorClassicSurvivorOutfit",
+"tint": null
+},
+"armorClassicSurvivorBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorClassicSurvivorBoots",
+"tint": null
+},
+"armorWinterHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorWinterHelmet",
+"tint": null
+},
+"armorWinterOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorWinterOutfit",
+"tint": null
+},
+"armorWinterGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorWinterGloves",
+"tint": null
+},
+"armorWinterBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorWinterBoots",
+"tint": null
+},
+"armorWorkingStiffHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorWorkingStiffHelmet",
+"tint": null
+},
+"armorWorkingStiffOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorWorkingStiffOutfit",
+"tint": null
+},
+"armorWorkingStiffGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorWorkingStiffGloves",
+"tint": null
+},
+"armorWorkingStiffBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorWorkingStiffBoots",
+"tint": null
+},
+"armorCasualOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorCasualOutfit",
+"tint": null
+},
+"armorCasualGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorCasualGloves",
+"tint": null
+},
+"armorCasualBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorCasualBoots",
+"tint": null
+},
+"armorBeachHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorBeachHelmet",
+"tint": null
+},
+"armorBeachHelmet02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorBeachHelmet02",
+"tint": null
+},
+"armorBeachOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorBeachOutfit",
+"tint": null
+},
+"armorBeachGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorBeachGloves",
+"tint": null
+},
+"armorBeachBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorBeachBoots",
+"tint": null
+},
+"armorElfHatHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorElfHatHelmet",
+"tint": null
+},
+"armorReindeerHatHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorReindeerHatHelmet",
+"tint": null
+},
+"armorSnowmanHatHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorSnowmanHatHelmet",
+"tint": null
+},
+"armorTreeHatHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorTreeHatHelmet",
+"tint": null
+},
+"armorCrimsonWarlordHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorCrimsonWarlordHelmet",
+"tint": null
+},
+"armorCrimsonWarlordOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorCrimsonWarlordOutfit",
+"tint": null
+},
+"armorCrimsonWarlordGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorCrimsonWarlordGloves",
+"tint": null
+},
+"armorCrimsonWarlordBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorCrimsonWarlordBoots",
+"tint": null
+},
+"armorSamuraiHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorSamuraiHelmet",
+"tint": null
+},
+"armorSamuraiOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorSamuraiOutfit",
+"tint": null
+},
+"armorSamuraiGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorSamuraiGloves",
+"tint": null
+},
+"armorSamuraiBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorSamuraiBoots",
+"tint": null
+},
+"armorKegBreakerHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorKegBreakerHelmet",
+"tint": null
+},
+"armorKegBreakerOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorKegBreakerOutfit",
+"tint": null
+},
+"armorKegBreakerGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorKegBreakerGloves",
+"tint": null
+},
+"armorKegBreakerBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorKegBreakerBoots",
+"tint": null
+},
+"armorWraithWoodWitchHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorWraithWoodWitchHelmet",
+"tint": null
+},
+"armorWraithWoodWitchOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorWraithWoodWitchOutfit",
+"tint": null
+},
+"armorWraithWoodWitchGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorWraithWoodWitchGloves",
+"tint": null
+},
+"armorWraithWoodWitchBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorWraithWoodWitchBoots",
+"tint": null
+},
+"armorBigbeakHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorBigbeakHelmet",
+"tint": null
+},
+"armorBigbeakOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorBigbeakOutfit",
+"tint": null
+},
+"armorBigbeakGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorBigbeakGloves",
+"tint": null
+},
+"armorBigbeakBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorBigbeakBoots",
+"tint": null
+},
+"armorMonsterMaskHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorMonsterMaskHelmet",
+"tint": null
+},
+"armorVampireMaskHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorVampireMaskHelmet",
+"tint": null
+},
+"armorWerewolfMaskHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorWerewolfMaskHelmet",
+"tint": null
+},
+"armorZombieMaskHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorZombieMaskHelmet",
+"tint": null
+},
+"armorInspectorMaskHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorInspectorMaskHelmet",
+"tint": null
+},
+"armorNobleThiefMaskHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorNobleThiefMaskHelmet",
+"tint": null
+},
+"armorPennyPincherMaskHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPennyPincherMaskHelmet",
+"tint": null
+},
+"armorTheHatterMaskHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorTheHatterMaskHelmet",
+"tint": null
+},
+"armorPimpHatBlueHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPimpHatBlueHelmet",
+"tint": null
+},
+"armorPimpHatPurpleHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPimpHatPurpleHelmet",
+"tint": null
+},
+"armorWatcherHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorWatcherHelmet",
+"tint": null
+},
+"armorWatcherOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorWatcherOutfit",
+"tint": null
+},
+"armorWatcherGloves": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorWatcherGloves",
+"tint": null
+},
+"armorWatcherBoots": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorWatcherBoots",
+"tint": null
+},
+"armorCrackABookHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorCrackABookHelmet",
+"tint": null
+},
+"armorCrackABookOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorCrackABookOutfit",
+"tint": null
+},
+"armorMoPowerHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorMoPowerHelmet",
+"tint": null
+},
+"armorMoPowerOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorMoPowerOutfit",
+"tint": null
+},
+"armorPassNGasHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPassNGasHelmet",
+"tint": null
+},
+"armorPassNGasOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPassNGasOutfit",
+"tint": null
+},
+"armorPopNPillsHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPopNPillsHelmet",
+"tint": null
+},
+"armorPopNPillsOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPopNPillsOutfit",
+"tint": null
+},
+"armorSavageCountryHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorSavageCountryHelmet",
+"tint": null
+},
+"armorSavageCountryOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorSavageCountryOutfit",
+"tint": null
+},
+"armorShamwayHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorShamwayHelmet",
+"tint": null
+},
+"armorShamwayOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorShamwayOutfit",
+"tint": null
+},
+"armorShotgunMessiahHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorShotgunMessiahHelmet",
+"tint": null
+},
+"armorShotgunMessiahOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorShotgunMessiahOutfit",
+"tint": null
+},
+"armorWorkingStiffsHelmet": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorWorkingStiffsHelmet",
+"tint": null
+},
+"armorWorkingStiffsOutfit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorWorkingStiffsOutfit",
+"tint": null
+},
+"clothingMaster": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "clothingHeadT1",
+"tint": null
+},
+"clothingHeadT1": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "clothingHeadT1",
+"tint": null
+},
+"clothingOutfitT1": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "clothingOutfitT1",
+"tint": null
+},
+"clothingHandsT1": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "clothingHandsT1",
+"tint": null
+},
+"clothingFeetT1": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "clothingFeetT1",
+"tint": null
+},
+"clothingHeadT2": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "clothingHeadT2",
+"tint": null
+},
+"clothingOutfitT2": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "clothingOutfitT2",
+"tint": null
+},
+"clothingHandsT2": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "clothingHandsT2",
+"tint": null
+},
+"clothingFeetT2": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "clothingFeetT2",
+"tint": null
+},
+"clothingHeadT3": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "clothingHeadT3",
+"tint": null
+},
+"clothingOutfitT3": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "clothingOutfitT3",
+"tint": null
+},
+"clothingHandsT3": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "clothingHandsT3",
+"tint": null
+},
+"clothingFeetT3": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "clothingFeetT3",
+"tint": null
+},
+"backpackMaster": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "cntBackpack01",
+"tint": null
+},
+"backpackSmall": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "backpackSmall",
+"tint": null
+},
+"backpackMedium": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "backpackMedium",
+"tint": null
+},
+"backpackLarge": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "backpackLarge",
+"tint": null
+},
+"medicalAloeCream": {
+"mesh": "@:Other/Items/Health/bandage.FBX",
+"icon": "medicalAloeCream",
+"tint": null
+},
+"medicalBandage": {
+"mesh": "@:Other/Items/Health/bandage.FBX",
+"icon": "medicalBandage",
+"tint": null
+},
+"medicalFirstAidBandage": {
+"mesh": "@:Other/Items/Health/bandage.FBX",
+"icon": "medicalFirstAidBandage",
+"tint": null
+},
+"medicalFirstAidKit": {
+"mesh": "@:Other/Items/Health/bandage.FBX",
+"icon": "medicalFirstAidKit",
+"tint": null
+},
+"medicalSplint": {
+"mesh": "@:Other/Items/Health/bandage.FBX",
+"icon": "medicalSplint",
+"tint": null
+},
+"medicalPlasterCast": {
+"mesh": "@:Other/Items/Health/bandage.FBX",
+"icon": "medicalPlasterCast",
+"tint": null
+},
+"medicalBloodBag": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "medicalBloodBag",
+"tint": null
+},
+"drugVitamins": {
+"mesh": "@:Other/Items/Health/pillBottlePrefab.prefab",
+"icon": "drugVitamins",
+"tint": null
+},
+"drugPainkillers": {
+"mesh": "@:Other/Items/Health/pillBottlePrefab.prefab",
+"icon": "drugPainkillers",
+"tint": null
+},
+"drugHerbalAntibiotics": {
+"mesh": "@:Other/Items/Health/pillBottlePrefab.prefab",
+"icon": "drugHerbalAntibiotics",
+"tint": null
+},
+"drugAntibiotics": {
+"mesh": "@:Other/Items/Health/pillBottlePrefab.prefab",
+"icon": "drugAntibiotics",
+"tint": null
+},
+"drugSteroids": {
+"mesh": "@:Other/Items/Health/syringeMedical_01Prefab.prefab",
+"icon": "drugSteroids",
+"tint": null
+},
+"drugRecog": {
+"mesh": "@:Other/Items/Health/pillBottlePrefab.prefab",
+"icon": "drugRecog",
+"tint": null
+},
+"drugFortBites": {
+"mesh": "@:Other/Items/Health/pillBottlePrefab.prefab",
+"icon": "drugFortBites",
+"tint": null
+},
+"foodBurntSmoothie": {
+"mesh": "@:Other/Items/Health/syringeMedical_01Prefab.prefab",
+"icon": "blackLungSerum",
+"tint": null
+},
+"foodOasisSmoothie": {
+"mesh": "@:Other/Items/Food/masonJarOasisSmoothiePrefab.prefab",
+"icon": "sunstrokeTonic",
+"tint": null
+},
+"foodFrostbiteSmoothie": {
+"mesh": "@:Other/Items/Food/foodPotPrefab.prefab",
+"icon": "scorcherStew",
+"tint": null
+},
+"foodAtomicSmoothie": {
+"mesh": "@:Other/Items/Health/syringeMedical_01Prefab.prefab",
+"icon": "falloutFlush",
+"tint": null
+},
+"drugAtomJunkies": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "drugAtomJunkies",
+"tint": null
+},
+"drugCovertCats": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "drugCovertCats",
+"tint": null
+},
+"drugEyeKandy": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "drugEyeKandy",
+"tint": null
+},
+"drugHackers": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "drugHackers",
+"tint": null
+},
+"drugHealthBar": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "drugHealthBar",
+"tint": null
+},
+"drugJailBreakers": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "drugJailBreakers",
+"tint": null
+},
+"drugNerdTats": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "drugNerdTats",
+"tint": null
+},
+"drugOhShitzDrops": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "drugOhShitzDrops",
+"tint": null
+},
+"drugRockBusters": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "drugRockBusters",
+"tint": null
+},
+"drugSkullCrushers": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "drugSkullCrushers",
+"tint": null
+},
+"drugSugarButts": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "drugSugarButts",
+"tint": null
+},
+"foodHoney": {
+"mesh": "@:Other/Items/Food/masonJarBeerPrefab.prefab",
+"icon": "foodHoney",
+"tint": null
+},
+"foodCanBeef": {
+"mesh": "@:Other/Items/Food/cannedFood_BeefPrefab.prefab",
+"icon": "foodCanBeef",
+"tint": null
+},
+"foodCanChicken": {
+"mesh": "@:Other/Items/Food/cannedFood_ChickenPrefab.prefab",
+"icon": "foodCanChicken",
+"tint": null
+},
+"foodCanLamb": {
+"mesh": "@:Other/Items/Food/cannedFood_LambPrefab.prefab",
+"icon": "foodCanLamb",
+"tint": null
+},
+"foodCanCatfood": {
+"mesh": "@:Other/Items/Food/cannedFood_CatFoodPrefab.prefab",
+"icon": "foodCanCatfood",
+"tint": null
+},
+"foodCanDogfood": {
+"mesh": "@:Other/Items/Food/cannedFood_DogFoodPrefab.prefab",
+"icon": "foodCanDogfood",
+"tint": null
+},
+"foodCanChili": {
+"mesh": "@:Other/Items/Food/cannedFood_StashChiliPrefab.prefab",
+"icon": "foodCanChili",
+"tint": null
+},
+"foodCanTuna": {
+"mesh": "@:Other/Items/Food/cannedFood_TunaPrefab.prefab",
+"icon": "foodCanTuna",
+"tint": null
+},
+"foodCanSham": {
+"mesh": "@:Other/Items/Food/cannedFood_ShamPrefab.prefab",
+"icon": "foodCanSham",
+"tint": null
+},
+"foodCanPasta": {
+"mesh": "@:Other/Items/Food/cannedFood_SpaghettiPrefab.prefab",
+"icon": "foodCanPasta",
+"tint": null
+},
+"foodCanSalmon": {
+"mesh": "@:Other/Items/Food/cannedFood_SalmonPrefab.prefab",
+"icon": "foodCanSalmon",
+"tint": null
+},
+"foodCanMiso": {
+"mesh": "@:Other/Items/Food/cannedFood_MisoSoupPrefab.prefab",
+"icon": "foodCanMiso",
+"tint": null
+},
+"foodCanPeas": {
+"mesh": "@:Other/Items/Food/cannedFood_PeasPrefab.prefab",
+"icon": "foodCanPeas",
+"tint": null
+},
+"foodCanPears": {
+"mesh": "@:Other/Items/Food/cannedFood_PearsPrefab.prefab",
+"icon": "foodCanPears",
+"tint": null
+},
+"foodCanSoup": {
+"mesh": "@:Other/Items/Food/cannedFood_NoodleSoupPrefab.prefab",
+"icon": "foodCanSoup",
+"tint": null
+},
+"foodCanStock": {
+"mesh": "@:Other/Items/Food/cannedFood_01Prefab.prefab",
+"icon": "foodCanStock",
+"tint": null
+},
+"foodCornOnTheCob": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodCornOnTheCob",
+"tint": null
+},
+"foodCornBread": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodCornBread",
+"tint": null
+},
+"foodShamSandwich": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodShamSandwich",
+"tint": null
+},
+"foodCharredMeat": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodCharredMeat",
+"tint": null
+},
+"foodGrilledMeat": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodGrilledMeat",
+"tint": null
+},
+"foodBoiledMeat": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodBoiledMeat",
+"tint": null
+},
+"foodChickenWings": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodChickenWings",
+"tint": null
+},
+"foodChickenNuggets": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodChickenNuggets",
+"tint": null
+},
+"foodAshChickenStew": {
+"mesh": "@:Other/Items/Food/foodPotPrefab.prefab",
+"icon": "foodAshChickenStew",
+"tint": null
+},
+"foodRoadrunnerChickenJerky": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodRoadrunnerChickenJerky",
+"tint": null
+},
+"foodMeatStew": {
+"mesh": "@:Other/Items/Food/foodPotPrefab.prefab",
+"icon": "foodMeatStew",
+"tint": null
+},
+"foodSteakAndPotato": {
+"mesh": "@:Other/Items/Food/foodPlatePrefab.prefab",
+"icon": "foodSteakAndPotato",
+"tint": null
+},
+"foodHoneyGlazedSham": {
+"mesh": "@:Other/Items/Food/foodPlatePrefab.prefab",
+"icon": "foodHoneyGlazedSham",
+"tint": null
+},
+"foodHoneyBrisket": {
+"mesh": "@:Other/Items/Food/foodPlatePrefab.prefab",
+"icon": "foodHoneyBrisket",
+"tint": null
+},
+"foodShamChowder": {
+"mesh": "@:Other/Items/Food/foodPotPrefab.prefab",
+"icon": "foodShamChowder",
+"tint": null
+},
+"foodHoboStew": {
+"mesh": "@:Other/Items/Food/foodPotPrefab.prefab",
+"icon": "foodHoboStew",
+"tint": null
+},
+"foodFishTacos": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodFishTacos",
+"tint": null
+},
+"foodChiliDog": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodChiliDog",
+"tint": null
+},
+"foodBakedPotato": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodBakedPotato",
+"tint": null
+},
+"foodBlueberryPie": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodBlueberryPie",
+"tint": null
+},
+"foodPumpkinPie": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodPumpkinPie",
+"tint": null
+},
+"foodPumpkinCheesecake": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodPumpkinCheesecake",
+"tint": null
+},
+"foodPumpkinBread": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodPumpkinBread",
+"tint": null
+},
+"foodGumboStew": {
+"mesh": "@:Other/Items/Food/foodPotPrefab.prefab",
+"icon": "foodGumboStew",
+"tint": null
+},
+"foodShepardsPie": {
+"mesh": "@:Other/Items/Food/foodPlatePrefab.prefab",
+"icon": "foodShepardsPie",
+"tint": null
+},
+"foodSpaghetti": {
+"mesh": "@:Other/Items/Food/foodPlatePrefab.prefab",
+"icon": "foodSpaghetti",
+"tint": null
+},
+"foodTunaFishGravyToast": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodTunaFishGravyToast",
+"tint": null
+},
+"foodEggBoiled": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodEggBoiled",
+"tint": null
+},
+"foodBaconAndEggs": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodBaconAndEggs",
+"tint": null
+},
+"foodVegetableStew": {
+"mesh": "@:Other/Items/Food/foodPotPrefab.prefab",
+"icon": "foodVegetableStew",
+"tint": null
+},
+"foodRawMeat": {
+"mesh": "@:Other/Items/Misc/raw_meatPrefab.prefab",
+"icon": "foodRawMeat",
+"tint": null
+},
+"foodRawMeatBundle": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodRawMeatBundle",
+"tint": null
+},
+"foodRottingFlesh": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodRottingFlesh",
+"tint": null
+},
+"foodEgg": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodEgg",
+"tint": null
+},
+"foodCornMeal": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodCornMeal",
+"tint": null
+},
+"foodCropBlueberries": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodCropBlueberries",
+"tint": null
+},
+"foodCropCorn": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodCropCorn",
+"tint": null
+},
+"foodCropGraceCorn": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodCropCorn",
+"tint": "ff9f9f"
+},
+"foodCropPotato": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodCropPotato",
+"tint": null
+},
+"foodCropMushrooms": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodCropMushrooms",
+"tint": null
+},
+"foodCropMushroomsRadiated": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodCropMushrooms",
+"tint": "9FFF80"
+},
+"foodCropYuccaFruit": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "foodCropYuccaFruit",
+"tint": null
+},
+"foodCropPumpkin": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "plantedPumpkin3Harvest",
+"tint": null
+},
+"drinkJarEmpty": {
+"mesh": "@:Other/Items/Food/masonJarFPVEmptyPrefab.prefab",
+"icon": "drinkJarEmpty",
+"tint": null
+},
+"drinkJarRiverWater": {
+"mesh": "@:Other/Items/Food/masonJarMurkeyWaterPrefab.prefab",
+"icon": "drinkJarRiverWater",
+"tint": null
+},
+"drinkJarBoiledWater": {
+"mesh": "@:Other/Items/Food/masonJarWaterPrefab.prefab",
+"icon": "drinkJarBoiledWater",
+"tint": null
+},
+"drinkJarPureMineralWater": {
+"mesh": "@:Other/Items/Food/masonJarWaterPrefab.prefab",
+"icon": "drinkJarPureMineralWater",
+"tint": null
+},
+"drinkJarYuccaJuice": {
+"mesh": "@:Other/Items/Food/masonJarYuccaJuicePrefab.prefab",
+"icon": "drinkJarYuccaJuice",
+"tint": null
+},
+"drinkJarGoldenRodTea": {
+"mesh": "@:Other/Items/Food/masonJarGoldenRodTeaPrefab.prefab",
+"icon": "drinkJarGoldenRodTea",
+"tint": null
+},
+"drinkJarHoneyTea": {
+"mesh": "@:Other/Items/Food/masonJarHoneyTeaPrefab.prefab",
+"icon": "drinkJarHoneyTea",
+"tint": null
+},
+"drinkJarRedTea": {
+"mesh": "@:Other/Items/Food/masonJarRedTeaPrefab.prefab",
+"icon": "drinkJarRedTea",
+"tint": null
+},
+"drinkYuccaJuiceSmoothie": {
+"mesh": "@:Other/Items/Food/masonJarYuccaJuicePrefab.prefab",
+"icon": "drinkYuccaJuiceSmoothie",
+"tint": null
+},
+"drinkCanMegaCrush": {
+"mesh": "@:Other/Items/Food/masonJarYuccaJuicePrefab.prefab",
+"icon": "drinkCanMegaCrush",
+"tint": null
+},
+"drinkJarCoffee": {
+"mesh": "@:Other/Items/Food/masonJarCoffeePrefab.prefab",
+"icon": "drinkJarCoffee",
+"tint": null
+},
+"drinkJarBlackStrapCoffee": {
+"mesh": "@:Other/Items/Food/masonJarCoffeePrefab.prefab",
+"icon": "drinkJarBlackStrapCoffee",
+"tint": null
+},
+"drinkJarBeer": {
+"mesh": "@:Other/Items/Food/masonJarBeerPrefab.prefab",
+"icon": "drinkJarBeer",
+"tint": null
+},
+"drinkJarGrandpasMoonshine": {
+"mesh": "@:Other/Items/Food/masonJarBeerPrefab.prefab",
+"icon": "drinkJarGrandpasMoonshine",
+"tint": null
+},
+"drinkJarGrandpasAwesomeSauce": {
+"mesh": "@:Other/Items/Food/masonJarBeerPrefab.prefab",
+"icon": "drinkJarGrandpasAwesomeSauce",
+"tint": null
+},
+"drinkJarGrandpasLearningElixir": {
+"mesh": "@:Other/Items/Food/masonJarLearningElixirPrefab.prefab",
+"icon": "drinkJarGrandpasLearningElixir",
+"tint": null
+},
+"drinkJarGrandpasForgettingElixir": {
+"mesh": "@:Other/Items/Food/masonJarAtomicSmoothiePrefab.prefab",
+"icon": "drinkJarGrandpasForgettingElixir",
+"tint": null
+},
+"bucketEmpty": {
+"mesh": "@:Other/Items/Crafting/Metal/IronBucketEmptyPrefab.prefab",
+"icon": "bucketEmpty",
+"tint": null
+},
+"bucketRiverWater": {
+"mesh": "@:Other/Items/Crafting/Metal/IronBucketWaterPrefab.prefab",
+"icon": "bucketRiverWater",
+"tint": null
+},
+"schematicMaster": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "schematicMaster",
+"tint": null
+},
+"invisibleRecipesForRepairCost": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "invisibleRecipesForRepairCost",
+"tint": null
+},
+"schematicNoQualityMaster": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "schematicMaster",
+"tint": null
+},
+"modGunBarrelExtenderSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunBarrelExtender",
+"tint": null
+},
+"modGunMuzzleBrakeSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunMuzzleBrake",
+"tint": null
+},
+"modGunSoundSuppressorSilencerSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunSoundSuppressorSilencer",
+"tint": null
+},
+"modGunLaserSightSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunLaserSight",
+"tint": null
+},
+"modGunFlashlightSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunFlashlight",
+"tint": null
+},
+"modGunScopeSmallSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunScopeSmall",
+"tint": null
+},
+"modGunScopeMediumSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunScopeMedium",
+"tint": null
+},
+"modGunScopeLargeSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunScopeLarge",
+"tint": null
+},
+"modGunReflexSightSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunReflexSight",
+"tint": null
+},
+"modGunTriggerGroupSemiSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunTriggerGroupSemi",
+"tint": null
+},
+"modGunTriggerGroupBurst3Schematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunTriggerGroupBurst",
+"tint": null
+},
+"modGunTriggerGroupAutomaticSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunTriggerGroupAutomatic",
+"tint": null
+},
+"modGunBipodSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunBipod",
+"tint": null
+},
+"modGunForegripSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunForegrip",
+"tint": null
+},
+"modGunRetractingStockSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunRetractingStock",
+"tint": null
+},
+"modGunDuckbillSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunDuckbill",
+"tint": null
+},
+"modGunChokeSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunChoke",
+"tint": null
+},
+"modGunMagazineExtenderSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunMagazineExtender",
+"tint": null
+},
+"modShotgunSawedOffBarrelSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modShotgunSawedOffBarrel",
+"tint": null
+},
+"modGunCrippleEmSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunCrippleEm",
+"tint": null
+},
+"modGunBowPolymerStringSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunBowPolymerString",
+"tint": null
+},
+"modGunBowArrowRestSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunBowArrowRest",
+"tint": null
+},
+"modGunMeleeTheHunterSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunMeleeTheHunter",
+"tint": null
+},
+"modGunMeleeRadRemoverSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modGunMeleeRadRemover",
+"tint": null
+},
+"modMeleeTemperedBladeSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modMeleeTemperedBlade",
+"tint": null
+},
+"modMeleeSerratedBladeSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modMeleeSerratedBlade",
+"tint": null
+},
+"modMeleeWeightedHeadSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modMeleeWeightedHead",
+"tint": null
+},
+"modMeleeStructuralBraceSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modMeleeStructuralBrace",
+"tint": null
+},
+"modMeleeErgonomicGripSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modMeleeErgonomicGrip",
+"tint": null
+},
+"modMeleeFortifyingGripSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modMeleeFortifyingGrip",
+"tint": null
+},
+"modMeleeClubBarbedWireSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modMeleeClubBarbedWire",
+"tint": null
+},
+"modMeleeClubMetalSpikesSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modMeleeClubMetalSpikes",
+"tint": null
+},
+"modMeleeGraveDiggerSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modMeleeGraveDigger",
+"tint": null
+},
+"modMeleeBunkerBusterSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modMeleeBunkerBuster",
+"tint": null
+},
+"modMeleeIronBreakerSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modMeleeIronBreaker",
+"tint": null
+},
+"modMeleeWoodSplitterSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modMeleeWoodSplitter",
+"tint": null
+},
+"modMeleeClubBurningShaftSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modMeleeClubBurningShaft",
+"tint": null
+},
+"modArmorImprovedFittingsSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modArmorImprovedFittings",
+"tint": null
+},
+"modArmorCustomizedFittingsSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modArmorCustomizedFittings",
+"tint": null
+},
+"modArmorPlatingBasicSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modArmorPlatingBasic",
+"tint": null
+},
+"modArmorPlatingReinforcedSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modArmorPlatingReinforced",
+"tint": null
+},
+"modArmorStoragePocketSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modArmorStoragePocket",
+"tint": null
+},
+"modArmorDoubleStoragePocketSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modArmorDoubleStoragePocket",
+"tint": null
+},
+"modArmorTripleStoragePocketSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modArmorTripleStoragePocket",
+"tint": null
+},
+"modArmorQuadStoragePocketSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modArmorQuadStoragePocket",
+"tint": null
+},
+"modArmorMuffledConnectorsSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modArmorMuffledConnectors",
+"tint": null
+},
+"modArmorAdvancedMuffledConnectorsSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modArmorAdvancedMuffledConnectors",
+"tint": null
+},
+"modArmorImpactBracingSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modArmorImpactBracing",
+"tint": null
+},
+"modArmorBandolierSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modArmorBandolier",
+"tint": null
+},
+"modArmorWaterPurifierSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modArmorWaterPurifier",
+"tint": null
+},
+"modArmorHelmetLightSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modArmorHelmetLight",
+"tint": null
+},
+"modFuelTankSmallSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modFuelTankSmall",
+"tint": null
+},
+"modFuelTankLargeSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modFuelTankLarge",
+"tint": null
+},
+"modRoboticDroneCargoModSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modRoboticDroneCargoMod",
+"tint": null
+},
+"modRoboticDroneMedicModSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modRoboticDroneMedicMod",
+"tint": null
+},
+"modRoboticDroneHeadlampModSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modRoboticDroneHeadlampMod",
+"tint": null
+},
+"modRoboticDroneArmorPlatingModSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modRoboticDroneArmorPlatingMod",
+"tint": null
+},
+"modRoboticDroneMoraleBoosterModSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modRoboticDroneMoraleBoosterMod",
+"tint": null
+},
+"modRoboticDroneStunWeaponModSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modRoboticDroneStunWeaponMod",
+"tint": null
+},
+"modVehicleFuelSaverSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modVehicleFuelSaver",
+"tint": null
+},
+"modVehicleOffRoadHeadlightsSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modVehicleOffRoadHeadlights",
+"tint": null
+},
+"modVehicleSuperChargerSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modVehicleSuperCharger",
+"tint": null
+},
+"modVehicleExpandedSeatSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modVehicleExpandedSeat",
+"tint": null
+},
+"modVehicleReserveFuelTankSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modVehicleReserveFuelTank",
+"tint": null
+},
+"modVehiclePlowSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modVehiclePlow",
+"tint": null
+},
+"modVehicleArmorSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modVehicleArmor",
+"tint": null
+},
+"modVehicleStorageSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modVehicleStorage",
+"tint": null
+},
+"schematicNoQualityRecipeMaster": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "schematicMaster",
+"tint": null
+},
+"foodCanShamSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "foodCanSham",
+"tint": null
+},
+"plantedGraceCorn1Schematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "plantedCorn1",
+"tint": "ff9f9f"
+},
+"skillBookMaster": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "skillBookMaster",
+"tint": null
+},
+"blankNoteMaster": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "questMaster",
+"tint": null
+},
+"noteDuke01": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "challengeQuestMaster",
+"tint": null
+},
+"questMaster": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "questMaster",
+"tint": null
+},
+"challengeQuestMaster": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "challengeQuestMaster",
+"tint": null
+},
+"treasureQuestMaster": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "treasureQuestMaster",
+"tint": null
+},
+"q_basicSurvival": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "q_basicSurvival",
+"tint": null
+},
+"qt_taylor": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "qt_taylor",
+"tint": null
+},
+"qt_nickole": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "qt_nickole",
+"tint": null
+},
+"qt_stephan": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "qt_stephan",
+"tint": null
+},
+"qt_jennifer": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "qt_jennifer",
+"tint": null
+},
+"qt_claude": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "qt_claude",
+"tint": null
+},
+"qt_sarah": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "qt_sarah",
+"tint": null
+},
+"qt_raphael": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "qt_raphael",
+"tint": null
+},
+"qtest_nextTraderAdmin": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "qtest_nextTraderAdmin",
+"tint": "210,0,210"
+},
+"adminQuestTicketMaster": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "adminQuestTicketMaster",
+"tint": null
+},
+"adminT1QuestTicket": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "adminT1QuestTicket",
+"tint": "9C8867"
+},
+"adminT2QuestTicket": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "adminT2QuestTicket",
+"tint": "CF7F29"
+},
+"adminT3QuestTicket": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "adminT3QuestTicket",
+"tint": "A2A41B"
+},
+"adminT4QuestTicket": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "adminT4QuestTicket",
+"tint": "42C234"
+},
+"adminT5QuestTicket": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "adminT5QuestTicket",
+"tint": "315DCE"
+},
+"adminT6QuestTicket": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "adminT6QuestTicket",
+"tint": "A42ACC"
+},
+"resourceRockSmall": {
+"mesh": "@:Other/Items/Crafting/rock_smallPrefab.prefab",
+"icon": "resourceRockSmall",
+"tint": null
+},
+"resourceSnowBall": {
+"mesh": "@:Other/Items/Misc/snowballPrefab.prefab",
+"icon": "resourceSnowBall",
+"tint": null
+},
+"resourceAcid": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceAcid",
+"tint": null
+},
+"resourceYuccaFibers": {
+"mesh": "@:Other/Items/Crafting/plant_fibersPrefab.prefab",
+"icon": "resourceYuccaFibers",
+"tint": null
+},
+"resourceWood": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceWood",
+"tint": null
+},
+"resourceCrushedSand": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceCrushedSand",
+"tint": null
+},
+"resourceBrokenGlass": {
+"mesh": "@:Other/Items/Misc/brokenGlassPrefab.prefab",
+"icon": "resourceBrokenGlass",
+"tint": null
+},
+"resourceScrapIron": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceScrapIron",
+"tint": null
+},
+"resourceForgedIron": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceForgedIron",
+"tint": "c2d6d6"
+},
+"resourceMetalPipe": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceMetalPipe",
+"tint": null
+},
+"resourceForgedSteel": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceForgedSteel",
+"tint": null
+},
+"resourceScrapPolymers": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceScrapPolymers",
+"tint": null
+},
+"resourceScopeLens": {
+"mesh": "@:Other/Items/Misc/brokenGlassPrefab.prefab",
+"icon": "resourceScopeLens",
+"tint": null
+},
+"resourceSewingKit": {
+"mesh": "@:Other/Items/Health/bandage.FBX",
+"icon": "resourceSewingKit",
+"tint": null
+},
+"resourceOilShale": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceOilShale",
+"tint": null
+},
+"resourceBone": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceBone",
+"tint": null
+},
+"resourceLeather": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceLeather",
+"tint": null
+},
+"resourceAnimalFat": {
+"mesh": "@:Other/Items/Food/parcelGenericPrefab.prefab",
+"icon": "resourceAnimalFat",
+"tint": null
+},
+"resourceTestosteroneExtract": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceTestosteroneExtract",
+"tint": null
+},
+"resourceQueenBee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceQueenBee",
+"tint": null
+},
+"resourceBeeswax": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceBeeswax",
+"tint": null
+},
+"resourceChickenFeed": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceChickenFeed",
+"tint": null
+},
+"resourceCropHopsFlower": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "plantedHop3Harvest",
+"tint": null
+},
+"resourceCropAloeLeaf": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceCropAloeLeaf",
+"tint": null
+},
+"resourceCropChrysanthemumPlant": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "plantedChrysanthemum3Harvest",
+"tint": null
+},
+"resourceCropCottonPlant": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "plantedCotton3Harvest",
+"tint": null
+},
+"resourceCropGoldenrodPlant": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "plantedGoldenrod3HarvestPlayer",
+"tint": null
+},
+"resourceCropCoffeeBeans": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceCropCoffeeBeans",
+"tint": null
+},
+"resourceScrapBrass": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceScrapBrass",
+"tint": null
+},
+"resourceScrapLead": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceScrapLead",
+"tint": null
+},
+"resourceClayLump": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceClayLump",
+"tint": null
+},
+"resourceCobblestones": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceCobblestones",
+"tint": null
+},
+"resourceCement": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceCement",
+"tint": null
+},
+"resourceConcreteMix": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceConcreteMix",
+"tint": null
+},
+"resourceCloth": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceCloth",
+"tint": null
+},
+"resourcePaper": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourcePaper",
+"tint": null
+},
+"resourceElectricParts": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceElectricParts",
+"tint": null
+},
+"resourceHeadlight": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceHeadlight",
+"tint": null
+},
+"resourceMechanicalParts": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceMechanicalParts",
+"tint": null
+},
+"resourceSpring": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceSpring",
+"tint": null
+},
+"resourceGlue": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceGlue",
+"tint": null
+},
+"resourceDuctTape": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceDuctTape",
+"tint": null
+},
+"resourceFeather": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceFeather",
+"tint": null
+},
+"resourceArrowHeadIron": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceArrowHeadIron",
+"tint": null
+},
+"resourceArrowHeadSteelAP": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceArrowHeadSteelAP",
+"tint": null
+},
+"resourceCoal": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceCoal",
+"tint": null
+},
+"resourcePotassiumNitratePowder": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourcePotassiumNitratePowder",
+"tint": null
+},
+"resourceGunPowder": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceGunPowder",
+"tint": null
+},
+"resourceBuckshot": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceBuckshot",
+"tint": null
+},
+"resourceBulletCasing": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceBulletCasing",
+"tint": null
+},
+"resourceBulletTip": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceBulletTip",
+"tint": null
+},
+"resourceNail": {
+"mesh": "@:Other/Items/Tools/nailProjectilePrefab.prefab",
+"icon": "resourceNail",
+"tint": null
+},
+"resourceRocketTip": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceRocketTip",
+"tint": null
+},
+"resourceRocketCasing": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceRocketCasing",
+"tint": null
+},
+"resourceWaterFilter": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceWaterFilter",
+"tint": null
+},
+"resourceRepairKit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceRepairKit",
+"tint": null
+},
+"resourceArmorCraftingKit": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceArmorCraftingKit",
+"tint": null
+},
+"resourceLegendaryParts": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceLegendaryParts",
+"tint": null
+},
+"resourceOil": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceOil",
+"tint": null
+},
+"resourcePaint": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourcePaint",
+"tint": null
+},
+"resourceDoorKnob": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceDoorKnob",
+"tint": null
+},
+"resourceCandleStick": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceCandleStick",
+"tint": null
+},
+"resourceRadiator": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceRadiator",
+"tint": null
+},
+"resourceFishingWeight": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceFishingWeight",
+"tint": null
+},
+"resourceTrophy1": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceTrophy1",
+"tint": null
+},
+"resourceTrophy2": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceTrophy2",
+"tint": null
+},
+"resourceSilverNugget": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceSilverNugget",
+"tint": null
+},
+"resourceGoldNugget": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceGoldNugget",
+"tint": null
+},
+"resourceRawDiamond": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceRawDiamond",
+"tint": null
+},
+"candle": {
+"mesh": "@:Other/Items/Tools/candlePrefab.prefab",
+"icon": "candle",
+"tint": null
+},
+"smallEngine": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "smallEngine",
+"tint": null
+},
+"carBattery": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "carBattery",
+"tint": null
+},
+"casinoCoin": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "casinoCoin",
+"tint": null
+},
+"oldCash": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "oldCash",
+"tint": null
+},
+"solarCell": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "solarCell",
+"tint": null
+},
+"toolCookingGrill": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "toolCookingGrill",
+"tint": null
+},
+"toolCookingPot": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "toolCookingPot",
+"tint": null
+},
+"toolBeaker": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "toolBeaker",
+"tint": null
+},
+"toolBellows": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "toolBellows",
+"tint": null
+},
+"toolAnvil": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "toolAnvil",
+"tint": null
+},
+"toolForgeCrucible": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "toolForgeCrucible",
+"tint": null
+},
+"toolDewGatherer": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "toolDewGatherer",
+"tint": null
+},
+"toolDewTarp": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "toolDewTarp",
+"tint": null
+},
+"toolDewFilter": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceWaterFilter",
+"tint": null
+},
+"toolApiaryExtractor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "toolApiaryExtractor",
+"tint": null
+},
+"toolApiaryBroodBox": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "toolApiaryBroodBox",
+"tint": null
+},
+"toolApiarySmoker": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "toolApiarySmoker",
+"tint": null
+},
+"toolChickenCoopLamp": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "toolChickenCoopLamp",
+"tint": null
+},
+"toolChickenCoopRun": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "toolChickenCoopRun",
+"tint": null
+},
+"toolChickenCoopNestingBox": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "toolChickenCoopNestingBox",
+"tint": null
+},
+"wildChicken": {
+"mesh": "@:Entities/Animals/Bird/animalBirdChickenHeldPrefab.prefab",
+"icon": "wildChicken",
+"tint": null
+},
+"domesticatedChicken": {
+"mesh": "@:Entities/Animals/Bird/animalBirdChickenHeldPrefab.prefab",
+"icon": "domesticatedChicken",
+"tint": null
+},
+"unit_iron": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceScrapIron",
+"tint": null
+},
+"unit_brass": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceScrapBrass",
+"tint": null
+},
+"unit_lead": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceScrapLead",
+"tint": null
+},
+"unit_glass": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceCrushedSand",
+"tint": null
+},
+"unit_stone": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceRockSmall",
+"tint": null
+},
+"unit_clay": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceClayLump",
+"tint": null
+},
+"questItem": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "missingIcon",
+"tint": null
+},
+"resourceLockPick": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceLockPick",
+"tint": null
+},
+"resourceLockPickBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourceLockPick",
+"tint": null
+},
+"bookFiremansAlmanacHeat": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookFiremansAlmanacHeat",
+"tint": null
+},
+"bookFiremansAlmanacAxes": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookFiremansAlmanacAxes",
+"tint": null
+},
+"bookFiremansAlmanacSpeed": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookFiremansAlmanacSpeed",
+"tint": null
+},
+"bookFiremansAlmanacMolotov": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookFiremansAlmanacMolotov",
+"tint": null
+},
+"bookFiremansAlmanacPrevention": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookFiremansAlmanacPrevention",
+"tint": null
+},
+"bookFiremansAlmanacHarvest": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookFiremansAlmanacHarvest",
+"tint": null
+},
+"bookFiremansAlmanacEquipment": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookFiremansAlmanacEquipment",
+"tint": null
+},
+"bookNightStalkerStealthDamage": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookNightStalkerStealthDamage",
+"tint": null
+},
+"bookNightStalkerSilentNight": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookNightStalkerSilentNight",
+"tint": null
+},
+"bookNightStalkerBlades": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookNightStalkerBlades",
+"tint": null
+},
+"bookNightStalkerThiefAdrenaline": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookNightStalkerThiefAdrenaline",
+"tint": null
+},
+"bookNightStalkerArchery": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookNightStalkerArchery",
+"tint": null
+},
+"bookNightStalkerTwilightThief": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookNightStalkerTwilightThief",
+"tint": null
+},
+"bookNightStalkerSlumberParty": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookNightStalkerSlumberParty",
+"tint": null
+},
+"bookLuckyLooterDukes": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookLuckyLooterDukes",
+"tint": null
+},
+"bookLuckyLooterAmmunition": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookLuckyLooterAmmunition",
+"tint": null
+},
+"bookLuckyLooterBrass": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookLuckyLooterBrass",
+"tint": null
+},
+"bookLuckyLooterLead": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookLuckyLooterLead",
+"tint": null
+},
+"bookLuckyLooterBooks": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookLuckyLooterBooks",
+"tint": null
+},
+"bookLuckyLooterFood": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookLuckyLooterFood",
+"tint": null
+},
+"bookLuckyLooterMedical": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookLuckyLooterMedical",
+"tint": null
+},
+"bookEnforcerDamage": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookEnforcerDamage",
+"tint": null
+},
+"bookEnforcerApparel": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookEnforcerApparel",
+"tint": null
+},
+"bookEnforcerPunks": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookEnforcerPunks",
+"tint": null
+},
+"bookEnforcerIntimidation": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookEnforcerIntimidation",
+"tint": null
+},
+"bookEnforcerAPAmmo": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookEnforcerAPAmmo",
+"tint": null
+},
+"bookEnforcerHPAmmo": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookEnforcerHPAmmo",
+"tint": null
+},
+"bookEnforcerCriminalPursuit": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookEnforcerCriminalPursuit",
+"tint": null
+},
+"bookBatterUpBigHits": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookBatterUpBigHits",
+"tint": null
+},
+"bookBatterUpStealingBases": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookBatterUpStealingBases",
+"tint": null
+},
+"bookBatterUpSlowPitch": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookBatterUpSlowPitch",
+"tint": null
+},
+"bookBatterUpKnockdown": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookBatterUpKnockdown",
+"tint": null
+},
+"bookBatterUpMaintenance": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookBatterUpMaintenance",
+"tint": null
+},
+"bookBatterUpFoulBalls": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookBatterUpFoulBalls",
+"tint": null
+},
+"bookBatterUpMetalChain": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookBatterUpMetalChain",
+"tint": null
+},
+"bookSledgeSagaKnockdown": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSledgeSagaKnockdown",
+"tint": null
+},
+"bookSledgeSagaDegradation": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSledgeSagaDegradation",
+"tint": null
+},
+"bookSledgeSagaCrippledMorale": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSledgeSagaCrippledMorale",
+"tint": null
+},
+"bookSledgeSagaPulverizingFinishers": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSledgeSagaPulverizingFinishers",
+"tint": null
+},
+"bookSledgeSagaSavageReaper": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSledgeSagaSavageReaper",
+"tint": null
+},
+"bookSledgeSagaConcussiveStrike": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSledgeSagaConcussiveStrike",
+"tint": null
+},
+"bookSledgeSagaArmorCrusher": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSledgeSagaArmorCrusher",
+"tint": null
+},
+"bookGreatHeistSafes": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookTheGreatHeistSafes",
+"tint": null
+},
+"bookGreatHeistGems": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookGreatHeistGems",
+"tint": null
+},
+"bookGreatHeistGoldRush": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookGreatHeistGoldRush",
+"tint": null
+},
+"bookGreatHeistClaimed": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookGreatHeistClaimed",
+"tint": null
+},
+"bookGreatHeistAdrenalineFall": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookGreatHeistAdrenalineFall",
+"tint": null
+},
+"bookGreatHeistSprintSneak": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookGreatHeistSprintSneak",
+"tint": null
+},
+"bookGreatHeistMotionDetection": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookGreatHeistMotionDetection",
+"tint": null
+},
+"bookWasteTreasuresHoney": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookWasteTreasuresHoney",
+"tint": null
+},
+"bookWasteTreasuresCoffins": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookWasteTreasuresCoffins",
+"tint": null
+},
+"bookWasteTreasuresAcid": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookWasteTreasuresAcid",
+"tint": null
+},
+"bookWasteTreasuresWater": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookWasteTreasuresWater",
+"tint": null
+},
+"bookWasteTreasuresDoors": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookWasteTreasuresDoors",
+"tint": null
+},
+"bookWasteTreasuresCloth": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookWasteTreasuresCloth",
+"tint": null
+},
+"bookWasteTreasuresSinks": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookWasteTreasuresSinks",
+"tint": null
+},
+"bookHuntingJournalBears": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookHuntingJournalBears",
+"tint": null
+},
+"bookHuntingJournalWolves": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookHuntingJournalWolves",
+"tint": null
+},
+"bookHuntingJournalCoyotes": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookHuntingJournalCoyotes",
+"tint": null
+},
+"bookHuntingJournalMountainLions": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookHuntingJournalMountainLions",
+"tint": null
+},
+"bookHuntingJournalDeer": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookHuntingJournalDeer",
+"tint": null
+},
+"bookHuntingJournalVultures": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookHuntingJournalVultures",
+"tint": null
+},
+"bookHuntingJournalSelfDefense": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookHuntingJournalSelfDefense",
+"tint": null
+},
+"bookArtOfMiningLuckyStrike": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookArtOfMiningLuckyStrike",
+"tint": null
+},
+"bookArtOfMiningDiamondTools": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookArtOfMiningDiamondTools",
+"tint": null
+},
+"bookArtOfMiningCoffee": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookArtOfMiningCoffee",
+"tint": null
+},
+"bookArtOfMiningBlackStrap": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookArtOfMiningBlackStrap",
+"tint": null
+},
+"bookArtOfMiningPallets": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookArtOfMiningPallets",
+"tint": null
+},
+"bookArtOfMiningAvalanche": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookArtOfMiningAvalanche",
+"tint": null
+},
+"bookArtOfMiningDamage": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookArtOfMiningDamage",
+"tint": null
+},
+"bookRangersArrowRecovery": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookRangersArrowRecovery",
+"tint": null
+},
+"bookRangersExplodingBolts": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookRangersExplodingBolts",
+"tint": null
+},
+"bookRangersCripplingShot": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookRangersCripplingShot",
+"tint": null
+},
+"bookRangersAPAmmo": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookRangersAPAmmo",
+"tint": null
+},
+"bookRangersFlamingArrows": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookRangersFlamingArrows",
+"tint": null
+},
+"bookRangersForestGuide": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookRangersForestGuide",
+"tint": null
+},
+"bookRangersKnockdown": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookRangersKnockdown",
+"tint": null
+},
+"bookPistolPeteTakeAim": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookPistolPeteTakeAim",
+"tint": null
+},
+"bookPistolPeteSwissKnees": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookPistolPeteSwissKnees",
+"tint": null
+},
+"bookPistolPeteSteadyHand": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookPistolPeteSteadyHand",
+"tint": null
+},
+"bookPistolPeteMaintenance": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookPistolPeteMaintenance",
+"tint": null
+},
+"bookPistolPeteHPAmmo": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookPistolPeteHPAmmo",
+"tint": null
+},
+"bookPistolPeteAPAmmo": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookPistolPeteAPAmmo",
+"tint": null
+},
+"bookPistolPeteDamage": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookPistolPeteDamage",
+"tint": null
+},
+"bookShotgunMessiahDamage": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookShotgunMessiahDamage",
+"tint": null
+},
+"bookShotgunMessiahBreachingSlugs": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookShotgunMessiahBreachingSlugs",
+"tint": null
+},
+"bookShotgunMessiahLimbShot": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookShotgunMessiahLimbShot",
+"tint": null
+},
+"bookShotgunMessiahSlugs": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookShotgunMessiahSlugs",
+"tint": null
+},
+"bookShotgunMessiahMaintenance": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookShotgunMessiahMaintenance",
+"tint": null
+},
+"bookShotgunMessiahMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookShotgunMessiahMagazine",
+"tint": null
+},
+"bookShotgunMessiahPartyStarter": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookShotgunMessiahPartyStarter",
+"tint": null
+},
+"bookSniperDamage": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSniperDamage",
+"tint": null
+},
+"bookSniperCripplingShot": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSniperCripplingShot",
+"tint": null
+},
+"bookSniperHeadShot": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSniperHeadShot",
+"tint": null
+},
+"bookSniperReload": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSniperReload",
+"tint": null
+},
+"bookSniperControlledBreathing": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSniperControlledBreathing",
+"tint": null
+},
+"bookSniperAPAmmo": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSniperAPAmmo",
+"tint": null
+},
+"bookSniperHPAmmo": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSniperHPAmmo",
+"tint": null
+},
+"bookAutoWeaponsDamage": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookAutoWeaponsDamage",
+"tint": null
+},
+"bookAutoWeaponsUncontrolledBurst": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookAutoWeaponsUncontrolledBurst",
+"tint": null
+},
+"bookAutoWeaponsMaintenance": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookAutoWeaponsMaintenance",
+"tint": null
+},
+"bookAutoWeaponsDrumMag": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookAutoWeaponsDrumMag",
+"tint": null
+},
+"bookAutoWeaponsRecoil": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookAutoWeaponsRecoil",
+"tint": null
+},
+"bookAutoWeaponsRagdoll": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookAutoWeaponsRagdoll",
+"tint": null
+},
+"bookAutoWeaponsMachineGuns": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookAutoWeaponsMachineGuns",
+"tint": null
+},
+"bookUrbanCombatLanding": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookUrbanCombatLanding",
+"tint": null
+},
+"bookUrbanCombatCigar": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookUrbanCombatCigar",
+"tint": null
+},
+"bookUrbanCombatSneaking": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookUrbanCombatSneaking",
+"tint": null
+},
+"bookUrbanCombatJumping": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookUrbanCombatJumping",
+"tint": null
+},
+"bookUrbanCombatLandMines": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookUrbanCombatLandMines",
+"tint": null
+},
+"bookUrbanCombatAdrenalineRush": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookUrbanCombatAdrenalineRush",
+"tint": null
+},
+"bookUrbanCombatRoomClearing": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookUrbanCombatRoomClearing",
+"tint": null
+},
+"bookTechJunkie1Damage": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookTechJunkie1Damage",
+"tint": null
+},
+"bookTechJunkie2Maintenance": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookTechJunkie2Maintenance",
+"tint": null
+},
+"bookTechJunkie3APAmmo": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookTechJunkie3APAmmo",
+"tint": null
+},
+"bookTechJunkie4Shells": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookTechJunkie4Shells",
+"tint": null
+},
+"bookTechJunkie5Repulsor": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookTechJunkie5Repulsor",
+"tint": null
+},
+"bookTechJunkie6BatonCharge": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookTechJunkie6BatonCharge",
+"tint": null
+},
+"bookTechJunkie7Hydraulics": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookTechJunkie7Hydraulics",
+"tint": null
+},
+"bookBarBrawling1BasicMoves": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookBarBrawling1BasicMoves",
+"tint": null
+},
+"bookBarBrawling2DropABomb": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookBarBrawling2DropABomb",
+"tint": null
+},
+"bookBarBrawling3KillerInstinct": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookBarBrawling3KillerInstinct",
+"tint": null
+},
+"bookBarBrawling4FinishingMoves": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookBarBrawling4FinishingMoves",
+"tint": null
+},
+"bookBarBrawling5AdrenalineHealing": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookBarBrawling5AdrenalineHealing",
+"tint": null
+},
+"bookBarBrawling6RageMode": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookBarBrawling6RageMode",
+"tint": null
+},
+"bookBarBrawling7BoozedUp": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookBarBrawling7BoozedUp",
+"tint": null
+},
+"bookSpearHunter1Damage": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSpearHunter1Damage",
+"tint": null
+},
+"bookSpearHunter2Maintenance": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSpearHunter2Maintenance",
+"tint": null
+},
+"bookSpearHunter3Bleed": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSpearHunter3Bleed",
+"tint": null
+},
+"bookSpearHunter4KillMove": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSpearHunter4KillMove",
+"tint": null
+},
+"bookSpearHunter5RapidStrike": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSpearHunter5RapidStrike",
+"tint": null
+},
+"bookSpearHunter6PenetratingShaft": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSpearHunter6PenetratingShaft",
+"tint": null
+},
+"bookSpearHunter7QuickStrike": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSpearHunter7QuickStrike",
+"tint": null
+},
+"masterSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "masterSkillMagazine",
+"tint": null
+},
+"harvestingToolsSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookToolsDigest",
+"tint": null
+},
+"repairToolsSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookHandyLand",
+"tint": null
+},
+"salvageToolsSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookScrapping4Fun",
+"tint": null
+},
+"knucklesSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookFuriousFists",
+"tint": null
+},
+"bladesSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookKnifeGuy",
+"tint": null
+},
+"clubsSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookBigHitters",
+"tint": null
+},
+"sledgehammersSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookGetHammered",
+"tint": null
+},
+"spearsSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSharpSticks",
+"tint": null
+},
+"bowsSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookBowHunters",
+"tint": null
+},
+"handgunsSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookHandgunMagazine",
+"tint": null
+},
+"shotgunsSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookShotgunWeekly",
+"tint": null
+},
+"riflesSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookRifleWorld",
+"tint": null
+},
+"machineGunsSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookTacticalWarfare",
+"tint": null
+},
+"explosivesSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookExplosiveMagazine",
+"tint": null
+},
+"roboticsSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookTechPlanet",
+"tint": null
+},
+"armorSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookArmoredUp",
+"tint": null
+},
+"backpackSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookPackRat",
+"tint": null
+},
+"medicalSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookMedicalJournal",
+"tint": null
+},
+"foodSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookHomeCookingWeekly",
+"tint": null
+},
+"seedSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookSouthernFarming",
+"tint": null
+},
+"electricianSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookWiring101",
+"tint": null
+},
+"trapsSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookElectricalTraps",
+"tint": null
+},
+"workstationSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookForgeAhead",
+"tint": null
+},
+"vehiclesSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookVehicleAdventures",
+"tint": null
+},
+"questRewardBundleMaster": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourcePaper",
+"tint": "210,0,210"
+},
+"questRewardPipePistolBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleRevolver",
+"tint": "CC9966"
+},
+"questRewardPipeShotgunBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleShotgun",
+"tint": "cc9966"
+},
+"questRewardPipeRifleBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleRifle",
+"tint": "cc9966"
+},
+"questRewardPipeMachineGunBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleMachineGun",
+"tint": "cc9966"
+},
+"questRewardPipeBatonBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleTurrets",
+"tint": "cc9966"
+},
+"questRewardSteelKnuckleCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleKnuckles",
+"tint": "B3E0FF"
+},
+"questRewardMacheteCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleKnife",
+"tint": "B3E0FF"
+},
+"questRewardSteelClubCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleClub",
+"tint": "B3E0FF"
+},
+"questRewardSteelSledgehammerCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleSledge",
+"tint": "B3E0FF"
+},
+"questRewardBowCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleBow",
+"tint": "B3E0FF"
+},
+"questRewardSteelSpearCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleSpear",
+"tint": "B3E0FF"
+},
+"questRewardHandgunCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundlePistol",
+"tint": "B3E0FF"
+},
+"questRewardShotgunCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleShotgun",
+"tint": "B3E0FF"
+},
+"questRewardRifleCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleRifle",
+"tint": "B3E0FF"
+},
+"questRewardMachineGunCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleMachineGun",
+"tint": "B3E0FF"
+},
+"questRewardRocketLauncherCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleExplosives",
+"tint": "B3E0FF"
+},
+"questRewardBatonCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleTurrets",
+"tint": "B3E0FF"
+},
+"questRewardRoboticsCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleTurrets",
+"tint": "B3E0FF"
+},
+"questRewardSteelToolsCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleTools",
+"tint": "B3E0FF"
+},
+"questRewardMotorToolsCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleTools",
+"tint": "B3E0FF"
+},
+"questRewardLegendarySteelKnuckleCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleKnuckles",
+"tint": "D580FF"
+},
+"questRewardLegendaryMacheteCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleKnife",
+"tint": "D580FF"
+},
+"questRewardLegendarySteelClubCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleClub",
+"tint": "D580FF"
+},
+"questRewardLegendarySteelSledgehammerCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleSledge",
+"tint": "D580FF"
+},
+"questRewardLegendaryBowCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleBow",
+"tint": "D580FF"
+},
+"questRewardLegendarySteelSpearCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleSpear",
+"tint": "D580FF"
+},
+"questRewardLegendaryHandgunCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundlePistol",
+"tint": "D580FF"
+},
+"questRewardLegendaryShotgunCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleShotgun",
+"tint": "D580FF"
+},
+"questRewardLegendaryRifleCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleRifle",
+"tint": "D580FF"
+},
+"questRewardLegendaryMachineGunCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleMachineGun",
+"tint": "D580FF"
+},
+"questRewardLegendaryRocketLauncherCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleExplosives",
+"tint": "D580FF"
+},
+"questRewardLegendaryBatonCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleTurrets",
+"tint": "D580FF"
+},
+"questRewardLegendaryRoboticsCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleTurrets",
+"tint": "D580FF"
+},
+"questRewardLegendarySteelToolsCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleTools",
+"tint": "D580FF"
+},
+"questRewardLegendaryMotorToolsCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleTools",
+"tint": "D580FF"
+},
+"questRewardAmmoCraftingBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleAmmo",
+"tint": "FF6666"
+},
+"questRewardT0HandgunBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleRevolver",
+"tint": "FF6666"
+},
+"questRewardT0RifleBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleRifle",
+"tint": "FF6666"
+},
+"questRewardT0ShotgunBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleShotgun",
+"tint": "FF6666"
+},
+"questRewardT0MachineGunBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleMachineGun",
+"tint": "FF6666"
+},
+"questRewardT1HandgunBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundlePistol",
+"tint": "FF6666"
+},
+"questRewardT1ShotgunBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleShotgun",
+"tint": "FF6666"
+},
+"questRewardT1RifleBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleRifle",
+"tint": "FF6666"
+},
+"questRewardT1MachineGunBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleMachineGun",
+"tint": "FF6666"
+},
+"questRewardT2HandgunBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleRevolver",
+"tint": "FF6666"
+},
+"questRewardT2ShotgunBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleShotgun",
+"tint": "FF6666"
+},
+"questRewardT2RifleBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleRifle",
+"tint": "FF6666"
+},
+"questRewardT2MachineGunBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleMachineGun",
+"tint": "FF6666"
+},
+"questRewardT3HandgunBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundlePistol",
+"tint": "FF6666"
+},
+"questRewardT3SMGBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundlePistol",
+"tint": "FF6666"
+},
+"questRewardT3ShotgunBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleShotgun",
+"tint": "FF6666"
+},
+"questRewardT3RifleBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleRifle",
+"tint": "FF6666"
+},
+"questRewardT3MachineGunBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleMachineGun",
+"tint": "FF6666"
+},
+"questRewardT3HandgunLegendaryBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundlePistol",
+"tint": "FF6666"
+},
+"questRewardT3SMGLegendaryBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundlePistol",
+"tint": "FF6666"
+},
+"questRewardT3ShotgunLegendaryBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleShotgun",
+"tint": "FF6666"
+},
+"questRewardT3RifleLegendaryBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleRifle",
+"tint": "FF6666"
+},
+"questRewardT3MachineGunLegendaryBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleMachineGun",
+"tint": "FF6666"
+},
+"questRewardT1BookBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleBooks",
+"tint": "FFFFFF"
+},
+"questRewardT2BookBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleBooks",
+"tint": "FFFFFF"
+},
+"questRewardT3BookBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleBooks",
+"tint": "FFFFFF"
+},
+"questRewardT4BookBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleBooks",
+"tint": "FFFFFF"
+},
+"questRewardT5BookBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleBooks",
+"tint": "FFFFFF"
+},
+"questRewardT1SkillMagazineBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleBooks",
+"tint": "FFFF00"
+},
+"questRewardT1TrapsBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleTraps",
+"tint": "FF6666"
+},
+"questRewardT2TrapsBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleTraps",
+"tint": "FF6666"
+},
+"questRewardDartTrapBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleDartTrap",
+"tint": "FF6666"
+},
+"questRewardBladeTrapBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleBladeTrap",
+"tint": "FF6666"
+},
+"questRewardShotgunTurretBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleTurrets",
+"tint": "FF6666"
+},
+"questRewardAutoTurretBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleTurrets",
+"tint": "FF6666"
+},
+"questRewardSecuritySystemBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleSecurity",
+"tint": "66A3FF"
+},
+"questRewardGeneratorBankBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleGeneratorBank",
+"tint": "66A3FF"
+},
+"questRewardBatteryBankBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleBatteryBank",
+"tint": "66A3FF"
+},
+"questRewardSolarBankBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleSolarBank",
+"tint": "66A3FF"
+},
+"questRewardT1MeleeModsBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleMeleeMods",
+"tint": "B3B3B3"
+},
+"questRewardT2MeleeModsBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleMeleeMods",
+"tint": "B3B3B3"
+},
+"questRewardT3MeleeModsBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleMeleeMods",
+"tint": "B3B3B3"
+},
+"questRewardT1RangedModsBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleRangedMods",
+"tint": "B3B3B3"
+},
+"questRewardT2RangedModsBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleRangedMods",
+"tint": "B3B3B3"
+},
+"questRewardT3RangedModsBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleRangedMods",
+"tint": "B3B3B3"
+},
+"questRewardT2FoodBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleFood",
+"tint": "99FF99"
+},
+"questRewardT3FoodBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleFood",
+"tint": "99FF99"
+},
+"questRewardT4FoodBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleFood",
+"tint": "99FF99"
+},
+"questRewardFarmT1Bundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleFarm",
+"tint": "99FF99"
+},
+"questRewardFarmT2Bundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleFarm",
+"tint": "99FF99"
+},
+"questRewardFarmT3Bundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleFarm",
+"tint": "99FF99"
+},
+"questRewardVehiclePartsBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleVehicleParts",
+"tint": "FFFFFF"
+},
+"questRewardMinibikePartsBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleVehicleMiniBike",
+"tint": "FFFFFF"
+},
+"questRewardMotorcyclePartsBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleVehicleMotorCycle",
+"tint": "FFFFFF"
+},
+"questReward4x4PartsBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleVehicle4x4",
+"tint": "FFFFFF"
+},
+"questRewardGyrocopterPartsBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "bundleVehicleGyro",
+"tint": "FFFFFF"
+},
+"twitchTurd": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "twitchTurd",
+"tint": null
+},
+"biomeBadge1": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "biomeBadge1",
+"tint": null
+},
+"biomeBadge2": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "biomeBadge2",
+"tint": null
+},
+"biomeBadge3": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "biomeBadge3",
+"tint": null
+},
+"biomeBadge4": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "biomeBadge4",
+"tint": null
+},
+"biomeWeatherItem1": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "biomeWeatherItem1",
+"tint": null
+},
+"biomeWeatherItem2": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "biomeWeatherItem2",
+"tint": null
+},
+"biomeWeatherItem3": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "biomeWeatherItem3",
+"tint": null
+},
+"biomeWeatherItem4": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "biomeWeatherItem4",
+"tint": null
+},
+"meleeToolPaintToolAdmin": {
+"mesh": "@:Other/Items/Tools/paintbrushPrefab.prefab",
+"icon": "meleeToolPaintTool",
+"tint": "210,0,210"
+},
+"meleeToolSalvageWrenchAdmin": {
+"mesh": "@:Other/Items/Tools/wrenchPrefab.prefab",
+"icon": "meleeToolSalvageT1Wrench",
+"tint": "210,0,210"
+},
+"meleeToolBlockReplaceTool": {
+"mesh": "@:Other/Items/Tools/wrenchPrefab.prefab",
+"icon": "meleeToolSalvageT1Wrench",
+"tint": "6900D2"
+},
+"gunToolDiggerAdmin": {
+"mesh": "@:Other/Items/Weapons/Ranged/SMG/smgPrefab.prefab",
+"icon": "gunHandgunT3SMG5",
+"tint": "210,0,210"
+},
+"gunHandgunPistolAdmin": {
+"mesh": "@:Other/Items/Weapons/Ranged/Pistol/PistolPrefab.prefab",
+"icon": "gunHandgunT1Pistol",
+"tint": "210,0,210"
+},
+"meleeToolHammerOfGodAdmin": {
+"mesh": "@:Other/Items/Tools/hammerPrefab.prefab",
+"icon": "meleeToolRepairT1ClawHammer",
+"tint": "210,0,210"
+},
+"pimpMiningHelmetAdmin": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorMinerHelmet",
+"tint": "210,0,210"
+},
+"toughGuyShirtAdmin": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorBikerOutfit",
+"tint": "210,0,210"
+},
+"ringOfFireAdmin": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorBikerGloves",
+"tint": "210,0,210"
+},
+"staminaBootsAdmin": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorBikerBoots",
+"tint": "210,0,210"
+},
+"staminaOnlyBootsAdmin": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorBikerBoots",
+"tint": "51, 204, 255"
+},
+"rocketBootsAdmin": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorBikerBoots",
+"tint": "6900D2"
+},
+"drinkJarFullRespecAdmin": {
+"mesh": "@:Other/Items/Food/masonJarFPVFullPrefab.prefab",
+"icon": "drinkJarGrandpasForgettingElixir",
+"tint": "210,0,210"
+},
+"drinkJarFullRespecWithPointsAdmin": {
+"mesh": "@:Other/Items/Food/masonJarFPVFullPrefab.prefab",
+"icon": "drinkJarGrandpasForgettingElixir",
+"tint": "51, 204, 255"
+},
+"noteTestersDelightAdmin": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourcePaper",
+"tint": "210,0,210"
+},
+"noteTestingAdmin": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourcePaper",
+"tint": "210,0,210"
+},
+"noteAchievementAdmin": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "resourcePaper",
+"tint": "0,100,255"
+},
+"noteTestersElectricityAdmin": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "meleeToolWireTool",
+"tint": null
+},
+"upgradeResourcesPackAdmin": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "cntShippingCrateHero",
+"tint": "D200D2"
+},
+"craftingResourcesPackAdmin": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "cntShippingCrateHero",
+"tint": "6900D2"
+},
+"workstationsPackAdmin": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "forge",
+"tint": "D200D2"
+},
+"levelDesignToolsAdmin": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "cementMixer",
+"tint": "D200D2"
+},
+"toolTerrainModelerAdmin": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "meleeToolShovelT1IronShovel",
+"tint": "200,0,255"
+},
+"thrownGrenadeNukeAdmin": {
+"mesh": "@:Other/Items/Weapons/Ranged/Grenade/GrenadePrefab.prefab",
+"icon": "thrownGrenadeContact",
+"tint": "200,0,255"
+},
+"adminPerkBook": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookLuckyLooterDukes",
+"tint": "FF00FF"
+},
+"adminSkillMagazine": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "bookTechPlanet",
+"tint": "FF00FF"
+},
+"adminModSchematic": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "modRoboticDroneMoraleBoosterMod",
+"tint": "FF00FF"
+},
+"tier01Bow01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "725E51"
+},
+"tier01PerceptionWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "725E51"
+},
+"tier01StrengthWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "725E51"
+},
+"tier01FortitudeWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "725E51"
+},
+"tier01AgilityWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "725E51"
+},
+"tier01IntellectWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "725E51"
+},
+"tier01Weapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "725E51"
+},
+"tier01Armor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "725E51"
+},
+"tier01Loadout": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "725E51"
+},
+"tier02Lumberjack01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02Preacher01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02Rogue01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02Athletic01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02Enforcer01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02Farmer01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02Biker01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02Scavenger01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02Ranger01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02Commando01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02Assassin01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02Miner01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02Nomad01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02Nerd01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02Raider01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02LightPerception01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02MediumPerception01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02HeavyPerception01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02PerceptionArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02LightStrength01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02MediumStrength01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02HeavyStrength01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02StrengthArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02LightFortitude01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02MediumFortitude01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02HeavyFortitude01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02FortitudeArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02LightAgility01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02MediumAgility01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02HeavyAgility01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02AgilityArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02LightIntellect01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02MediumIntellect01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02HeavyIntellect01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02IntellectArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02PerceptionMeleeMods": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02PerceptionMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02PerceptionRangedMods": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02PerceptionRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02PerceptionWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02StrengthMeleeMods": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02StrengthMelee01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02StrengthMelee02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02StrengthMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02StrengthRangedMods": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02StrengthRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02StrengthWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02FortitudeMeleeMods": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02FortitudeMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02FortitudeRangedMods": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02FortitudeRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02FortitudeWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02AgilityMeleeMods": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02AgilityMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02AgilityRanged01Mods": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02AgilityRanged01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02AgilityRanged02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02AgilityRanged03": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02AgilityRanged04": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02AgilityRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02AgilityWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02IntellectMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02IntellectRangedMods": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02IntellectRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02IntellectWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02Perception": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02Strength": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02Fortitude": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02Agility": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02Intellect": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier02Loadout": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "E7821A"
+},
+"tier03Lumberjack01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03Preacher01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03Rogue01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03Athletic01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03Enforcer01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03Farmer01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03Biker01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03Scavenger01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03Ranger01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03Commando01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03Assassin01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03Miner01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03Nomad01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03Nerd01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03Raider01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03LightPerception01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03MediumPerception01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03HeavyPerception01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03PerceptionArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03LightStrength01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03MediumStrength01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03HeavyStrength01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03StrengthArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03LightFortitude01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03MediumFortitude01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03HeavyFortitude01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03FortitudeArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03LightAgility01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03MediumAgility01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03HeavyAgility01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03AgilityArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03LightIntellect01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03MediumIntellect01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03HeavyIntellect01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03IntellectArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03PerceptionMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03PerceptionRangedMods": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03PerceptionRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03PerceptionWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03StrengthMelee01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03StrengthMelee02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03StrengthMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03StrengthRanged01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03StrengthRanged02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03StrengthRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03StrengthWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03FortitudeMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03FortitudeRangedMods": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03FortitudeRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03FortitudeWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03AgilityMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03AgilityRanged01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03AgilityRanged02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03AgilityRanged03": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03AgilityRanged04": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03AgilityRangedA": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03AgilityRangedB": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03AgilityRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03AgilityWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03IntellectMelee01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03IntellectMelee02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03IntellectRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03IntellectWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03Perception": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03Strength": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03Fortitude": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03Agility": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03Intellect": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier03Loadout": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "D1E71A"
+},
+"tier04Lumberjack01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04Preacher01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04Rogue01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04Athletic01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04Enforcer01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04Farmer01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04Biker01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04Scavenger01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04Ranger01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04Commando01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04Assassin01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04Miner01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04Nomad01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04Nerd01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04Raider01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04LightPerception01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04MediumPerception01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04HeavyPerception01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04PerceptionArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04LightStrength01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04MediumStrength01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04HeavyStrength01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04StrengthArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04LightFortitude01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04MediumFortitude01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04HeavyFortitude01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04FortitudeArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04LightAgility01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04MediumAgility01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04HeavyAgility01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04AgilityArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04LightIntellect01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04MediumIntellect01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04HeavyIntellect01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04IntellectArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04PerceptionMeleeMods": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04PerceptionMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04PerceptionRanged01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04PerceptionRanged02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04PerceptionRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04PerceptionWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04StrengthMelee01Mods": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04StrengthMelee01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04StrengthMelee02Mods": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04StrengthMelee02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04StrengthMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04StrengthRanged01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04StrengthRanged02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04StrengthRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04StrengthWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04FortitudeMelee01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04FortitudeMelee02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04FortitudeMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04FortitudeRanged01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04FortitudeRanged02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04FortitudeRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04FortitudeWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04AgilityMelee01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04AgilityMelee02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04AgilityMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04AgilityRanged01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04AgilityRanged02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04AgilityRanged03": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04AgilityRanged04": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04AgilityRanged05": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04AgilityRangedA": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04AgilityRangedB": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04AgilityRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04AgilityWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04IntellectMelee01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04IntellectMelee02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04IntellectMelee03": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04IntellectMelee04": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04IntellectMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04IntellectRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04IntellectWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04Perception": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04Strength": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04Fortitude": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04Agility": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04Intellect": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier04Loadout": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1AE73C"
+},
+"tier05Lumberjack01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05Preacher01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05Rogue01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05Athletic01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05Enforcer01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05Farmer01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05Biker01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05Scavenger01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05Ranger01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05Commando01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05Assassin01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05Miner01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05Nomad01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05Nerd01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05Raider01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05LightPerception01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05MediumPerception01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05HeavyPerception01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05PerceptionArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05LightStrength01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05MediumStrength01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05HeavyStrength01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05StrengthArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05LightFortitude01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05MediumFortitude01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05HeavyFortitude01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05FortitudeArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05LightAgility01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05MediumAgility01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05HeavyAgility01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05AgilityArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05LightIntellect01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05MediumIntellect01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05HeavyIntellect01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05IntellectArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05PerceptionMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05PerceptionRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05PerceptionWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05StrengthMelee01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05StrengthMelee02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05StrengthRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05StrengthWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05FortitudeMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05FortitudeRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05FortitudeWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05AgilityMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05AgilityRanged01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05AgilityRanged02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05AgilityRanged03": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05AgilityRanged04": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05AgilityRangedA": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05AgilityRangedB": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05AgilityRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05AgilityWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05IntellectMelee01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05IntellectMelee02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05IntellectMelee03": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05IntellectMelee04": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05IntellectMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05IntellectRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05IntellectWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05Perception": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05Strength": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05Fortitude": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05Agility": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05Intellect": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier05Loadout": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "1A1DE7"
+},
+"tier06Lumberjack01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Preacher01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Rogue01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Athletic01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Enforcer01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Farmer01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Biker01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Scavenger01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Ranger01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Commando01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Assassin01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Miner01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Nomad01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Nerd01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Raider01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06LightPerception01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06MediumPerception01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06HeavyPerception01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06PerceptionArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06LightStrength01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06MediumStrength01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06HeavyStrength01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06StrengthArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06LightFortitude01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06MediumFortitude01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06HeavyFortitude01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06FortitudeArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06LightAgility01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06MediumAgility01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06HeavyAgility01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06AgilityArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06LightIntellect01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06MediumIntellect01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06HeavyIntellect01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06IntellectArmor": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06PerceptionMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06PerceptionRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06PerceptionWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06StrengthMelee01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06StrengthMelee02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06StrengthRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06StrengthWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06FortitudeMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06FortitudeRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06FortitudeWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06AgilityMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06AgilityRanged01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06AgilityRanged02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06AgilityRanged03": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06AgilityRanged04": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06AgilityRangedA": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06AgilityRangedB": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06AgilityRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06AgilityWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06IntellectMelee01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06IntellectMelee02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06IntellectMelee03": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06IntellectMelee04": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06IntellectMelee": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06IntellectRanged": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06IntellectWeapons": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06ToolMods": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Throwables01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Perception": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Strength": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Fortitude": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Agility": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Intellect": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"tier06Loadout": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "mineCandyTin",
+"tint": "A42ACC"
+},
+"adminPrimitiveQualityArmorBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPrimitiveHelmet",
+"tint": "FF00FF"
+},
+"adminLumberjackQualityArmorBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorLumberjackHelmet",
+"tint": "FF00FF"
+},
+"adminPreacherQualityArmorBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorPreacherHelmet",
+"tint": "FF00FF"
+},
+"adminRogueQualityArmorBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorRogueHelmet",
+"tint": "FF00FF"
+},
+"adminAthleticQualityArmorBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorAthleticHelmet",
+"tint": "FF00FF"
+},
+"adminEnforcerQualityArmorBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorEnforcerHelmet",
+"tint": "FF00FF"
+},
+"adminFarmerQualityArmorBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorFarmerHelmet",
+"tint": "FF00FF"
+},
+"adminBikerQualityArmorBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorBikerHelmet",
+"tint": "FF00FF"
+},
+"adminScavengerQualityArmorBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorScavengerHelmet",
+"tint": "FF00FF"
+},
+"adminRangerQualityArmorBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorRangerHelmet",
+"tint": "FF00FF"
+},
+"adminCommandoQualityArmorBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorCommandoHelmet",
+"tint": "FF00FF"
+},
+"adminAssassinQualityArmorBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorAssassinHelmet",
+"tint": "FF00FF"
+},
+"adminMinerQualityArmorBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorMinerHelmet",
+"tint": "FF00FF"
+},
+"adminNomadQualityArmorBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorNomadHelmet",
+"tint": "FF00FF"
+},
+"adminNerdQualityArmorBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorNerdHelmet",
+"tint": "FF00FF"
+},
+"adminRaiderQualityArmorBundle": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorRaiderHelmet",
+"tint": "FF00FF"
+},
+"giveXP_T1_admin": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "XP",
+"tint": "9C8867"
+},
+"giveXP_T2_admin": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "XP",
+"tint": "CF7F29"
+},
+"giveXP_T3_admin": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "XP",
+"tint": "A2A41B"
+},
+"giveXP_T4_admin": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "XP",
+"tint": "42C234"
+},
+"giveXP_T5_admin": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "XP",
+"tint": "315DCE"
+},
+"giveXP_T6_admin": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "XP",
+"tint": "A42ACC"
+},
+"giveXP_T300_admin": {
+"mesh": "@:Other/Items/Misc/bookPrefab.prefab",
+"icon": "XP",
+"tint": "FF00FF"
+},
+"adminGiveBuffInfection": {
+"mesh": "@:Other/Items/Food/masonJarFPVFullPrefab.prefab",
+"icon": "drinkJarGrandpasForgettingElixir",
+"tint": "255,0,0"
+},
+"adminGiveBuffAbrasion": {
+"mesh": "@:Other/Items/Food/masonJarFPVFullPrefab.prefab",
+"icon": "medicalFirstAidKit",
+"tint": "100,255,100"
+},
+"adminGiveBuffAbrasion1800": {
+"mesh": "@:Other/Items/Food/masonJarFPVFullPrefab.prefab",
+"icon": "medicalFirstAidKit",
+"tint": "255,255,100"
+},
+"adminGiveBuffAbrasion2400": {
+"mesh": "@:Other/Items/Food/masonJarFPVFullPrefab.prefab",
+"icon": "medicalFirstAidKit",
+"tint": "255,150,0"
+},
+"adminGiveBuffAbrasion3200": {
+"mesh": "@:Other/Items/Food/masonJarFPVFullPrefab.prefab",
+"icon": "medicalFirstAidKit",
+"tint": "255,0,0"
+},
+"adminGiveBuffFatigued": {
+"mesh": "@:Other/Items/Food/masonJarFPVFullPrefab.prefab",
+"icon": "drinkJarGrandpasForgettingElixir",
+"tint": "255,255,0"
+},
+"adminGiveBuffLaceration": {
+"mesh": "@:Other/Items/Food/masonJarFPVFullPrefab.prefab",
+"icon": "drinkJarGrandpasForgettingElixir",
+"tint": "0,255,0"
+},
+"adminGiveBuffConcussion": {
+"mesh": "@:Other/Items/Food/masonJarFPVFullPrefab.prefab",
+"icon": "drinkJarGrandpasForgettingElixir",
+"tint": "0,0,255"
+},
+"adminGiveBuffDysentery": {
+"mesh": "@:Other/Items/Food/masonJarFPVFullPrefab.prefab",
+"icon": "drinkJarGrandpasForgettingElixir",
+"tint": "102,0,255"
+},
+"adminGiveBuffSprainedLeg": {
+"mesh": "@:Other/Items/Food/masonJarFPVFullPrefab.prefab",
+"icon": "armorAssassinBoots",
+"tint": "255,153,0"
+},
+"adminGiveBuffBrokenLeg": {
+"mesh": "@:Other/Items/Food/masonJarFPVFullPrefab.prefab",
+"icon": "armorAssassinBoots",
+"tint": "255,0,0"
+},
+"adminGiveBuffSprainedArm": {
+"mesh": "@:Other/Items/Food/masonJarFPVFullPrefab.prefab",
+"icon": "armorAssassinGloves",
+"tint": "255,153,0"
+},
+"adminGiveBuffBrokenArm": {
+"mesh": "@:Other/Items/Food/masonJarFPVFullPrefab.prefab",
+"icon": "armorAssassinGloves",
+"tint": "255,0,0"
+},
+"TEST_ITEM_00": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "shapeFont0",
+"tint": "000000"
+},
+"TEST_ITEM_01": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "shapeFont1",
+"tint": "996633"
+},
+"TEST_ITEM_02": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "shapeFont2",
+"tint": "FF0000"
+},
+"TEST_ITEM_03": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "shapeFont3",
+"tint": "FF9900"
+},
+"TEST_ITEM_04": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "shapeFont4",
+"tint": "FFFF00"
+},
+"TEST_ITEM_05": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "shapeFont5",
+"tint": "00FF00"
+},
+"TEST_ITEM_06": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "shapeFont6",
+"tint": "0000FF"
+},
+"TEST_ITEM_07": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "shapeFont7",
+"tint": "CC66FF"
+},
+"TEST_ITEM_08": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "shapeFont8",
+"tint": "808080"
+},
+"TEST_ITEM_09": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "shapeFont9",
+"tint": "FFFFFF"
+},
+"armorLumberjackHelmetDemo": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "armorLumberjackHelmet",
+"tint": null
+},
+"missingItem": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "missingIcon",
+"tint": "90ff90"
+},
+"drinkJarGrey": {
+"mesh": "@:Other/Items/Misc/sackPrefab.prefab",
+"icon": "drinkJarGrey",
+"tint": null
+},
+"UselessThing": {
+"mesh": "@:Other/Items/Crafting/rock_smallPrefab.prefab",
+"icon": "missingIcon",
+"tint": null
+}
+}

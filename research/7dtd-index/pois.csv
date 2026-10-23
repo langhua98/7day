@@ -1,0 +1,1106 @@
+poi_file,name_en,zoning,difficulty_tier,prefab_size_xyz,drive_zip
+AAA_utility_waterworks,,none,1,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+abandoned_house_01,The MeMaw Residence,ResidentialOld,0,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+abandoned_house_02,Jack & Sally's Getaway,ResidentialOld,0,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+abandoned_house_03,Luke's Vacation Rental,ResidentialOld,0,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+abandoned_house_04,The Mimzy Residence,ResidentialOld,0,"42, 15, 42",/7day/建筑POI/POIs_all_1575.zip
+abandoned_house_05,The Papaw Residence,ResidentialOld,0,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+abandoned_house_06,Sal's Safehouse,ResidentialOld,0,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+abandoned_house_07,The Clement Residence,ResidentialOld,0,"42, 24, 42",/7day/建筑POI/POIs_all_1575.zip
+abandoned_house_08,The Rupert Residence,ResidentialOld,0,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+abandoned_house_09,The Dickens Retreat,none,0,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+abandoned_house_10,K. Reeves Place,none,0,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+apartments_01,Good Life Apartments,none,4,"42, 24, 42",/7day/建筑POI/POIs_all_1575.zip
+apartments_02,Vanity Tower,none,5,"60, 81, 60",/7day/建筑POI/POIs_all_1575.zip
+apartments_03,The Bend Apartments,none,3,"42, 16, 42",/7day/建筑POI/POIs_all_1575.zip
+apartments_04,The Budget Burrows,none,2,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+apartments_05,Slummit Apartments,none,2,"42, 13, 42",/7day/建筑POI/POIs_all_1575.zip
+apartments_06,Two Bit Tower,"ResidentialNew, downtown",5,"100, 82, 100",/7day/建筑POI/POIs_all_1575.zip
+army_camp_01,Fort Camo,Industrial,4,"53, 28, 61",/7day/建筑POI/POIs_all_1575.zip
+army_camp_02,Fort Bags,Industrial,4,"54, 26, 60",/7day/建筑POI/POIs_all_1575.zip
+army_camp_03,Fort Quonset,Industrial,4,"60, 26, 60",/7day/建筑POI/POIs_all_1575.zip
+army_camp_04,Fort Razor,none,3,"60, 24, 60",/7day/建筑POI/POIs_all_1575.zip
+army_camp_05,Fort Choppa,none,4,"60, 30, 60",/7day/建筑POI/POIs_all_1575.zip
+army_camp_06,Goldrush Station,none,4,"60, 29, 60",/7day/建筑POI/POIs_all_1575.zip
+army_camp_07,Installation Blue Ridge,none,4,"60, 38, 60",/7day/建筑POI/POIs_all_1575.zip
+army_camp_08,Forward Supply Depot,none,3,"60, 17, 60",/7day/建筑POI/POIs_all_1575.zip
+army_camp_09,Camp Hollow Point,none,4,"60, 35, 60",/7day/建筑POI/POIs_all_1575.zip
+army_camp_10,Green Hill,none,4,"60, 27, 60",/7day/建筑POI/POIs_all_1575.zip
+auto_mechanic_01,A1 Auto,none,2,"60, 16, 60",/7day/建筑POI/POIs_all_1575.zip
+bank_01,The Piggy Bank,none,2,"42, 18, 42",/7day/建筑POI/POIs_all_1575.zip
+bank_02,Seemore Bank,none,3,"25, 26, 25",/7day/建筑POI/POIs_all_1575.zip
+bar_01,Buzz's Bar,"Commercial, downtown",1,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+barn_01,Hay Dude Fields,Industrial,0,"60, 11, 60",/7day/建筑POI/POIs_all_1575.zip
+barn_02,Mason's Barn,Industrial,2,"60, 20, 60",/7day/建筑POI/POIs_all_1575.zip
+barn_03,Boar Barn Fields,Industrial,2,"60, 26, 60",/7day/建筑POI/POIs_all_1575.zip
+base_military_01,U.S. Army Post #7,Industrial,5,"100, 49, 100",/7day/建筑POI/POIs_all_1575.zip
+base_survivor_02,The Rejekts Gang Outpost,none,3,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+blueberryfield_sm,,none,0,"12, 2, 12",/7day/建筑POI/POIs_all_1575.zip
+bluff01,,none,0,"15, 10, 19",/7day/建筑POI/POIs_all_1575.zip
+body_shop_01,Collision Center,"none, Commercial, downtown, Industrial",2,"42, 19, 42",/7day/建筑POI/POIs_all_1575.zip
+bombshelter_01,Bart's Salvage,Industrial,2,"42, 34, 42",/7day/建筑POI/POIs_all_1575.zip
+bombshelter_02,Hexagon Hideaway,none,3,"60, 38, 60",/7day/建筑POI/POIs_all_1575.zip
+bombshelter_03,The Cylinder,none,1,"25, 32, 25",/7day/建筑POI/POIs_all_1575.zip
+bombshelter_04,Bomb Shelter 41,none,1,"25, 33, 25",/7day/建筑POI/POIs_all_1575.zip
+bombshelter_05,Bunker Buildsite #5,none,0,"25, 13, 25",/7day/建筑POI/POIs_all_1575.zip
+bombshelter_06,Best Pals Shelter,none,0,"25, 19, 25",/7day/建筑POI/POIs_all_1575.zip
+bombshelter_07,Navezgane Civil Defense Shelter,none,1,"25, 38, 25",/7day/建筑POI/POIs_all_1575.zip
+bombshelter_08,Tracey Family Shelter,none,1,"25, 31, 25",/7day/建筑POI/POIs_all_1575.zip
+bombshelter_09,Duck Station,none,1,"25, 33, 25",/7day/建筑POI/POIs_all_1575.zip
+bombshelter_10,Blue Sky Project,none,1,"25, 33, 25",/7day/建筑POI/POIs_all_1575.zip
+bombshelter_11,USA #1 Type Bunker,none,0,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+bowling_alley_01,Pineballs Bowling,none,4,"60, 25, 60",/7day/建筑POI/POIs_all_1575.zip
+bowling_alley_02,Ballzstrike Bowling,none,3,"42, 14, 42",/7day/建筑POI/POIs_all_1575.zip
+bridge_asphalt1,,none,0,"15, 20, 43",/7day/建筑POI/POIs_all_1575.zip
+bridge_asphalt_broken,,none,0,"15, 23, 47",/7day/建筑POI/POIs_all_1575.zip
+bridge_concrete1,,NavOnly,0,"39, 11, 11",/7day/建筑POI/POIs_all_1575.zip
+bridge_concrete_1,,none,0,"13, 9, 39",/7day/建筑POI/POIs_all_1575.zip
+bridge_concrete_2,,none,0,"45, 15, 17",/7day/建筑POI/POIs_all_1575.zip
+bridge_wood1,,NavOnly,0,"39, 20, 11",/7day/建筑POI/POIs_all_1575.zip
+bridge_wood2,,none,0,"31, 12, 9",/7day/建筑POI/POIs_all_1575.zip
+bunker_00,Area 7,none,5,"100, 76, 100",/7day/建筑POI/POIs_all_1575.zip
+bus_stop_01,,none,0,"29, 5, 9",/7day/建筑POI/POIs_all_1575.zip
+bus_wreck_01,,none,0,"27, 7, 7",/7day/建筑POI/POIs_all_1575.zip
+business_burnt_01,O'malley Oats,Industrial,2,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+business_burnt_02,Navezgane Creamery,Industrial,2,"42, 30, 42",/7day/建筑POI/POIs_all_1575.zip
+cabin_01,Willy's Cabin,ResidentialOld,1,"42, 16, 42",/7day/建筑POI/POIs_all_1575.zip
+cabin_02,Marvin's Getaway,ResidentialOld,1,"42, 17, 42",/7day/建筑POI/POIs_all_1575.zip
+cabin_03,The Harrison Residence,ResidentialOld,2,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+cabin_04,Wilbur's Place,ResidentialOld,1,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+cabin_05,Shawn's Shack,ResidentialOld,1,"42, 24, 42",/7day/建筑POI/POIs_all_1575.zip
+cabin_06,Roberts Tack Shack,ResidentialOld,1,"39, 20, 32",/7day/建筑POI/POIs_all_1575.zip
+cabin_07,The TJ Morales Residence,ResidentialOld,1,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+cabin_08,Johnson Family Cabin,ResidentialOld,1,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+cabin_09,Skeeter's Place,ResidentialOld,1,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+cabin_10,The Knowbly Cabin,ResidentialOld,1,"30, 26, 52",/7day/建筑POI/POIs_all_1575.zip
+cabin_11,New Life Hope Cabin,ResidentialOld,1,"42, 34, 42",/7day/建筑POI/POIs_all_1575.zip
+cabin_12,Allistair's Cabin,ResidentialOld,1,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+cabin_13,The Gladue Residence,ResidentialOld,2,"60, 27, 60",/7day/建筑POI/POIs_all_1575.zip
+cabin_14,The Burns Cabin,ResidentialOld,1,"42, 23, 42",/7day/建筑POI/POIs_all_1575.zip
+cabin_15,The Presley Dwellers,ResidentialOld,1,"40, 24, 48",/7day/建筑POI/POIs_all_1575.zip
+cabin_16,The Broken Axe,none,1,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+cabin_17,The Engall's Residence,none,2,"60, 28, 60",/7day/建筑POI/POIs_all_1575.zip
+cabin_18,Our Best Moments,none,2,"60, 26, 60",/7day/建筑POI/POIs_all_1575.zip
+cabin_20,The Fire Pit Lodge,none,3,"60, 24, 60",/7day/建筑POI/POIs_all_1575.zip
+canyon_car_wreck,,none,0,"29, 8, 19",/7day/建筑POI/POIs_all_1575.zip
+canyon_cliff_dwellings,Canyon Cliff Dwellings,NavOnly,0,"48, 34, 77",/7day/建筑POI/POIs_all_1575.zip
+canyon_gift_shop,Canyon Gift Shop & Diner,none,2,"56, 47, 50",/7day/建筑POI/POIs_all_1575.zip
+canyon_gift_shop_parking,,none,0,"36, 22, 40",/7day/建筑POI/POIs_all_1575.zip
+canyon_gift_shop_sign,,NavOnly,0,"4, 9, 10",/7day/建筑POI/POIs_all_1575.zip
+canyon_mine,Canyon Mine,NavOnly,0,"64, 69, 44",/7day/建筑POI/POIs_all_1575.zip
+carlot_01,Joey's Carlot,Commercial,2,"42, 18, 42",/7day/建筑POI/POIs_all_1575.zip
+carlot_02,Carl's Cars,Commercial,3,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+cave_01,Steer Gulch,NoZone,1,"33, 37, 54",/7day/建筑POI/POIs_all_1575.zip
+cave_02,Pete's Hidey Hole,NoZone,1,"33, 35, 54",/7day/建筑POI/POIs_all_1575.zip
+cave_03,Mushroom Mining Company,NoZone,1,"44, 37, 54",/7day/建筑POI/POIs_all_1575.zip
+cave_04,Hobo Cave,NoZone,1,"33, 14, 54",/7day/建筑POI/POIs_all_1575.zip
+cave_05,Nav Mt. Cave,none,1,"26, 19, 61",/7day/建筑POI/POIs_all_1575.zip
+cave_06,Corkscrew Caverns,none,1,"25, 45, 25",/7day/建筑POI/POIs_all_1575.zip
+cave_07,Rotten Cavern,none,0,"60, 63, 60",/7day/建筑POI/POIs_all_1575.zip
+cave_09,Aranea Caverns,none,4,"100, 35, 100",/7day/建筑POI/POIs_all_1575.zip
+cave_10,Crossvein Caverns,none,0,"25, 45, 25",/7day/建筑POI/POIs_all_1575.zip
+cave_11,Carlsgood Caverns,none,1,"25, 45, 25",/7day/建筑POI/POIs_all_1575.zip
+cave_12,Spelunker's Surprise,none,2,"25, 45, 25",/7day/建筑POI/POIs_all_1575.zip
+cave_13,,none,0,"25, 26, 25",/7day/建筑POI/POIs_all_1575.zip
+cave_14,The Secret Chamber,none,0,"25, 45, 25",/7day/建筑POI/POIs_all_1575.zip
+cave_16,,none,0,"25, 26, 25",/7day/建筑POI/POIs_all_1575.zip
+cave_17,Nameless Caverns,none,1,"25, 44, 25",/7day/建筑POI/POIs_all_1575.zip
+cave_18,Devil's Cauldron,none,1,"25, 44, 25",/7day/建筑POI/POIs_all_1575.zip
+cave_19,The Breather's Pocket,none,2,"25, 49, 25",/7day/建筑POI/POIs_all_1575.zip
+cave_20,The Eater's Gate,none,1,"25, 31, 25",/7day/建筑POI/POIs_all_1575.zip
+cemetery_01,Mausoleums,"ResidentialOld, ResidentialNew, Downtown",1,"42, 16, 42",/7day/建筑POI/POIs_all_1575.zip
+cemetery_02,Crypts,"ResidentialOld, ResidentialNew, Downtown",2,"42, 29, 42",/7day/建筑POI/POIs_all_1575.zip
+church_01,St. Moe's Cathedral,"ResidentialNew, ResdentialOld, downtown",4,"60, 68, 60",/7day/建筑POI/POIs_all_1575.zip
+church_02,St. Mark's Church,none,1,"42, 30, 42",/7day/建筑POI/POIs_all_1575.zip
+church_sm_01,Navezgane Church of Brick,ResidentialOld,1,"42, 31, 42",/7day/建筑POI/POIs_all_1575.zip
+city_center_01,Olgiddy & Brother Advertising,none,4,"60, 48, 60",/7day/建筑POI/POIs_all_1575.zip
+commercial_site_01,,none,0,"42, 12, 42",/7day/建筑POI/POIs_all_1575.zip
+commercial_site_02,,,0,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+commercial_strip_01,Shady Square Shoppe,none,2,"42, 20, 42",/7day/建筑POI/POIs_all_1575.zip
+commercial_strip_02,Treats Terrace,none,2,"42, 16, 42",/7day/建筑POI/POIs_all_1575.zip
+commercial_strip_03,Vick Garrison's Pedipawn,none,3,"60, 20, 60",/7day/建筑POI/POIs_all_1575.zip
+commercial_strip_04,Smorgasbord Square,none,2,"42, 12, 42",/7day/建筑POI/POIs_all_1575.zip
+commercial_strip_05,Elzner's Emporium,none,3,"60, 15, 60",/7day/建筑POI/POIs_all_1575.zip
+commercial_strip_07,Elite Essentials,none,2,"42, 12, 42",/7day/建筑POI/POIs_all_1575.zip
+commercial_strip_08,,none,0,"42, 28, 42",/7day/建筑POI/POIs_all_1575.zip
+commercial_strip_09,,none,0,"42, 13, 42",/7day/建筑POI/POIs_all_1575.zip
+commercial_strip_10,,none,0,"42, 17, 42",/7day/建筑POI/POIs_all_1575.zip
+cornfield_lg,,"ResidentialOld, Industrial",0,"48, 2, 48",/7day/建筑POI/POIs_all_1575.zip
+cornfield_med,,"ResidentialOld, Industrial",0,"24, 2, 24",/7day/建筑POI/POIs_all_1575.zip
+cornfield_sm,,"ResidentialOld, Industrial",0,"12, 2, 12",/7day/建筑POI/POIs_all_1575.zip
+country_junkyard_01,Junkin,none,0,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+country_junkyard_02,Atlas Metal Company,none,3,"60, 17, 60",/7day/建筑POI/POIs_all_1575.zip
+countrytown_business_01,Pink Penny's,none,2,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+countrytown_business_02,Federal Appliance,none,2,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+countrytown_business_03,The Bear Den,"commercial, downtown",3,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+countrytown_business_04,Aldos Cabinet,none,2,"42, 26, 42",/7day/建筑POI/POIs_all_1575.zip
+countrytown_business_05,Butcher Pete's,none,4,"42, 26, 42",/7day/建筑POI/POIs_all_1575.zip
+countrytown_business_06,Red Ruby's,none,2,"42, 18, 42",/7day/建筑POI/POIs_all_1575.zip
+countrytown_business_07,Maggie's Corner Cafe,none,2,"42, 24, 42",/7day/建筑POI/POIs_all_1575.zip
+countrytown_business_08,Wildfire Camping,none,3,"42, 11, 42",/7day/建筑POI/POIs_all_1575.zip
+countrytown_business_09,4 Ever Video,none,3,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+countrytown_business_10,Bobcats Bar,none,1,"42, 15, 42",/7day/建筑POI/POIs_all_1575.zip
+countrytown_business_11,Midway Clinic,none,3,"42, 15, 42",/7day/建筑POI/POIs_all_1575.zip
+countrytown_business_12,Jim & Tim's Bullets and Booze,none,3,"42, 15, 42",/7day/建筑POI/POIs_all_1575.zip
+countrytown_business_13,The Dead Rooster,none,1,"42, 19, 42",/7day/建筑POI/POIs_all_1575.zip
+countrytown_business_14,Grumpy's Pub,none,2,"42, 11, 42",/7day/建筑POI/POIs_all_1575.zip
+countrytown_business_15,Uncle Ray's Supermarket,none,3,"60, 14, 60",/7day/建筑POI/POIs_all_1575.zip
+countrytown_business_16,Crazy Billy's Used Cars,none,1,"42, 13, 42",/7day/建筑POI/POIs_all_1575.zip
+countrytown_business_17,Glove Affair Boxing Gym,none,2,"42, 10, 42",/7day/建筑POI/POIs_all_1575.zip
+countrytown_church_02,Church Of The Blinding Faith,none,3,"42, 45, 42",/7day/建筑POI/POIs_all_1575.zip
+courthouse_med_01,Town Hall,downtown,4,"60, 61, 60",/7day/建筑POI/POIs_all_1575.zip
+crater_deco_01,,none,0,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+crater_deco_02,,none,0,"25, 23, 25",/7day/建筑POI/POIs_all_1575.zip
+crater_deco_03,,none,0,"25, 5, 25",/7day/建筑POI/POIs_all_1575.zip
+culvert_01,,none,0,"21, 15, 45",/7day/建筑POI/POIs_all_1575.zip
+deco_coal_vein,,BiomeOnly,0,"2, 12, 2",/7day/建筑POI/POIs_all_1575.zip
+deco_foilage_01,,none,0,"7, 20, 7",/7day/建筑POI/POIs_all_1575.zip
+deco_foilage_02,,none,0,"7, 7, 7",/7day/建筑POI/POIs_all_1575.zip
+deco_foilage_03,,none,0,"7, 10, 7",/7day/建筑POI/POIs_all_1575.zip
+deco_foilage_04,,none,0,"7, 5, 7",/7day/建筑POI/POIs_all_1575.zip
+deco_foilage_05,,none,0,"7, 3, 7",/7day/建筑POI/POIs_all_1575.zip
+deco_iron_vein,,BiomeOnly,0,"2, 12, 2",/7day/建筑POI/POIs_all_1575.zip
+deco_lead_vein,,BiomeOnly,0,"2, 12, 2",/7day/建筑POI/POIs_all_1575.zip
+deco_nitrate_vein,,BiomeOnly,0,"2, 12, 2",/7day/建筑POI/POIs_all_1575.zip
+deco_remnant_stone_01,,"downtown, commercial, industrial",0,"8, 11, 8",/7day/建筑POI/POIs_all_1575.zip
+deco_remnant_stone_02,,"downtown, commercial, industrial",0,"9, 11, 8",/7day/建筑POI/POIs_all_1575.zip
+deco_remnant_stone_03,,"downtown, commercial, industrial",0,"9, 14, 9",/7day/建筑POI/POIs_all_1575.zip
+deco_remnant_stone_04,,BiomeOnly,0,"9, 11, 9",/7day/建筑POI/POIs_all_1575.zip
+deco_remnant_stone_05,,BiomeOnly,0,"9, 6, 9",/7day/建筑POI/POIs_all_1575.zip
+deco_remnant_wood_01,,BiomeOnly,0,"8, 10, 8",/7day/建筑POI/POIs_all_1575.zip
+deco_remnant_wood_02,,BiomeOnly,0,"6, 7, 7",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_brick_01,,none,0,"5, 2, 5",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_brick_02,,none,0,"5, 3, 5",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_brick_03,,none,0,"5, 2, 5",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_stone_01,,BiomeOnly,0,"5, 2, 5",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_stone_02,,BiomeOnly,0,"7, 3, 7",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_stone_03,,BiomeOnly,0,"4, 3, 4",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_stone_04,,BiomeOnly,1,"7, 3, 7",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_stone_05,,BiomeOnly,1,"9, 3, 9",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_stone_06,,none,0,"5, 3, 5",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_stone_07,,none,0,"5, 3, 5",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_stone_08,,none,0,"7, 3, 7",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_stone_09,,none,0,"9, 3, 9",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_stone_10,,BiomeOnly,0,"4, 2, 4",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_stone_11,,BiomeOnly,0,"7, 2, 7",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_stone_12,,BiomeOnly,1,"7, 2, 7",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_stone_13,,none,0,"7, 2, 7",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_stone_14,,none,0,"7, 2, 7",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_stone_15,,none,0,"7, 2, 7",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_stone_16,,none,0,"7, 2, 7",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_wood_01,,none,0,"7, 2, 7",/7day/建筑POI/POIs_all_1575.zip
+deco_rubble_wood_02,,none,0,"5, 2, 5",/7day/建筑POI/POIs_all_1575.zip
+deco_shale_vein,,BiomeOnly,0,"2, 12, 2",/7day/建筑POI/POIs_all_1575.zip
+departure_bridge_01,,none,0,"32, 18, 11",/7day/建筑POI/POIs_all_1575.zip
+departure_bridge_02,,none,0,"16, 18, 11",/7day/建筑POI/POIs_all_1575.zip
+departure_bridge_1,,none,0,"146, 34, 17",/7day/建筑POI/POIs_all_1575.zip
+departure_bridge_2,,none,0,"176, 32, 19",/7day/建筑POI/POIs_all_1575.zip
+departure_city_blk_01,Departure,DevOnly,0,"103, 12, 103",/7day/建筑POI/POIs_all_1575.zip
+departure_city_blk_plaza,Departure Plaza,downtown,0,"103, 19, 103",/7day/建筑POI/POIs_all_1575.zip
+desert_arch,,BiomeOnly,0,"24, 9, 8",/7day/建筑POI/POIs_all_1575.zip
+desert_form01,,BiomeOnly,0,"26, 22, 29",/7day/建筑POI/POIs_all_1575.zip
+desert_form02,,BiomeOnly,0,"9, 9, 10",/7day/建筑POI/POIs_all_1575.zip
+desert_town_blk_01,,none,0,"150, 13, 161",/7day/建筑POI/POIs_all_1575.zip
+desert_town_blk_02,,none,0,"150, 23, 100",/7day/建筑POI/POIs_all_1575.zip
+diersville_city_blk_01,Diersville,none,0,"135, 12, 115",/7day/建筑POI/POIs_all_1575.zip
+diersville_city_blk_02,Diersville,none,0,"135, 12, 115",/7day/建筑POI/POIs_all_1575.zip
+diner_01,The Greasy Spoon,"Commercial, downtown",1,"42, 13, 42",/7day/建筑POI/POIs_all_1575.zip
+diner_02,Bob's Cafe,"Commercial, downtown",1,"42, 16, 42",/7day/建筑POI/POIs_all_1575.zip
+diner_03,Del's Cafe,none,1,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+diner_04,Dick's Diner,none,1,"42, 15, 42",/7day/建筑POI/POIs_all_1575.zip
+diner_07,Navezgane Falls Diner,none,3,"60, 12, 60",/7day/建筑POI/POIs_all_1575.zip
+docks_01,BJ's Gas Dock,NavOnly,1,"27, 23, 27",/7day/建筑POI/POIs_all_1575.zip
+docks_02,Pal's Marina,NavOnly,2,"44, 31, 58",/7day/建筑POI/POIs_all_1575.zip
+docks_03,Haulwell Freight,NavOnly,3,"53, 32, 54",/7day/建筑POI/POIs_all_1575.zip
+docks_04,Middleman Docks,NavOnly,0,"12, 27, 25",/7day/建筑POI/POIs_all_1575.zip
+docks_05,"Hook, Line, & Sinker",none,1,"25, 17, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_building_01,Buy-N-Go Apartments,downtown,3,"42, 28, 42",/7day/建筑POI/POIs_all_1575.zip
+downtown_building_02,Pergola Apartments,downtown,4,"42, 28, 42",/7day/建筑POI/POIs_all_1575.zip
+downtown_building_03,Stand Tower,downtown,4,"60, 35, 60",/7day/建筑POI/POIs_all_1575.zip
+downtown_building_04,Blaze & Burns Offices,downtown,3,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+downtown_building_05,Bombshell News,none,2,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+downtown_business_06,Special Totz,"commercial, downtown",2,"42, 19, 42",/7day/建筑POI/POIs_all_1575.zip
+downtown_business_07,Doggos,"commercial, downtown",2,"42, 20, 42",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_01,Lazy Fitness,downtown,2,"25, 25, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_02,Le Spank,downtown,3,"25, 27, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_03,Schittz Law,none,3,"25, 31, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_04,z-work,none,2,"25, 47, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_05,Trilogy Suites,none,3,"25, 25, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_06,Downtown Apartments,none,3,"25, 20, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_07,Dumpsy Clinic,none,4,"25, 32, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_08,,none,1,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_09,Century Outlet,none,1,"25, 16, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_11,Fit Box,none,3,"25, 30, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_12,Town Square Apartments,downtown,3,"25, 26, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_13,Luigi's Pizza,downtown,2,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_14,Post Office Apartment,downtown,2,"25, 19, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_15,Downtown Shamway,downtown,2,"25, 16, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_21,Meat You Here Butchery,downtown,3,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_22,Law & Order Square,downtown,3,"25, 34, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_23,HNN Bank,downtown,3,"25, 32, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_24,Ann Hoing's Telemarketing,none,3,"25, 18, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_25,Mamma Pizza,downtown,3,"25, 40, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_26,Hooligan's Corner,downtown,2,"25, 18, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_27,OK Laundry,downtown,3,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_29,The Molar & Moral Building,downtown,2,"25, 13, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_30,KLZ Radio,downtown,3,"25, 30, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_31,Downtown MeltDowns,downtown,3,"25, 32, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_park_01,Loan Tree Park,none,0,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_park_02,Gazebo Park,downtown,0,"25, 8, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_park_03,Crosswalk Park,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_park_04,Detour Park,none,0,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_park_05,Arch Park,none,0,"25, 9, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_plaza_01,Obelisk Plaza,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_plaza_02,Square Water Plaza,downtown,0,"25, 7, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_plaza_03,Step Water Plaza,none,0,"25, 8, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_plaza_04,Garden Plaza,none,0,"25, 7, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_filler_plaza_05,Memorial Plaza,none,0,"25, 23, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_park_01,Shady Pointe Park,none,0,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+downtown_park_02,Federal Plaza,none,0,"60, 29, 60",/7day/建筑POI/POIs_all_1575.zip
+downtown_park_03,Civic Square,none,0,"60, 27, 60",/7day/建筑POI/POIs_all_1575.zip
+downtown_parking_lot_01,Downtown Evacuation Point,none,2,"42, 14, 42",/7day/建筑POI/POIs_all_1575.zip
+downtown_strip_01,Flushing Rule Palace,"commercial, downtown",4,"42, 32, 42",/7day/建筑POI/POIs_all_1575.zip
+downtown_strip_02,Richard Munchz Plaza,none,4,"42, 23, 42",/7day/建筑POI/POIs_all_1575.zip
+downtown_strip_03,Pete's Outlet,"commercial, downtown",4,"42, 31, 42",/7day/建筑POI/POIs_all_1575.zip
+downtown_strip_04,Joe's Junction,"commercial, downtown",4,"42, 29, 42",/7day/建筑POI/POIs_all_1575.zip
+downtown_strip_05,Downtown Marketplace,none,4,"42, 30, 42",/7day/建筑POI/POIs_all_1575.zip
+downtown_strip_06,,none,1,"42, 23, 42",/7day/建筑POI/POIs_all_1575.zip
+downtown_strip_07,Holvez Rent-a-Car,none,4,"42, 23, 42",/7day/建筑POI/POIs_all_1575.zip
+downtown_strip_08,,none,1,"42, 19, 25",/7day/建筑POI/POIs_all_1575.zip
+downtown_strip_09,Pop's Pawn & Bel's Bakery,none,3,"42, 18, 42",/7day/建筑POI/POIs_all_1575.zip
+downtown_strip_10,The Boobie Trap,none,3,"42, 18, 42",/7day/建筑POI/POIs_all_1575.zip
+downtown_strip_11,Diamond's Mens Club,none,4,"42, 18, 42",/7day/建筑POI/POIs_all_1575.zip
+downtown_strip_12,NFD Downtown HQ,none,4,"42, 30, 42",/7day/建筑POI/POIs_all_1575.zip
+factory_01,Shamway Factory,industrial,5,"100, 55, 100",/7day/建筑POI/POIs_all_1575.zip
+factory_02,Shotgun Messiah Factory,industrial,5,"100, 78, 100",/7day/建筑POI/POIs_all_1575.zip
+factory_03,Pop-N-Pills Factory,none,5,"60, 55, 60",/7day/建筑POI/POIs_all_1575.zip
+farm_01,Jericho Ranch,none,2,"60, 29, 60",/7day/建筑POI/POIs_all_1575.zip
+farm_02,Scarecrow Fields,NoZone,3,"60, 24, 60",/7day/建筑POI/POIs_all_1575.zip
+farm_03,Huenink Family Farms,none,2,"60, 23, 60",/7day/建筑POI/POIs_all_1575.zip
+farm_04,Animal Hospital,NoZone,2,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+farm_05,Fiery Farms,none,3,"60, 19, 60",/7day/建筑POI/POIs_all_1575.zip
+farm_06,Fortified Farm,none,3,"60, 21, 60",/7day/建筑POI/POIs_all_1575.zip
+farm_07,The Shady Swine,NoZone,2,"60, 26, 60",/7day/建筑POI/POIs_all_1575.zip
+farm_08,Sweet Sweet Honey Pot Farms,NoZone,2,"60, 26, 60",/7day/建筑POI/POIs_all_1575.zip
+farm_10,Red Barn Bed-n-Bath,none,2,"60, 26, 60",/7day/建筑POI/POIs_all_1575.zip
+farm_11,Smithstone Silos,NoZone,2,"60, 29, 60",/7day/建筑POI/POIs_all_1575.zip
+farm_12,Abandoned Shady Shed Farms,NoZone,1,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+farm_13,Mason Farms,ResidentialOld,3,"100, 25, 100",/7day/建筑POI/POIs_all_1575.zip
+farm_14,Hersh Farm,none,2,"60, 19, 60",/7day/建筑POI/POIs_all_1575.zip
+farm_15,Hogzilla Ranch LLC,none,3,"60, 14, 60",/7day/建筑POI/POIs_all_1575.zip
+farm_16,Judy Witch,none,4,"60, 34, 60",/7day/建筑POI/POIs_all_1575.zip
+farm_17,McPherson UFO Museum,none,2,"60, 18, 60",/7day/建筑POI/POIs_all_1575.zip
+farm_18,McOivey Farms,none,4,"60, 27, 60",/7day/建筑POI/POIs_all_1575.zip
+farm_19,Soyer Family Farm,none,3,"60, 29, 60",/7day/建筑POI/POIs_all_1575.zip
+farm_20,Sprout & Sons Nursery,none,4,"60, 23, 60",/7day/建筑POI/POIs_all_1575.zip
+fastfood_01,Prowlin Petes,"Commercial, downtown",1,"42, 13, 42",/7day/建筑POI/POIs_all_1575.zip
+fastfood_02,Hurry Harry's,none,1,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+fastfood_03,Blue Birdie,"Commercial, downtown",1,"42, 12, 42",/7day/建筑POI/POIs_all_1575.zip
+fastfood_04,Fats Foods,none,0,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+fastfood_05,Marvin's Restaurant,none,1,"42, 11, 42",/7day/建筑POI/POIs_all_1575.zip
+fastfood_06,The Burgcaneer,none,3,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+fastfood_07,NEW Mamma Pizza,none,2,"42, 15, 42",/7day/建筑POI/POIs_all_1575.zip
+field_concert_01,Shady Woods Amphitheatre,NoZone,3,"100, 20, 100",/7day/建筑POI/POIs_all_1575.zip
+fire_station_01,Fire Station 7,"downtown, ResidentialNew",2,"42, 32, 42",/7day/建筑POI/POIs_all_1575.zip
+fire_station_02,Fire Station 8,none,3,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+fire_station_03,Navezgane Fire District #3,none,3,"42, 19, 42",/7day/建筑POI/POIs_all_1575.zip
+fire_station_04,NFD Engine 4,none,2,"42, 37, 42",/7day/建筑POI/POIs_all_1575.zip
+football_stadium,Navezgane Athletics Complex,none,5,"100, 42, 100",/7day/建筑POI/POIs_all_1575.zip
+funeral_home_01,Am-I-Gone Funeral Home,"Commercial, ResidentialNew",1,"42, 23, 42",/7day/建筑POI/POIs_all_1575.zip
+gas_station_01,Pass-N-Gas Store #01,Commercial,1,"42, 20, 42",/7day/建筑POI/POIs_all_1575.zip
+gas_station_02,Pass-N-Gas Store #02,Commercial,1,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+gas_station_03,Pass-N-Gas Store #03,Commercial,1,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+gas_station_04,Pass-N-Gas Store #04,Commercial,1,"60, 30, 60",/7day/建筑POI/POIs_all_1575.zip
+gas_station_05,Pass-N-Gas Store #05,Commercial,4,"60, 24, 60",/7day/建筑POI/POIs_all_1575.zip
+gas_station_06,Pass-N-Gas Store #06,Commercial,0,"42, 15, 42",/7day/建筑POI/POIs_all_1575.zip
+gas_station_07,Pass-N-Gas Store #07,Commercial,1,"60, 24, 60",/7day/建筑POI/POIs_all_1575.zip
+gas_station_08,Pass-N-Gas Store #08,Commercial,1,"42, 26, 42",/7day/建筑POI/POIs_all_1575.zip
+gas_station_09,Pass-N-Gas Store #09,Commercial,1,"60, 13, 60",/7day/建筑POI/POIs_all_1575.zip
+gas_station_10,Pass-N-Gas Store #10,Commercial,1,"42, 14, 42",/7day/建筑POI/POIs_all_1575.zip
+gas_station_11,Jerry's Fill,Commercial,1,"42, 23, 42",/7day/建筑POI/POIs_all_1575.zip
+gas_station_12,Pass-N-Gas Plaza,none,3,"60, 18, 60",/7day/建筑POI/POIs_all_1575.zip
+gravestowne_city_blk_01,Gravestowne,NavOnly,0,"103, 12, 103",/7day/建筑POI/POIs_all_1575.zip
+gravestowne_city_blk_half,Gravestowne,NavOnly,0,"103, 12, 25",/7day/建筑POI/POIs_all_1575.zip
+gravestowne_city_blk_quarter,Gravestowne,NavOnly,0,"25, 12, 25",/7day/建筑POI/POIs_all_1575.zip
+gravestowne_street_crater_01,Gravestowne,NavOnly,0,"9, 5, 9",/7day/建筑POI/POIs_all_1575.zip
+hospital_01,Navezgane General Hospital,none,5,"100, 64, 100",/7day/建筑POI/POIs_all_1575.zip
+hotel_01,Hotel Zombona,none,4,"60, 30, 60",/7day/建筑POI/POIs_all_1575.zip
+hotel_02,Haven Hotel,none,5,"100, 36, 100",/7day/建筑POI/POIs_all_1575.zip
+hotel_03,7 Days Suites,none,5,"100, 35, 100",/7day/建筑POI/POIs_all_1575.zip
+hotel_04,Calm Inn,none,4,"60, 24, 60",/7day/建筑POI/POIs_all_1575.zip
+hotel_ostrich,Ostrich Hotel,"Commercial, downtown",5,"60, 62, 60",/7day/建筑POI/POIs_all_1575.zip
+house_burnt_01,The Owens Residence,ResidentialOld,1,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+house_burnt_02,The Paciotti Residence,ResidentialOld,2,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+house_burnt_03,The Jacobs Residence,ResidentialOld,1,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+house_burnt_04,The Rendon Residence,ResidentialOld,2,"42, 26, 42",/7day/建筑POI/POIs_all_1575.zip
+house_burnt_05,The Byington Residence,ResidentialOld,2,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+house_burnt_06,Seedy Manor,ResidentialOld,4,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+house_construction_01,The Roland Residence,ResidentialNew,1,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+house_construction_02,Kodiak Construction,ResidentialNew,0,"42, 27, 42",/7day/建筑POI/POIs_all_1575.zip
+house_construction_03,Garage 1st Construction,ResidentialNew,1,"42, 12, 42",/7day/建筑POI/POIs_all_1575.zip
+house_construction_04,Deracinated Domicile,none,1,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+house_construction_05,OLD - Uninhabited Mansion,none,0,"42, 1, 42",/7day/建筑POI/POIs_all_1575.zip
+house_country_01,Wango Barndo,ResidentialNew,1,"42, 20, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_01,The Nairn Residence,ResidentialNew,2,"42, 18, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_02,The Nightstar Residence,ResidentialNew,3,"60, 23, 60",/7day/建筑POI/POIs_all_1575.zip
+house_modern_03,The Draycott Residence,ResidentialNew,2,"42, 26, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_04,The Erickson Residence,ResidentialNew,2,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_05,The Señor Drogas Residence,ResidentialNew,3,"60, 24, 60",/7day/建筑POI/POIs_all_1575.zip
+house_modern_06,The Barniskis Residence,none,2,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_07,The LaGrega Residence,ResidentialNew,3,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_08,The Contino Residence,none,2,"42, 15, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_09,The Rua Residence,ResidentialNew,2,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_10,Bullis-Bates Estate,ResidentialNew,1,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_11,The Strogatz Residence,ResidentialNew,2,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_12,The Eisele Residence,ResidentialNew,1,"42, 23, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_13,The Hinton Residence,"ResidentialNew, Residential",1,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_14,The Bennett Residence,"ResidentialNew, ResidentialOld, Residential",2,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_15,The Burnett Residence,ResidentialNew,2,"42, 17, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_16,The Haug Residence,"ResidentialNew, Residential",2,"42, 16, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_17,The Sinkhole House,ResidentialNew,2,"42, 19, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_18,Don Vittorio Spagetto Residence,"ResidentialNew, Residential, any",4,"100, 36, 100",/7day/建筑POI/POIs_all_1575.zip
+house_modern_19,"The ""Broken Dreams"" house","ResidentialNew, Residential",2,"42, 23, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_20,The Barbosa Residence,"Residential, ResidentialNew",1,"42, 13, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_21,The Hellenes Residence,"Residential, ResidentialNew",3,"42, 24, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_22,The Johansen Residence,"ResidentialNew, Residential",2,"42, 20, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_23,Dormer Residence,none,1,"42, 23, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_24,Jeffelon Zuckergates Estate,none,4,"100, 33, 100",/7day/建筑POI/POIs_all_1575.zip
+house_modern_25,Rosilyn Residence,none,1,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_26,Casa de Machina,none,1,"42, 23, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_27,Phoenix Residence,none,1,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_28,Casa De Vino,none,2,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_29,Don Diego Estate,none,2,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_30,Towersley Estate,none,3,"60, 23, 60",/7day/建筑POI/POIs_all_1575.zip
+house_modern_31,Dr. Karen Higashi Residence,none,5,"60, 35, 60",/7day/建筑POI/POIs_all_1575.zip
+house_modern_32,The Wade Residence,none,1,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_33,The Prado Residence,none,1,"42, 23, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_34,Casa Carneiro,none,2,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+house_modern_35,The Muggins Residence,none,2,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_bungalow_01,The Vaecon Residence,none,3,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_bungalow_02,T. Thornbury Residence,none,2,"42, 24, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_bungalow_03,Home of Jack Canada,none,2,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_bungalow_04,The Wotton Residence,ResidentialOld,2,"42, 23, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_bungalow_05,The Klemm Residence,none,2,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_bungalow_06,A Sewage Problem,ResidentialOld,2,"42, 27, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_bungalow_07,Film Fanatic's house,none,2,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_bungalow_08,The McKean Residence,none,2,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_bungalow_09,The Powell Residence,ResidentialOld,1,"42, 20, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_bungalow_10,The Crow Residence,ResidentialOld,1,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_bungalow_11,Johnnytown,ResidentialOld,3,"60, 43, 60",/7day/建筑POI/POIs_all_1575.zip
+house_old_bungalow_12,The Reber Residence,ResidentialOld,1,"42, 24, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_cottage_01,Cobweb Cottage,ResidentialOld,1,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_cottage_01_detail,,ResidentialOld,1,"33, 15, 38",/7day/建筑POI/POIs_all_1575.zip
+house_old_cottage_01_path,,none,0,"41, 15, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_cottage_01_sleeper,,ResidentialOld,1,"33, 15, 38",/7day/建筑POI/POIs_all_1575.zip
+house_old_gambrel_01,The Hestnes Residence,ResidentialOld,2,"42, 30, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_gambrel_02,The Richmond Residence,ResidentialOld,1,"42, 20, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_gambrel_03,Bob's Boars & Carl's Corn,ResidentialOld,3,"100, 44, 100",/7day/建筑POI/POIs_all_1575.zip
+house_old_gambrel_04,Bert Englund Residence,ResidentialOld,2,"42, 20, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_mansard_01,The Brown Residence,ResidentialOld,2,"42, 26, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_mansard_02,The Mortician's house,none,4,"60, 31, 60",/7day/建筑POI/POIs_all_1575.zip
+house_old_mansard_03,The Brett Residence,ResidentialOld,3,"42, 20, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_mansard_04,The Hyde Residence,ResidentialOld,3,"42, 18, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_mansard_05,Huskie Manor,ResidentialOld,1,"42, 20, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_mansard_06,The Fates Motel,ResidentialOld,4,"100, 33, 100",/7day/建筑POI/POIs_all_1575.zip
+house_old_mansard_07,The Wright Residence,ResidentialOld,4,"60, 60, 60",/7day/建筑POI/POIs_all_1575.zip
+house_old_modular_01,The Purser Residence,ResidentialOld,1,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_modular_02,Bill Gearz Place,ResidentialOld,3,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_modular_03,The Animal Hoarder,ResidentialOld,2,"42, 26, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_modular_04,The Wagner Residence,ResidentialOld,2,"42, 14, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_modular_05,The Gilbert Residence,ResidentialOld,1,"42, 10, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_modular_06,The Cook's Residence,ResidentialOld,1,"42, 14, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_modular_07,Spark's Place,ResidentialOld,1,"42, 20, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_modular_08,The Pawtato Residence,ResidentialOld,1,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_pyramid_01,The D. Smith Residence,ResidentialOld,3,"42, 24, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_pyramid_02,The McElveen Residence,ResidentialOld,2,"42, 24, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_pyramid_03,The Cartel House,none,2,"42, 24, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_pyramid_04,The Gully Residence,ResidentialOld,3,"42, 26, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_pyramid_05,The Reed Residence,ResidentialOld,1,"42, 24, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_ranch_01,The Wetz Residence,ResidentialOld,1,"60, 21, 60",/7day/建筑POI/POIs_all_1575.zip
+house_old_ranch_02,The Redchurch Residence,ResidentialNew,3,"60, 24, 60",/7day/建筑POI/POIs_all_1575.zip
+house_old_ranch_03,The Goldsmith Residence,ResidentialNew,2,"60, 27, 60",/7day/建筑POI/POIs_all_1575.zip
+house_old_ranch_04,The Jensen Residence,ResidentialNew,2,"60, 27, 60",/7day/建筑POI/POIs_all_1575.zip
+house_old_ranch_05,The McMillin Residence,ResidentialOld,2,"60, 23, 60",/7day/建筑POI/POIs_all_1575.zip
+house_old_ranch_06,The Huenink Residence,ResidentialOld,2,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+house_old_ranch_07,The Brumit Residence,ResidentialNew,2,"60, 16, 60",/7day/建筑POI/POIs_all_1575.zip
+house_old_ranch_08,The Fermier Residence,ResidentialNew,2,"60, 24, 60",/7day/建筑POI/POIs_all_1575.zip
+house_old_ranch_09,The McCormick Residence,ResidentialOld,2,"60, 25, 60",/7day/建筑POI/POIs_all_1575.zip
+house_old_ranch_10,The Malone Residence,ResidentialOld,1,"60, 24, 60",/7day/建筑POI/POIs_all_1575.zip
+house_old_ranch_11,The Hoarders' House,none,2,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_ranch_12,The McStab Residence,none,3,"60, 24, 60",/7day/建筑POI/POIs_all_1575.zip
+house_old_ranch_13,The Serrano Residence,ResidentialNew,3,"60, 64, 60",/7day/建筑POI/POIs_all_1575.zip
+house_old_tudor_01,The Asgård Residence,none,2,"42, 50, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_tudor_02,The Williams Residence,ResidentialOld,1,"42, 20, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_tudor_03,The Zeigler Residence,ResidentialOld,3,"60, 26, 60",/7day/建筑POI/POIs_all_1575.zip
+house_old_tudor_04,R. Thornbury Residence,ResidentialOld,2,"42, 18, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_tudor_05,The McLemore Residence,ResidentialOld,2,"42, 26, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_tudor_06,The Rippon Residence,none,3,"42, 24, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_victorian_01,Taylor Manor,ResidentialOld,3,"60, 32, 60",/7day/建筑POI/POIs_all_1575.zip
+house_old_victorian_02,The Lopez Residence,ResidentialOld,2,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_victorian_03,The Zavislak Residence,none,4,"60, 32, 60",/7day/建筑POI/POIs_all_1575.zip
+house_old_victorian_04,The Neckarski Residence,none,3,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_victorian_05,The Perkel Residence,ResidentialOld,1,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_victorian_06,The Sandvik Residence,ResidentialOld,2,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_victorian_07,The Schweizer Residence,none,2,"42, 26, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_victorian_08,The Kenvyn Residence,ResidentialOld,1,"42, 24, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_victorian_09,The Grand Forks Estate,ResidentialOld,3,"42, 23, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_victorian_10,The Curren Residence,ResidentialOld,2,"42, 31, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_victorian_11,The Philippe Residence,ResidentialOld,2,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+house_old_victorian_12,The Kostecky Residence,ResidentialOld,2,"42, 26, 42",/7day/建筑POI/POIs_all_1575.zip
+housing_development_01,Housing Development,none,4,"100, 26, 100",/7day/建筑POI/POIs_all_1575.zip
+hwy_overpass_sign_01,,BiomeOnly,0,"1, 8, 17",/7day/建筑POI/POIs_all_1575.zip
+indian_burial_grounds_01,Taza Burial Grounds,NoZone,0,"27, 8, 27",/7day/建筑POI/POIs_all_1575.zip
+industrial_60_01,Granddaddy's Cable Regional Service Center,none,4,"60, 47, 60",/7day/建筑POI/POIs_all_1575.zip
+industrial_60_02,Ironwood Paper Mill,none,4,"60, 38, 60",/7day/建筑POI/POIs_all_1575.zip
+industrial_60_03,Beanthere Coffee Company,none,4,"60, 19, 60",/7day/建筑POI/POIs_all_1575.zip
+industrial_60_04,ChemTech Distribution Center,none,4,"60, 37, 60",/7day/建筑POI/POIs_all_1575.zip
+industrial_business_08,P&B Machining,"commercial, downtown",2,"42, 27, 42",/7day/建筑POI/POIs_all_1575.zip
+industrial_strip_01,Palo Verde Brickworks,none,2,"42, 20, 42",/7day/建筑POI/POIs_all_1575.zip
+industrial_strip_02,NC Bus Repair Site,none,2,"42, 12, 42",/7day/建筑POI/POIs_all_1575.zip
+industrial_strip_03,BONG Auto Parts Manufacturing,none,2,"42, 17, 42",/7day/建筑POI/POIs_all_1575.zip
+industrial_strip_05,Pawsnout Factory,none,3,"42, 19, 42",/7day/建筑POI/POIs_all_1575.zip
+industrial_strip_06,Water Treatment Plant,none,4,"42, 27, 42",/7day/建筑POI/POIs_all_1575.zip
+industrial_strip_09,Soyer Family Slaughterhouse,none,2,"42, 13, 42",/7day/建筑POI/POIs_all_1575.zip
+industrial_strip_10,Booze Hound Brewery,none,2,"42, 27, 42",/7day/建筑POI/POIs_all_1575.zip
+industrial_strip_11,Regional Paper Company,none,3,"42, 19, 42",/7day/建筑POI/POIs_all_1575.zip
+installation_red_mesa,Red Mesa Compound,industrial,5,"72, 45, 83",/7day/建筑POI/POIs_all_1575.zip
+junkyard_01,Ecotrash Recycling Center,none,4,"60, 18, 60",/7day/建筑POI/POIs_all_1575.zip
+lodge_01,Journey's End,commercial,3,"60, 27, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_country_01,Black Bus Mechanical,ResidentialOld,1,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+lot_country_02,Shade Tree Auto,ResidentialNew,1,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+lot_countryres_01,Grim Gazebo,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countryres_02,Sunny Creek Park,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countryres_07,Community Gardens,none,0,"25, 7, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countryres_08,Picnic Pond,none,0,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countryres_09,Maple Slide Park,none,0,"25, 9, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countryres_10,Old Timber Yard,none,0,"25, 8, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countryres_11,Abandoned Silo,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countryres_12,Old Johnson's Shed,none,0,"25, 12, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countryres_13,Transmission Station,none,0,"25, 19, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countryres_14,Sewer Maintenance Hub,none,0,"25, 11, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countryres_15,Flooded Construction,none,0,"25, 9, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countryres_16,The O-Well,none,0,"25, 27, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countryres_17,Woody's Wood Supply,none,0,"25, 6, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countryres_18,Community Greenhouse,none,0,"25, 9, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countryres_20,Leyline Electric Depot,none,0,"25, 23, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countrytown_01,Natas Parking,none,0,"25, 14, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countrytown_02,John & Sons Construction,none,0,"25, 13, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countrytown_05,AG1 Feed,none,0,"25, 10, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countrytown_06,Kountry Mart,none,0,"25, 11, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countrytown_07,Farmer's Market,none,0,"25, 6, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countrytown_08,Rusty's Razors,none,0,"25, 10, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countrytown_10,Red Star Gift Shop,none,0,"25, 7, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countrytown_12,Cleetus' Car Recycling,none,0,"25, 8, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_countrytown_13,Car Impound Lot,none,0,"25, 13, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_downtown_filler_01,Downtown Construction Site,none,0,"25, 10, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_film_01,Lone Wolf Set,none,0,"42, 14, 42",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_01,Industrial Service Systems,none,0,"25, 9, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_02,Industrial Trucking,none,0,"25, 10, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_03,Clunky Oil,Industrial,0,"25, 14, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_04,Industrial Tank #1,Industrial,0,"25, 14, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_05,Busted Industrial Tank,Industrial,0,"25, 14, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_06,Destroyed Industrial Tank,Industrial,0,"25, 14, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_07,Industrial Tank #2,Industrial,0,"25, 15, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_08,Leaking Industrial Tank,Industrial,0,"25, 17, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_09,Clunky Oil Station,Industrial,0,"25, 17, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_10,Industrial Construction Site #10,none,0,"25, 15, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_11,Power Distribution Station #1,Industrial,0,"25, 29, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_12,Industrial Construction Site #12,none,0,"25, 11, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_13,Industrial Demolition Site,none,0,"25, 17, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_14,County Stockpile,none,0,"25, 11, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_15,Power Distribution Station #2,none,0,"25, 10, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_16,Mo Power Service,Industrial,0,"25, 10, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_17,Construction Warehouse,Industrial,0,"25, 12, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_18,Carpet Warehouse,Industrial,0,"25, 13, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_19,Derelict Warehouse,Industrial,0,"25, 14, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_20,Abandoned Depot,Industrial,0,"25, 11, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_industrial_21,EZ-Chem Depot,none,0,"25, 14, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_01,Backpack Hill,none,0,"60, 7, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_02,Blood Forest,none,0,"60, 3, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_03,Hay Field,none,0,"60, 21, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_04,Sleepy Woods,none,0,"60, 5, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_05,Lazy Timbers,none,0,"60, 5, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_06,Wrong Harvester,none,0,"60, 12, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_07,Cobblestone Clearing,none,0,"60, 3, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_08,Anvil Acres,none,0,"60, 3, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_09,Gentle Grove,none,0,"60, 3, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_10,Paul's Pay Lake,none,0,"60, 5, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_11,Whispering Woodlands,none,0,"60, 4, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_12,,none,0,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_13,,none,0,"60, 23, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_14,,none,0,"60, 23, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_15,,none,0,"60, 4, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_16,,none,0,"60, 4, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_17,,none,0,"60, 23, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_18,,none,0,"60, 4, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_19,,none,0,"60, 4, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_20,,none,0,"60, 4, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_21,,none,0,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_22,,none,0,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_23,,none,0,"60, 3, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_24,,none,0,"60, 5, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_25,,none,0,"60, 5, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_26,,none,0,"60, 7, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_27,,none,0,"60, 4, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_28,,none,0,"60, 5, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_29,,none,0,"60, 5, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_rural_filler_30,,none,0,"60, 5, 60",/7day/建筑POI/POIs_all_1575.zip
+lot_vacant_01,Container Lot,none,0,"25, 7, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_vacant_02,7 Hour Park,none,0,"25, 11, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_vacant_03,Hobo Camp,none,0,"25, 11, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_vacant_04,Corona Wipes Billboard,none,0,"25, 17, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_vacant_05,Oskar's Dumpster,any,1,"42, 3, 42",/7day/建筑POI/POIs_all_1575.zip
+lot_vacant_06,Shady Dawgs,none,0,"25, 8, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_vacant_07,Treehouse Treasures,none,0,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_vacant_08,The Shed,none,0,"25, 11, 25",/7day/建筑POI/POIs_all_1575.zip
+lot_vacant_09,Forgotten Playground,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+mine_01,Hybrid Mining,none,5,"100, 37, 100",/7day/建筑POI/POIs_all_1575.zip
+motel_01,Nick's Motel,NoZone,2,"60, 21, 60",/7day/建筑POI/POIs_all_1575.zip
+motel_02,Motel Seven,none,1,"42, 14, 42",/7day/建筑POI/POIs_all_1575.zip
+motel_03,Happy Sleep Motel,none,3,"60, 20, 60",/7day/建筑POI/POIs_all_1575.zip
+motel_04,Greg's Motel,none,3,"60, 25, 60",/7day/建筑POI/POIs_all_1575.zip
+motel_05,Motel Eight,none,1,"42, 15, 42",/7day/建筑POI/POIs_all_1575.zip
+navezgane_waterfall_01,,none,0,"14, 15, 3",/7day/建筑POI/POIs_all_1575.zip
+nursing_home_01,The Last Sunset Nursing Home,none,5,"100, 28, 100",/7day/建筑POI/POIs_all_1575.zip
+office_01,Echo Commons,none,1,"42, 15, 42",/7day/建筑POI/POIs_all_1575.zip
+office_02,Rise Realty,none,2,"42, 14, 42",/7day/建筑POI/POIs_all_1575.zip
+office_03,Historic Office Suites,none,2,"42, 19, 42",/7day/建筑POI/POIs_all_1575.zip
+office_04,Smarketing,"none, Commercial",2,"42, 16, 42",/7day/建筑POI/POIs_all_1575.zip
+office_05,Triad Medical,none,3,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+office_06,Abandoned Office Building,none,3,"60, 25, 60",/7day/建筑POI/POIs_all_1575.zip
+office_07,,none,0,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+oldwest_business_01,Biskitz,Commercial,1,"25, 20, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_business_02,BJ Welding Company,Commercial,1,"25, 16, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_business_03,Fine Swines,Commercial,1,"50, 15, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_business_04,Bath Haus,Commercial,1,"25, 11, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_business_05,Oil Tycoons,Commercial,0,"25, 9, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_business_06,Spitz Seeds,Commercial,1,"25, 17, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_business_07,Eric's Stuff,Commercial,0,"25, 10, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_business_08,Undie Takers,Commercial,1,"25, 23, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_business_09,Earl's Wine Shack,Commercial,0,"25, 11, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_business_10,Rifle Martyrs,Commercial,1,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_business_11,Skamson Grocery,Commercial,1,"25, 17, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_business_12,Cole's Books,Commercial,1,"25, 15, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_business_13,Swiggin Serum,Commercial,1,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_business_14,Lathan's Hardware,Commercial,1,"25, 15, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_church,First Church of God,ResidentialOld,1,"42, 27, 42",/7day/建筑POI/POIs_all_1575.zip
+oldwest_coal_factory,Bear-N-Land Coal Mining,Industrial,1,"42, 33, 42",/7day/建筑POI/POIs_all_1575.zip
+oldwest_gallows,Gallows,Commercial,0,"25, 8, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_jail,Old West Sheriff,Commercial,0,"25, 9, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_stables,The Lazy H,Industrial,0,"25, 11, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_strip_01,Duke's General,Commercial,2,"50, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_strip_02,Mornin Lumber Hotel,Commercial,2,"50, 16, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_strip_03,Bert's Brewery,Commercial,1,"50, 20, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_strip_04,Metal Works,Industrial,1,"50, 19, 25",/7day/建筑POI/POIs_all_1575.zip
+oldwest_watertower,Old West Water Tower,Industrial,0,"25, 20, 25",/7day/建筑POI/POIs_all_1575.zip
+park_01,Arbor Park,"ResidentialOld, ResidentialNew, Downtown",0,"42, 5, 42",/7day/建筑POI/POIs_all_1575.zip
+park_02,Fountain Park,none,0,"42, 11, 42",/7day/建筑POI/POIs_all_1575.zip
+park_03,Lone Pine Park,none,0,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+park_basketball,Hoops Pavilion,"ResidentialOld, ResidentialNew, Downtown",0,"42, 11, 42",/7day/建筑POI/POIs_all_1575.zip
+park_plaza_01,Waterfall Plaza,downtown,0,"49, 8, 47",/7day/建筑POI/POIs_all_1575.zip
+park_plaza_02,Departure Plaza,"ResidentialNew, downtown",1,"46, 22, 46",/7day/建筑POI/POIs_all_1575.zip
+parking_garage_01,ParKing Garage #1,downtown,0,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+parking_garage_02,ParKing Garage #2,none,4,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+parking_garage_03,My Spot Parking,downtown,2,"42, 31, 42",/7day/建筑POI/POIs_all_1575.zip
+parking_garage_04,My Spot Mega-Parking,downtown,0,"42, 41, 42",/7day/建筑POI/POIs_all_1575.zip
+parking_lot_01,Park-n-Pay,none,1,"42, 6, 42",/7day/建筑POI/POIs_all_1575.zip
+parking_lot_02,Mobile Field Hospital,none,2,"42, 12, 42",/7day/建筑POI/POIs_all_1575.zip
+parking_lot_03,ParKing Lot,none,0,"42, 13, 42",/7day/建筑POI/POIs_all_1575.zip
+perishton_bridge,,none,0,"33, 16, 13",/7day/建筑POI/POIs_all_1575.zip
+perishton_church_parking,,none,0,"60, 4, 23",/7day/建筑POI/POIs_all_1575.zip
+perishton_city_blk_01,Perishton,DevOnly,0,"114, 13, 114",/7day/建筑POI/POIs_all_1575.zip
+perishton_city_blk_02,Perishton,DevOnly,0,"121, 11, 114",/7day/建筑POI/POIs_all_1575.zip
+perishton_city_blk_03,Perishton,DevOnly,0,"114, 10, 114",/7day/建筑POI/POIs_all_1575.zip
+perishton_city_blk_04,Perishton,DevOnly,0,"114, 11, 114",/7day/建筑POI/POIs_all_1575.zip
+perishton_city_blk_05,Perishton,none,0,"114, 11, 114",/7day/建筑POI/POIs_all_1575.zip
+perishton_city_blk_06,Perishton,none,0,"132, 28, 127",/7day/建筑POI/POIs_all_1575.zip
+perishton_city_blk_plaza,Perishton,none,0,"121, 12, 114",/7day/建筑POI/POIs_all_1575.zip
+perishton_fence,,NavOnly,0,"60, 3, 60",/7day/建筑POI/POIs_all_1575.zip
+perishton_median_01,Perishton,NavOnly,0,"103, 13, 23",/7day/建筑POI/POIs_all_1575.zip
+perishton_median_02,Perishton,none,0,"103, 10, 23",/7day/建筑POI/POIs_all_1575.zip
+perishton_median_03,Perishton,none,0,"103, 13, 23",/7day/建筑POI/POIs_all_1575.zip
+perishton_outlet,Perishton,none,0,"20, 9, 7",/7day/建筑POI/POIs_all_1575.zip
+perishton_riverdock,,none,0,"7, 9, 19",/7day/建筑POI/POIs_all_1575.zip
+perishton_tile_downtown_straight,,none,0,"150, 40, 150",/7day/建筑POI/POIs_all_1575.zip
+perishton_tunnel_01,Perishton Tunnel South,none,0,"28, 14, 95",/7day/建筑POI/POIs_all_1575.zip
+perishton_tunnel_02,Perishton Tunnel North,none,0,"28, 14, 94",/7day/建筑POI/POIs_all_1575.zip
+player_start1,,NavOnly,0,"6, 1, 2",/7day/建筑POI/POIs_all_1575.zip
+player_start2,,NavOnly,0,"3, 1, 8",/7day/建筑POI/POIs_all_1575.zip
+player_start3,,NavOnly,0,"6, 1, 5",/7day/建筑POI/POIs_all_1575.zip
+player_start4,,NavOnly,0,"5, 1, 7",/7day/建筑POI/POIs_all_1575.zip
+player_start5,,NavOnly,0,"6, 1, 7",/7day/建筑POI/POIs_all_1575.zip
+player_start6,,NavOnly,0,"6, 1, 6",/7day/建筑POI/POIs_all_1575.zip
+police_station_03,NPD 3rd Division,none,3,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+post_office_01,Downtown Post Office,downtown,2,"25, 23, 25",/7day/建筑POI/POIs_all_1575.zip
+post_office_02,Post Office #2,none,3,"42, 27, 42",/7day/建筑POI/POIs_all_1575.zip
+potatofield_sm,,"ResidentialOld, Industrial",1,"12, 2, 12",/7day/建筑POI/POIs_all_1575.zip
+prison_01,Navezgane Corrections,none,5,"100, 42, 100",/7day/建筑POI/POIs_all_1575.zip
+prison_02,Navezgane County Jail,none,5,"100, 51, 100",/7day/建筑POI/POIs_all_1575.zip
+quarry_02,Correa Rockworx,none,5,"100, 44, 100",/7day/建筑POI/POIs_all_1575.zip
+radio_station_01,KZL Radio Station,none,3,"60, 47, 60",/7day/建筑POI/POIs_all_1575.zip
+radio_station_02,ZMB Radio Station,none,2,"60, 24, 60",/7day/建筑POI/POIs_all_1575.zip
+radio_station_03,KZZ Radio Station,none,1,"42, 29, 42",/7day/建筑POI/POIs_all_1575.zip
+ranger_station_01,Ranger Station Alpha,none,3,"42, 59, 42",/7day/建筑POI/POIs_all_1575.zip
+ranger_station_02,Ranger Station Beta,NoZone,1,"42, 23, 42",/7day/建筑POI/POIs_all_1575.zip
+ranger_station_03,Ranger Station Charlie,NoZone,1,"42, 26, 42",/7day/建筑POI/POIs_all_1575.zip
+ranger_station_04,Ranger Station Delta,NoZone,1,"42, 20, 42",/7day/建筑POI/POIs_all_1575.zip
+ranger_station_05,Ranger Station Foxtrot,none,1,"42, 31, 42",/7day/建筑POI/POIs_all_1575.zip
+ranger_station_06,Ranger Station Echo,NoZone,2,"60, 24, 60",/7day/建筑POI/POIs_all_1575.zip
+ranger_station_07,Ranger Station Golf,NoZone,3,"60, 38, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_burnt_01,The Crisp Residence,ResidentialOld,0,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_burnt_02,The Cook Residence,ResidentialOld,0,"42, 20, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_burnt_03,The Kindle Residence,ResidentialOld,0,"45, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_burnt_04,Burnt Cafe,Commercial,0,"25, 7, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_burnt_05,Jon's Ham Radios,Industrial,0,"42, 40, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_burnt_06,Plating Company,Industrial,0,"42, 28, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_burnt_07,Krispy Kitchen,Industrial,0,"25, 15, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_burnt_08,Mini Market,Commercial,0,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_burnt_09,The Black Residence,ResidentialOld,0,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_burnt_10,The Tan Residence,none,0,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_business_01,Shamway Processing,Industrial,0,"60, 26, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_business_02,Pop-N-Pills Urgent Care,Commercial,0,"60, 26, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_business_03,Country Crack-a-Book,Commercial,0,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_business_04,Deserted Working Stiff Tools,Commercial,0,"42, 14, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_business_05,Ransacked Shotgun Messiah,none,0,"42, 23, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_business_06,Kruz-Thru Liquors,none,0,"25, 9, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_carwash_01,Auto Wash,Commercial,0,"42, 13, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_carwash_02,Cleanico Center,none,0,"42, 12, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_church_01,Cathedral of the Fallen,downtown,0,"60, 42, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_coffee_shop_01,Drive-Up Coffee,none,0,"25, 10, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_coffee_shop_02,Quick Cup,none,0,"25, 10, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_coffee_shop_03,Coffee Shed,none,0,"25, 9, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_commercial_large_02,Navezgane Outlets,none,0,"100, 21, 100",/7day/建筑POI/POIs_all_1575.zip
+remnant_commercial_strip_03,Outlaw Outlets,none,0,"42, 13, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_commercial_strip_04,Westwood Place,none,0,"42, 15, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_commercial_strip_05,Paradise Plaza,none,0,"42, 17, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_commercial_strip_06,,none,0,"42, 12, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_01,Army Takeover,none,0,"25, 26, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_02,Arkco Rusco,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_03,Couch Kingz Court,none,0,"25, 14, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_04,Ivant Business Park,none,0,"25, 13, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_05,Four Oaks Apartments,none,0,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_06,Shabby St. Outlet,none,0,"25, 13, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_07,Abandoned Downtown Deli,downtown,0,"25, 23, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_08,The View Offices,downtown,0,"25, 29, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_09,Racy's,"none, downtown",0,"25, 16, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_10,PlusPoint Offices,none,0,"25, 12, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_11,Moda Bar,"none, downtown",0,"25, 27, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_12,Destroyed Pharmacy,downtown,0,"25, 23, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_13,Bean Counter Court,none,0,"25, 11, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_14,Crumbled Plug Hub Store,"none, downtown",0,"25, 15, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_15,Downtown Hotel,"none, downtown",0,"25, 29, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_16,Decayed Office Tower,none,0,"25, 26, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_17,Mayor's Office,downtown,0,"25, 18, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_18,Condemned Property,none,0,"25, 33, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_19,Critic's Corner,none,0,"25, 10, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_20,LUX Restaurant,none,0,"25, 14, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_21,Pete's Grill,none,0,"25, 15, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_22,Ship-n-sip Station,none,0,"25, 18, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_23,Booze Vault,none,0,"25, 14, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_24,Oasis Workspaces,none,0,"25, 20, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_25,Bark Buzz Business Complex,none,0,"25, 11, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_26,Flavor Corner,none,0,"25, 10, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_27,JBB Worksite #27,none,0,"25, 46, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_28,Clean & Cozy Corner,none,0,"25, 14, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_29,Stock Shark Offices,none,0,"25, 19, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_30,Resolution Square,none,0,"25, 12, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_filler_31,Karate Kamp,none,0,"25, 14, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_strip_01,The AZ Sport Business Pavilion,none,0,"42, 13, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_strip_02,Route 66 Restaurant Row,none,0,"42, 9, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_strip_03,Willtronics Corner,none,0,"42, 16, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_strip_04,Buffalo Blues Building,none,0,"42, 14, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_strip_05,ZBrews Row,none,0,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_strip_06,Sapphire Square,none,0,"42, 16, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_strip_07,Bruno's Boulevard,none,0,"42, 17, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_strip_08,Urban Style Shops,none,0,"42, 18, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_strip_09,Rhythm & Brews District,none,0,"42, 14, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_strip_11,Fallen Rock Apartments,none,0,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_strip_12,Patriot Pavilion,none,0,"42, 15, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_strip_13,Circuit Splits Station,none,0,"42, 15, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_strip_14,Massive Gains Mall,none,0,"42, 15, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_strip_15,Bloomington Square,none,0,"42, 16, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_strip_16,Carlos' Travel Center,none,0,"42, 15, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_strip_17,Perk Penny Place,none,0,"42, 20, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_strip_18,Navezgane Bus Terminal,none,0,"42, 15, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_strip_19,Blue Clover Hotel,none,0,"42, 23, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_downtown_strip_20,Fallen Survivor Compound,none,0,"42, 24, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_farm_01,Dell Farms,none,0,"60, 23, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_farm_02,Yolk River Ranch,none,0,"60, 14, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_farm_03,Golden Acres Farm,none,0,"60, 21, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_farm_05,The Tackle Box,none,0,"60, 29, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_gas_station_01,Wasted Pass-N-Gas,none,0,"42, 16, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_hospital_01,Midway Hospital,none,0,"60, 31, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_hotel_01,The Joelton Hotel,none,0,"100, 25, 100",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_01,The Pokket Residence,ResidentialOld,0,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_02,The Rodriguez Residence,ResidentialOld,0,"42, 20, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_03,The Chikorina Residence,ResidentialOld,0,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_04,The Splinter Residence,ResidentialOld,0,"42, 12, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_05,Aves Manor,ResidentialOld,0,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_06,The Lemon Residence,ResidentialOld,0,"42, 20, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_07,The White Residence,ResidentialOld,0,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_08,The Berry Residence,ResidentialOld,0,"42, 15, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_09,Wax Manor,ResidentialOld,0,"42, 17, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_10,The Collins Residence,ResidentialOld,0,"42, 27, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_11,The Olive Residence,ResidentialOld,0,"42, 14, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_12,The Azure Residence,none,0,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_13,The Lincoln Residence,none,0,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_14,The Alabaster Residence,Residential,0,"42, 19, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_15,The Washington Residence,"ResidentialOld, ResdentialOld",0,"42, 23, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_16,The Sky Residence,ResidentialNew,0,"42, 13, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_17,The Johnson Residence,ResdentialOld,0,"42, 11, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_18,The Smoky Loft,Residential,0,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_19,Hangman's Retreat ,none,0,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_20,Philip Powers Residence,none,0,"60, 21, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_modern_01,Marta's Hollow,none,0,"42, 19, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_modern_02,Ransacked Residence,none,0,"42, 23, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_modern_03,Soakley Residence,none,0,"42, 14, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_house_modern_04,Ruined Residence,none,0,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_industrial_01,,"downtown, commercial, industrial",0,"16, 21, 14",/7day/建筑POI/POIs_all_1575.zip
+remnant_industrial_02,,"downtown, commercial, industrial",0,"16, 19, 14",/7day/建筑POI/POIs_all_1575.zip
+remnant_industrial_03,,"downtown, commercial, industrial",1,"11, 20, 12",/7day/建筑POI/POIs_all_1575.zip
+remnant_industrial_04,,"downtown, commercial, industrial",1,"36, 14, 35",/7day/建筑POI/POIs_all_1575.zip
+remnant_industrial_large_01,Infested Construction Site,none,0,"100, 45, 100",/7day/建筑POI/POIs_all_1575.zip
+remnant_industrial_large_02,,none,0,"100, 21, 100",/7day/建筑POI/POIs_all_1575.zip
+remnant_industrial_strip_07,Warehouse Outpost,none,0,"42, 12, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_industrial_strip_08,Ice Factory,none,0,"42, 12, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_industrial_strip_09,Fortified Fizz Cola Warehouse,none,0,"42, 14, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_industrial_strip_10,Crystal Spin Industrial Laundry,none,0,"42, 24, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_industrial_strip_11,Old Genrik Plant,none,0,"42, 16, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_industrial_strip_12,Northline Inspection Depot,none,0,"42, 18, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_library_01,Navezgane Public Library,none,0,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_library_02,Rogue Nerds Refuge,none,0,"60, 23, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_mill_01,Buddies Grain,Industrial,0,"60, 27, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_oldwest_01,The Forgotten Wagon,Industrial,0,"25, 5, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_oldwest_02,The Breakdown,Industrial,0,"10, 4, 10",/7day/建筑POI/POIs_all_1575.zip
+remnant_oldwest_03,The Raid,Industrial,0,"8, 7, 8",/7day/建筑POI/POIs_all_1575.zip
+remnant_oldwest_04,The Frontiersman,ResidentialOld,0,"25, 13, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_oldwest_05,The Runaway Spark,ResidentialOld,0,"25, 12, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_oldwest_06,The Hot Tub,ResidentialOld,0,"25, 14, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_oldwest_07,Matchstick Hotel,Commercial,0,"25, 17, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_oldwest_08,The Clutter Chest,Commercial,0,"25, 19, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_oldwest_09,Ruined Barn,Industrial,0,"25, 10, 25",/7day/建筑POI/POIs_all_1575.zip
+remnant_quicklube_01,Quick Lube,none,0,"42, 16, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_school_01,Montgomery Public School,none,0,"60, 23, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_selfstorage_01,A1 Self Storage,none,0,"42, 11, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_selfstorage_02,Top Storage,none,0,"42, 11, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_skyscraper_01,Cascade Tower,none,0,"60, 51, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_skyscraper_02,Zillion Tower,none,0,"60, 75, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_skyscraper_03,Demolition Site,none,0,"60, 50, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_skyscraper_04,Meridian Center,none,0,"60, 51, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_skyscraper_05,HNN Bank Building,none,0,"60, 82, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_sports_center_01,Friendszone Sports Center,none,0,"100, 22, 100",/7day/建筑POI/POIs_all_1575.zip
+remnant_waste_01,BRR Ice Cream,Commercial,0,"42, 16, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_waste_02,MeltDowns,Commercial,0,"42, 16, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_waste_03,Gray View Apartments,"Residential, ResidentialNew",0,"42, 27, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_waste_04,Zip Coffee,Commercial,0,"42, 13, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_waste_05,Mo Power Components Factory,Industrial,2,"42, 23, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_waste_06,Eye Candy Company,Industrial,0,"42, 26, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_waste_08,Box Factory,Industrial,0,"42, 45, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_waste_15,JD Shipping,"none, Commercial, Industrial",0,"60, 23, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_waste_16,Wasted Mo Power,none,0,"60, 18, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_waste_17,Nav Pest Control,none,0,"42, 25, 42",/7day/建筑POI/POIs_all_1575.zip
+remnant_waste_18,Pristine Healthcare,none,0,"60, 24, 60",/7day/建筑POI/POIs_all_1575.zip
+remnant_waste_19,Wasted Office Suites,none,0,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+rest_area_01,Canis Lupus Rest Area,none,0,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+rest_area_02,Arbor Loop Rest Area,none,0,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+rest_area_03,Crotalus Rest Area,none,1,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+rest_area_04,Buy-N-Go Rest Stop,none,1,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+rest_area_05,The Road Gentleman Truck Stop,none,3,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+restaurant_01,Restaurant Zelekt,"none, Commercial",4,"42, 16, 42",/7day/建筑POI/POIs_all_1575.zip
+restaurant_02,Bottomless Barrel Buffet,"none, Commercial",3,"42, 14, 42",/7day/建筑POI/POIs_all_1575.zip
+road_railing_long_filled_01,,NavOnly,0,"24, 2, 9",/7day/建筑POI/POIs_all_1575.zip
+roadblock_01,,NavOnly,0,"9, 2, 3",/7day/建筑POI/POIs_all_1575.zip
+roadside_checkpoint_01,NDC Checkpoint One,none,4,"60, 23, 60",/7day/建筑POI/POIs_all_1575.zip
+roadside_checkpoint_02,NDC Checkpoint Two,none,3,"60, 23, 60",/7day/建筑POI/POIs_all_1575.zip
+roadside_checkpoint_03,NDC Checkpoint Three,none,4,"60, 33, 60",/7day/建筑POI/POIs_all_1575.zip
+roadside_checkpoint_04,NDC Checkpoint Four,none,4,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+roadside_checkpoint_05,NDC Checkpoint Five,none,4,"60, 21, 60",/7day/建筑POI/POIs_all_1575.zip
+roadside_park_01,Rest Area 7,none,0,"60, 24, 60",/7day/建筑POI/POIs_all_1575.zip
+roadside_park_02,Shady Rest Area,none,0,"60, 21, 60",/7day/建筑POI/POIs_all_1575.zip
+roadside_restaurant_01,The Wagon Diner,none,2,"60, 12, 60",/7day/建筑POI/POIs_all_1575.zip
+roadside_strip_01,Junkville Saloon,none,3,"60, 20, 60",/7day/建筑POI/POIs_all_1575.zip
+roadside_truckstop_01,Pass-N-Gas Truck Plaza,none,3,"60, 19, 60",/7day/建筑POI/POIs_all_1575.zip
+rock_form01,,BiomeOnly,0,"6, 5, 8",/7day/建筑POI/POIs_all_1575.zip
+rock_form02,,BiomeOnly,0,"11, 8, 12",/7day/建筑POI/POIs_all_1575.zip
+rock_form03,,none,0,"3, 2, 3",/7day/建筑POI/POIs_all_1575.zip
+rock_form04,,none,0,"3, 2, 3",/7day/建筑POI/POIs_all_1575.zip
+rock_form05,,none,0,"3, 2, 3",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_01,Firemoor Manor,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_02,Roast Residence,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_03,The Emberstack Residence,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_04,Billy Bootlegger's,none,0,"25, 27, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_05,Hellman's Fire Insurance,none,0,"25, 24, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_06,Ranger Station Hotel,none,0,"25, 26, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_08,St. Sera's Church,none,0,"25, 25, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_09,Pharson's Residence,none,0,"25, 14, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_10,Crispwell Residence,none,0,"25, 13, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_11,Ashworth's Residence,none,0,"25, 12, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_12,The Emberton Estate,none,0,"25, 19, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_13,The Blazeley Residence,none,0,"25, 16, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_14,Church of Our Holy Ashes,none,0,"25, 30, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_15,The Scorchingtons Residence,none,0,"25, 12, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_16,Charcoal Cabin,none,0,"25, 13, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_17,Flashpoint Flats,none,0,"25, 24, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_18,The Cinderwell Residence,none,0,"25, 18, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_19,Ash & Splash Lodge,none,0,"25, 9, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_20,Flare BNB,none,0,"25, 10, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_21,Kris P. Cricket Residence,none,0,"25, 9, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_22,Ashroot Manor,none,0,"25, 8, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_23,Robin's Outpost,none,0,"25, 23, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_24,The Doll House,none,0,"25, 20, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_burnt_filler_25,The Lofted Loss,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_downtown_filler_01,Leap's Faith,none,0,"25, 15, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_downtown_filler_02,King's View,"none, downtown",0,"25, 18, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_downtown_filler_03,Fallen Brick Apartments,none,0,"25, 13, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_downtown_filler_04,Hobo Heights Apartments,none,0,"25, 14, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_downtown_filler_05,Oops Chemical Company,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_downtown_filler_11,HNN Bank Ruins,none,0,"25, 18, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_downtown_filler_12,Tattered Outlet,none,0,"25, 10, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_downtown_filler_13,Figaro Square,none,0,"25, 16, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_downtown_filler_14,Shines Jewelry,none,0,"25, 10, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_downtown_filler_15,Stable & Co Offices,none,0,"25, 13, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_downtown_filler_16,Diamond Liquors,none,0,"25, 20, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_downtown_filler_17,Safira Boutique,none,0,"25, 11, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_downtown_filler_18,Bellcroft Terrace,none,0,"25, 16, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_downtown_filler_19,Ruined Post Office,none,0,"25, 12, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_downtown_filler_20,Jefferson Complex,none,0,"25, 17, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_downtown_filler_21,Sunset Garage,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_downtown_filler_22,Lawless Station,none,0,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_downtown_filler_23,3rd Eye Optometry,none,0,"25, 12, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_downtown_filler_24,Dusty Commons,none,0,"25, 15, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_downtown_filler_25,Outbreak Auto,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_01,Cornerstone Hardware,none,0,"25, 20, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_02,#2 Tax Service,none,0,"25, 20, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_03,Rebar Ridge,none,0,"25, 20, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_04,Quiet Corner,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_05,Footprint Flats,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_06,Tainted Tudor,none,0,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_07,Dark Coffee Co,none,0,"25, 11, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_09,Faraway Storage,none,0,"25, 10, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_10,Last Chance Diner,none,0,"25, 11, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_11,Dilapidated Store,none,0,"25, 13, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_12,Dr. William Neville's Home,none,0,"25, 15, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_13,Nuke Burger,none,0,"25, 19, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_14,Pedlington Residence,none,0,"25, 13, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_15,Lovejoy Apartments,none,0,"25, 12, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_16,Crumbling Remains,none,0,"25, 7, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_17,Wrecked Rest Stop,none,0,"25, 12, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_18,Rustbelt Garage,none,0,"25, 12, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_19,Pitfall Residence,none,0,"25, 10, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_20,Scavengers' Rest,none,0,"25, 14, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_21,Decimated EZ-Chem Depot,none,0,"25, 14, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_22,Table 41,none,0,"25, 13, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_23,Void Apartments,none,0,"25, 24, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_24,Ironleaf Machines,none,0,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+rubble_wasteland_filler_25,Judgment Daycare,none,0,"25, 24, 25",/7day/建筑POI/POIs_all_1575.zip
+rural_church_01,White Hill Church of God,NoZone,3,"60, 40, 60",/7day/建筑POI/POIs_all_1575.zip
+rural_church_02,Congregation of Blind Faith,none,2,"60, 23, 60",/7day/建筑POI/POIs_all_1575.zip
+rural_drive_in_01,Coleman's Drive-In,none,4,"100, 25, 100",/7day/建筑POI/POIs_all_1575.zip
+rural_outdoor_wedding_01,Bell Lake,none,2,"100, 26, 100",/7day/建筑POI/POIs_all_1575.zip
+rwg_bridge_end_01,,none,0,"14, 14, 9",/7day/建筑POI/POIs_all_1575.zip
+rwg_bridge_tile_01,,none,0,"14, 14, 9",/7day/建筑POI/POIs_all_1575.zip
+sawmill_01,Jack's Lumber Mill,"Industrial, none",3,"100, 24, 100",/7day/建筑POI/POIs_all_1575.zip
+school_01,Navezgane High School,residentialnew,4,"100, 21, 100",/7day/建筑POI/POIs_all_1575.zip
+school_02,Favales Academy,"downtown, residentialnew",4,"100, 21, 100",/7day/建筑POI/POIs_all_1575.zip
+school_03,Grover High,none,5,"100, 21, 100",/7day/建筑POI/POIs_all_1575.zip
+school_daycare_01,Poopy Pants Country Daycare,none,1,"42, 15, 42",/7day/建筑POI/POIs_all_1575.zip
+school_daycare_02,Poopy Pants City Daycare,none,3,"42, 22, 42",/7day/建筑POI/POIs_all_1575.zip
+school_daycare_03,Fun-Gi Daycare,none,2,"42, 26, 42",/7day/建筑POI/POIs_all_1575.zip
+sign_260_east_speed_65,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+sign_260_west_speed_65,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+sign_73_north,,any,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+sign_73_south,,any,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+sign_albuquerque,,any,0,"1, 3, 2",/7day/建筑POI/POIs_all_1575.zip
+sign_ansel_adams_river,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+sign_arrowhead_apache,,NavOnly,0,"1, 1, 1",/7day/建筑POI/POIs_all_1575.zip
+sign_camp_fish,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+sign_caution,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+sign_hazardous_waste,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+sign_info_center1,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+sign_navezgane_natl_forest,,NavOnly,0,"3, 3, 3",/7day/建筑POI/POIs_all_1575.zip
+sign_phoenix,,any,0,"1, 3, 2",/7day/建筑POI/POIs_all_1575.zip
+sign_road_work,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+sign_school_25,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+sign_slow,,any,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+sign_speed_25,,any,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+sign_speed_35,,any,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+sign_speed_45,,any,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+sign_speed_55,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+sign_spillway_lake,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+sign_stop,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+sign_stop_4way,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+site_camp_01,Hexed Hikers,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+site_camp_02,Camp Arwitheryet,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+site_camp_03,Tranquil Terraced Retreat,none,0,"25, 13, 25",/7day/建筑POI/POIs_all_1575.zip
+site_camp_04,Cautious Campers,none,0,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+site_camp_05,Camp NomNom,none,0,"25, 23, 25",/7day/建筑POI/POIs_all_1575.zip
+site_camp_06,Hooch Hollow,none,0,"25, 26, 25",/7day/建筑POI/POIs_all_1575.zip
+site_camp_07,Survivalist Camp,none,0,"25, 29, 25",/7day/建筑POI/POIs_all_1575.zip
+site_camp_08,Archview Campsite,none,0,"25, 8, 25",/7day/建筑POI/POIs_all_1575.zip
+site_camp_09,Burstwater Beach,none,0,"25, 7, 25",/7day/建筑POI/POIs_all_1575.zip
+site_camp_10,Hillfall Camp,none,0,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+site_camp_11,The Circle,none,0,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+site_grave_01,Grave Robber's Surprise,none,0,"25, 23, 25",/7day/建筑POI/POIs_all_1575.zip
+site_grave_02,Digger's Rest,none,0,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+site_grave_03,The Executioner's Trench,none,0,"25, 23, 25",/7day/建筑POI/POIs_all_1575.zip
+site_grave_04,Hollow Chapel Grounds,none,0,"25, 13, 25",/7day/建筑POI/POIs_all_1575.zip
+site_grave_05,Mortabury Cemetery,none,0,"25, 23, 25",/7day/建筑POI/POIs_all_1575.zip
+site_grave_06,Eagle Hill Cemetery,none,0,"25, 23, 25",/7day/建筑POI/POIs_all_1575.zip
+site_grave_07,Drowned Rest Cemetery,none,0,"25, 24, 25",/7day/建筑POI/POIs_all_1575.zip
+site_grave_08,Brothers' Hollow,none,0,"25, 23, 25",/7day/建筑POI/POIs_all_1575.zip
+site_grave_09,Crumblemoor Catacombs,none,0,"25, 15, 25",/7day/建筑POI/POIs_all_1575.zip
+site_grave_10,Grasp of Silence Monument,none,0,"25, 16, 25",/7day/建筑POI/POIs_all_1575.zip
+site_shack_01,Willy White's Shack,none,0,"25, 25, 25",/7day/建筑POI/POIs_all_1575.zip
+site_shack_02,The Love Shack,none,0,"25, 25, 25",/7day/建筑POI/POIs_all_1575.zip
+site_shack_04,Deepwell Shack,none,0,"25, 14, 25",/7day/建筑POI/POIs_all_1575.zip
+site_shack_05,Lil´ Hill Retreat,none,0,"25, 24, 25",/7day/建筑POI/POIs_all_1575.zip
+site_shack_06,Rough Patch Acres,none,0,"25, 11, 25",/7day/建筑POI/POIs_all_1575.zip
+site_shack_07,Moonshiners' Retreat,none,0,"25, 26, 25",/7day/建筑POI/POIs_all_1575.zip
+site_shack_08,Stillwater Shack,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+site_shack_09,Silent Shack,none,0,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+site_shack_10,Quiet Night Shack,none,0,"25, 9, 25",/7day/建筑POI/POIs_all_1575.zip
+site_utility_01,Hybrid Energy Substation #4,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+site_utility_02,Hybrid Energy Substation #5,none,0,"25, 16, 25",/7day/建筑POI/POIs_all_1575.zip
+site_utility_03,WW Pumping Station,none,0,"25, 13, 25",/7day/建筑POI/POIs_all_1575.zip
+site_utility_04,PGC Compressor Station #4,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+site_utility_05,PGC Compressor Station #5,none,0,"25, 16, 25",/7day/建筑POI/POIs_all_1575.zip
+site_utility_06,PGC Compressor Station #6,none,0,"25, 17, 25",/7day/建筑POI/POIs_all_1575.zip
+site_utility_07,PGC Compressor Station #7,none,0,"25, 12, 25",/7day/建筑POI/POIs_all_1575.zip
+site_utility_09,County Line Substation,none,0,"25, 18, 25",/7day/建筑POI/POIs_all_1575.zip
+site_vendor_01,Woodchuck's Firewood Sale,none,0,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+site_vendor_02,Charlie's Chop Shop,none,0,"25, 27, 25",/7day/建筑POI/POIs_all_1575.zip
+site_vendor_03,Culinary Cruiser,none,0,"25, 25, 25",/7day/建筑POI/POIs_all_1575.zip
+site_vendor_04,Sweet Bee Honey,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+site_vendor_05,Joe's Juicy Roadburger,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+site_vendor_06,Eve's Garden Goodies,none,0,"25, 24, 25",/7day/建筑POI/POIs_all_1575.zip
+site_vendor_07,Sunny Side Stand,none,0,"25, 20, 25",/7day/建筑POI/POIs_all_1575.zip
+site_vendor_08,Freedom Fest,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+site_vendor_09,Marlon's Kart Track,none,0,"25, 8, 25",/7day/建筑POI/POIs_all_1575.zip
+site_vendor_10,Last Cast Rentals,none,0,"25, 27, 25",/7day/建筑POI/POIs_all_1575.zip
+skyscraper_01,Dishong Tower,downtown,5,"60, 108, 60",/7day/建筑POI/POIs_all_1575.zip
+skyscraper_02,Crack-a-Book HQ,none,5,"42, 55, 42",/7day/建筑POI/POIs_all_1575.zip
+skyscraper_03,Higashi Pharmaceutical,none,5,"60, 92, 60",/7day/建筑POI/POIs_all_1575.zip
+skyscraper_04,Doominium Tower,downtown,4,"60, 62, 60",/7day/建筑POI/POIs_all_1575.zip
+soccer_stadium_01,Champions Coliseum,none,5,"100, 42, 100",/7day/建筑POI/POIs_all_1575.zip
+store_autoparts_01,Oreally Auto,Commercial,2,"60, 25, 60",/7day/建筑POI/POIs_all_1575.zip
+store_bakery_01,Ma Baker & Sons Bakery,none,2,"42, 16, 42",/7day/建筑POI/POIs_all_1575.zip
+store_book_01,Crack-A-Book,Commercial,2,"60, 21, 60",/7day/建筑POI/POIs_all_1575.zip
+store_book_02,Crack-A-Cafe,Commercial,3,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+store_book_03,,none,0,"44, 15, 44",/7day/建筑POI/POIs_all_1575.zip
+store_book_04,The Book Barn,none,1,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+store_clothing_01,Super Savage Country,none,3,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+store_clothing_02,Savage Country,Commercial,3,"60, 21, 60",/7day/建筑POI/POIs_all_1575.zip
+store_discount_01,Three Dollar Store,none,3,"42, 14, 42",/7day/建筑POI/POIs_all_1575.zip
+store_electronics_01,MoPo-Shack,Commercial,1,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+store_electronics_02,Mo Power Electronics,none,2,"60, 21, 60",/7day/建筑POI/POIs_all_1575.zip
+store_grocery_01,Shamway,Commercial,2,"60, 14, 60",/7day/建筑POI/POIs_all_1575.zip
+store_grocery_02,Super Shamway,Commercial,4,"100, 28, 100",/7day/建筑POI/POIs_all_1575.zip
+store_grocery_03,Buy-N-Go Grocery,none,3,"42, 12, 42",/7day/建筑POI/POIs_all_1575.zip
+store_grocery_04,Moe's Grocery,none,1,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+store_grocery_05,Boe's Market,none,1,"60, 27, 60",/7day/建筑POI/POIs_all_1575.zip
+store_grocery_06,Joe's USA,none,1,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+store_gun_01,Shotgun Messiah Range,Commercial,4,"100, 23, 100",/7day/建筑POI/POIs_all_1575.zip
+store_gun_02,Close Encounters Gun Range,Commercial,4,"100, 21, 100",/7day/建筑POI/POIs_all_1575.zip
+store_hardware_01,Working Stiff Tools,Commercial,2,"60, 13, 60",/7day/建筑POI/POIs_all_1575.zip
+store_hardware_02,Working Stiff Superstore,Commercial,3,"60, 21, 60",/7day/建筑POI/POIs_all_1575.zip
+store_hardware_03,Wasted Stiff's,none,4,"100, 26, 100",/7day/建筑POI/POIs_all_1575.zip
+store_laundry_01,Dirty Laundry,none,1,"42, 11, 42",/7day/建筑POI/POIs_all_1575.zip
+store_pharmacy_01,Pop-N-Pills Mini-Mart,Commercial,1,"42, 21, 42",/7day/建筑POI/POIs_all_1575.zip
+store_pharmacy_02,Pop-N-Pills,Commercial,3,"60, 28, 60",/7day/建筑POI/POIs_all_1575.zip
+street_apache,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+street_bell_courtland,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+street_coronado,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+street_courtland_apache,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+street_courtland_coronado,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+street_courtland_east_260,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+street_davis,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+street_huenink_courtland,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+street_lake_bell,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+street_light_01,,any,0,"1, 12, 1",/7day/建筑POI/POIs_all_1575.zip
+street_light_02,,any,0,"1, 12, 1",/7day/建筑POI/POIs_all_1575.zip
+street_maple,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+street_maple_courtland,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+street_private,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+street_tran_courtland,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+streets_essag,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+streets_tran_and_lang,,NavOnly,0,"1, 2, 1",/7day/建筑POI/POIs_all_1575.zip
+survivor_camp_01,Camp BBQ,none,0,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+survivor_camp_02,Camp Bravo,none,0,"60, 7, 60",/7day/建筑POI/POIs_all_1575.zip
+survivor_camp_03,Camp Cardinal,none,0,"60, 7, 60",/7day/建筑POI/POIs_all_1575.zip
+survivor_site_01,Camp Carlson,none,1,"25, 10, 25",/7day/建筑POI/POIs_all_1575.zip
+survivor_site_02,The Smokehouse,NoZone,1,"25, 10, 25",/7day/建筑POI/POIs_all_1575.zip
+survivor_site_03,Radio Outpost,none,1,"25, 15, 25",/7day/建筑POI/POIs_all_1575.zip
+survivor_site_04,Camp Deucenhalf,NoZone,1,"25, 9, 25",/7day/建筑POI/POIs_all_1575.zip
+survivor_site_05,Mercy Point Camp,none,1,"25, 16, 25",/7day/建筑POI/POIs_all_1575.zip
+survivor_site_06,Hog Foot Village,NoZone,1,"25, 20, 25",/7day/建筑POI/POIs_all_1575.zip
+survivor_site_07,Camp Carwhal,NoZone,1,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+survivor_site_08,The Simmons Shanty,NoZone,1,"25, 13, 25",/7day/建筑POI/POIs_all_1575.zip
+survivor_site_09,Caravan Carousel,NoZone,1,"25, 13, 25",/7day/建筑POI/POIs_all_1575.zip
+survivor_site_10,Dug In Denizens,none,1,"25, 23, 25",/7day/建筑POI/POIs_all_1575.zip
+survivor_site_11,Cabin Retreat,none,1,"25, 14, 25",/7day/建筑POI/POIs_all_1575.zip
+theater_stage_01,Minotaur Theater,"commercial, downtown",5,"60, 27, 60",/7day/建筑POI/POIs_all_1575.zip
+trader_bob,Trader Bob,any,0,"60, 28, 60",/7day/建筑POI/POIs_all_1575.zip
+trader_hugh,Trader Hugh,any,0,"60, 21, 60",/7day/建筑POI/POIs_all_1575.zip
+trader_jen,Trader Jen,any,0,"60, 28, 60",/7day/建筑POI/POIs_all_1575.zip
+trader_joel,Trader Joel,any,0,"60, 48, 60",/7day/建筑POI/POIs_all_1575.zip
+trader_rekt,Trader Rekt,any,0,"60, 21, 60",/7day/建筑POI/POIs_all_1575.zip
+trailer_01,The Leonard Residence,"none, ResidentialOld",0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+trailer_02,The Bath Residence,ResidentialOld,0,"25, 9, 25",/7day/建筑POI/POIs_all_1575.zip
+trailer_03,The Thumb Residence,ResidentialOld,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+trailer_04,Trailer Ranch,"none, ResidentialOld",0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+trailer_05,Anderson's Home,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+trailer_06,Mario Piper,none,0,"25, 11, 25",/7day/建筑POI/POIs_all_1575.zip
+trailer_07,Overgrown Caravan,none,0,"25, 20, 25",/7day/建筑POI/POIs_all_1575.zip
+trailer_08,Sizzle Shack,none,0,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+trailer_09,Eva Victed Court,none,0,"25, 11, 25",/7day/建筑POI/POIs_all_1575.zip
+trailer_10,Buster Drivewell's,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+trailer_11,Tragedy Trailer,none,0,"25, 12, 25",/7day/建筑POI/POIs_all_1575.zip
+trailer_12,Weedle Bro Gardens,none,0,"25, 11, 25",/7day/建筑POI/POIs_all_1575.zip
+trailer_13,The Seller's Trailer,none,0,"25, 8, 25",/7day/建筑POI/POIs_all_1575.zip
+trailer_park_01,Honeysuckle Trailer Park,ResidentialOld,1,"42, 11, 42",/7day/建筑POI/POIs_all_1575.zip
+utility_celltower_01,Cell Tower #1,Industrial,0,"25, 90, 25",/7day/建筑POI/POIs_all_1575.zip
+utility_celltower_02,Cell Tower #2,none,0,"25, 59, 25",/7day/建筑POI/POIs_all_1575.zip
+utility_celltower_03,Cell Tower #3,none,0,"25, 64, 25",/7day/建筑POI/POIs_all_1575.zip
+utility_electric_co_01,Electric Company,Industrial,2,"42, 24, 42",/7day/建筑POI/POIs_all_1575.zip
+utility_electric_co_02,Hybrid Energy,none,4,"60, 42, 60",/7day/建筑POI/POIs_all_1575.zip
+utility_refinery_01,Pass-N-Gas Refinery,Industrial,3,"42, 35, 42",/7day/建筑POI/POIs_all_1575.zip
+utility_refinery_02,Pipeline Gas Co,none,4,"100, 33, 100",/7day/建筑POI/POIs_all_1575.zip
+utility_substation_01,Hybrid Energy Substation #1,none,3,"60, 17, 60",/7day/建筑POI/POIs_all_1575.zip
+utility_substation_02,Hybrid Energy Substation #2,none,2,"60, 23, 60",/7day/建筑POI/POIs_all_1575.zip
+utility_substation_03,Hybrid Energy Substation #3,none,1,"60, 22, 60",/7day/建筑POI/POIs_all_1575.zip
+utility_waterworks_01,Water Works,Industrial,4,"60, 33, 60",/7day/建筑POI/POIs_all_1575.zip
+warehouse_01,HSP Logistics,Industrial,4,"100, 20, 100",/7day/建筑POI/POIs_all_1575.zip
+warehouse_02,Shamway Warehouse,Industrial,3,"60, 20, 60",/7day/建筑POI/POIs_all_1575.zip
+warehouse_03,Infested Warehouse,Industrial,4,"60, 23, 60",/7day/建筑POI/POIs_all_1575.zip
+warehouse_04,Blue Trailer Trucking,Industrial,2,"42, 14, 42",/7day/建筑POI/POIs_all_1575.zip
+warehouse_05,Working Stiff Tools Warehouse,Industrial,3,"42, 13, 42",/7day/建筑POI/POIs_all_1575.zip
+warehouse_06,HSP Distribution Center,Industrial,3,"42, 17, 42",/7day/建筑POI/POIs_all_1575.zip
+warehouse_07,COC Chemicals,Industrial,3,"42, 17, 42",/7day/建筑POI/POIs_all_1575.zip
+warehouse_08,Johnson's Warehouses,none,3,"42, 17, 42",/7day/建筑POI/POIs_all_1575.zip
+water_tower_01,Water Tower #1,Industrial,0,"25, 17, 25",/7day/建筑POI/POIs_all_1575.zip
+water_tower_02,Water Tower #2,Industrial,0,"25, 16, 25",/7day/建筑POI/POIs_all_1575.zip
+water_tower_03,Water Tower #3,"ResidentialOld, ResidentialNew, Industrial",0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+water_tower_04,Water Tower #4,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+weigh_station_01,Weston Weigh Station,none,3,"60, 27, 60",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_01,Shady Slaughter RV,none,0,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_02,Eerie Echoes Campsite,none,0,"25, 6, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_03,Hermit Hollow,none,0,"25, 8, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_04,Hunter's Retreat,none,0,"25, 14, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_05,Prepper's Den,none,0,"25, 26, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_06,Overturned Trailer,none,0,"25, 23, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_07,The Last Cook,none,0,"25, 8, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_08,Lost Soldiers,none,0,"25, 5, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_09,Flesh Feast Falls,none,0,"25, 9, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_10,The Mush Pit,none,0,"25, 9, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_11,Pump Substation,none,0,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_12,TV Relay Station,none,0,"25, 23, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_13,Marshall's Hunting Lodge,none,0,"25, 8, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_14,Alpha Den,none,0,"25, 8, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_15,Camp Creepfest,none,0,"25, 5, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_16,Mourning Woods,none,0,"25, 6, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_17,Hidden Hollow,none,0,"25, 30, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_18,Deserted Creek Campsite,none,0,"25, 22, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_19,Body Bag Pit,none,0,"25, 8, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_20,Bandit's Revenge,none,0,"25, 21, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_21,Private Cemetery,none,0,"25, 12, 25",/7day/建筑POI/POIs_all_1575.zip
+wilderness_filler_22,Satellite Crash Site,none,0,"60, 23, 60",/7day/建筑POI/POIs_all_1575.zip
