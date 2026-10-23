@@ -53,7 +53,7 @@ func reset() -> void:
 
 
 func set_night_announced(day: int, hour: float) -> void:
-	_night_announced = day if hour >= C.NIGHT_START else -1
+	_night_announced = day if hour >= C.DUSK_HOUR else -1
 
 
 func update_sky(game_hours: float) -> void:
@@ -76,12 +76,15 @@ func update_sky(game_hours: float) -> void:
 	var day_sky := Color(0.30, 0.50, 0.80)
 	var night_sky := Color(0.07, 0.1, 0.2)
 	var day := int(game_hours / 24.0) + 1
-	var horde := (day == C.HORDE_DAY and hour >= C.NIGHT_START) or (day == C.HORDE_DAY + 1 and hour < C.NIGHT_END)
-	if horde:
+	var horde := GameState.is_blood_moon()
+	var blood_evening := day % C.BLOOD_MOON_EVERY == 0 and hour >= 18.0
+	if horde or blood_evening:
 		night_sky = Color(0.35, 0.05, 0.04)
+		if horde:
+			sun.light_color = sun.light_color.lerp(Color(1.0, 0.32, 0.22), 0.75)
 	sky_mat.set_shader_parameter("top_color", night_sky.lerp(day_sky, light))
 	var horizon := Color(0.16, 0.19, 0.28).lerp(Color(0.66, 0.70, 0.74), light).lerp(Color(0.95, 0.6, 0.4), dusk * 0.6)
-	if horde:
+	if horde or blood_evening:
 		horizon = horizon.lerp(Color(0.5, 0.08, 0.05), 1.0 - light)
 	sky_mat.set_shader_parameter("horizon_color", horizon)
 	sky_mat.set_shader_parameter("ground_color", Color(0.12, 0.12, 0.13).lerp(Color(0.25, 0.22, 0.18), light))
@@ -138,7 +141,9 @@ func update_banner(day: int, hour: float, night: bool, horde: bool) -> void:
 		hud.set_banner("血月尸潮！撑到天亮！")
 		if not _horde_announced:
 			_horde_announced = true
-	elif day == C.HORDE_DAY and hour >= 18.0:
+	elif day % C.BLOOD_MOON_EVERY == 0 and hour >= 21.0:
+		hud.set_banner("血月即将升起")
+	elif day % C.BLOOD_MOON_EVERY == 0 and hour >= 18.0:
 		hud.set_banner("今晚是血月……")
 	elif night:
 		if _night_announced != day:

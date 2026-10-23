@@ -18,6 +18,7 @@ var attack_held := false
 
 var _root := Control.new()
 var _status := Label.new()
+var _blood_info := Label.new()
 var _hp_bar := ProgressBar.new()
 var _food_bar := ProgressBar.new()
 var _stamina_bar := ProgressBar.new()
@@ -57,6 +58,7 @@ var _joy_origin := Vector2.ZERO
 var _look_id := -1
 var _look_last := Vector2.ZERO
 var _toast_t := 0.0
+var _blood_day := false
 const JOY_RADIUS := 90.0
 
 
@@ -81,6 +83,9 @@ func _ready() -> void:
 	_root.add_child(tl)
 	_status.add_theme_font_size_override("font_size", 30)
 	tl.add_child(_status)
+	_blood_info.add_theme_font_size_override("font_size", 20)
+	_blood_info.add_theme_color_override("font_color", Color(0.86, 0.78, 0.62, 0.9))
+	tl.add_child(_blood_info)
 	for pair in [[_hp_bar, Color(0.75, 0.12, 0.1)], [_food_bar, Color(0.8, 0.6, 0.15)], [_water_bar, Color(0.2, 0.5, 0.85)], [_stamina_bar, Color(0.3, 0.7, 0.45)]]:
 		var bar: ProgressBar = pair[0]
 		bar.custom_minimum_size = Vector2(260, 16 if bar != _stamina_bar else 8)
@@ -490,10 +495,15 @@ func set_stamina(v: float) -> void:
 	_stamina_bar.value = v
 
 
-func set_status(day: int, hour: float, hp: float, food: float, kills: int, zombies: int, night: bool) -> void:
+func set_status(day: int, hour: float, hp: float, food: float, kills: int, zombies: int, night: bool,
+		blood_day := false, blood_now := false, next_blood := 0) -> void:
 	var h := int(hour)
 	var m := int((hour - h) * 60.0)
 	_status.text = "第 %d 天  %02d:%02d %s" % [day, h, m, "夜" if night else ""]
+	if blood_day != _blood_day:
+		_blood_day = blood_day
+		_status.add_theme_color_override("font_color", Color(1, 0.35, 0.25) if blood_day else Color(0.95, 0.92, 0.85))
+	_blood_info.text = "血月中" if blood_now else "下次血月：第 %d 天" % next_blood
 	_hp_bar.value = hp
 	_food_bar.value = food
 	_kills.text = "击杀 %d   附近 %d" % [kills, zombies]

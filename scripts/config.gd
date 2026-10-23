@@ -1,18 +1,21 @@
 class_name GameConfig
 ## 游戏数值都集中在这里，想调难度改这个文件就行。
 
-## 一整天（24 小时）对应的真实秒数
-const DAY_SECONDS := 300.0
+## 一整天（24 小时）对应的真实分钟数（官方默认 60，手机 24）
+const DAY_LENGTH_MIN := 24.0
+## 测试模式：一天 3 分钟
+const TEST_FAST_TIME := false
+const FAST_DAY_SECONDS := 180.0
 ## 开局时间（小时）
 const START_HOUR := 7.0
-## 日出、日落（小时）
+## 日出、日落（小时，只影响太阳和天色）
 const SUNRISE := 5.5
 const SUNSET := 20.5
-## 夜晚：22:00 到 06:00
-const NIGHT_START := 22.0
-const NIGHT_END := 6.0
-## 第几天夜里是血月尸潮，撑到第二天早上就赢
-const HORDE_DAY := 7
+## 白天 / 夜晚：04:00–22:00
+const DAWN_HOUR := 4.0
+const DUSK_HOUR := 22.0
+## 每 7 天一次血月，夜里 22:00 到次日 04:00
+const BLOOD_MOON_EVERY := 7
 
 ## 夜里的亮度：月光强度、环境光颜色和强度。嫌夜里太黑就调大
 const MOON_LIGHT := 0.55
