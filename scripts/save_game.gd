@@ -10,6 +10,7 @@ var player_sys: PlayerSystem
 var inventory: InventorySystem
 var combat: CombatSystem
 var spawner: SpawnerSystem
+var horde: Horde
 var atmosphere: Atmosphere
 var hud: Hud
 var time_sys: TimeOfDay
@@ -17,14 +18,15 @@ var _save_t := 0.0
 
 
 func setup(parent: Node3D, world_ref: World, player_ref: PlayerSystem, inv_ref: InventorySystem,
-		combat_ref: CombatSystem, spawner_ref: SpawnerSystem, atmosphere_ref: Atmosphere, hud_ref: Hud,
-		time_ref: TimeOfDay) -> void:
+		combat_ref: CombatSystem, spawner_ref: SpawnerSystem, horde_ref: Horde,
+		atmosphere_ref: Atmosphere, hud_ref: Hud, time_ref: TimeOfDay) -> void:
 	main = parent
 	world = world_ref
 	player_sys = player_ref
 	inventory = inv_ref
 	combat = combat_ref
 	spawner = spawner_ref
+	horde = horde_ref
 	atmosphere = atmosphere_ref
 	hud = hud_ref
 	time_sys = time_ref
@@ -61,6 +63,7 @@ func save() -> void:
 	}
 	d.merge(time_sys.save_data())
 	d.merge(player_sys.save_data())
+	d.merge(horde.save_data())
 	d.merge(inventory.save_data())
 	d["kills"] = spawner.kills
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -88,6 +91,7 @@ func continue_game() -> void:
 	player_sys.load_data(d)
 	inventory.load_data(d)
 	spawner.load_data(d)
+	horde.load_data(d)
 	atmosphere.set_night_announced(time_sys.day, fmod(time_sys.hours, 24.0))
 	atmosphere.update_sky(time_sys.hours)
 	hud.toast("继续第 %d 天" % time_sys.day)

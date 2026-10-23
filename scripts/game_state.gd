@@ -18,7 +18,6 @@ const C = preload("res://scripts/config.gd")
 
 var day := 1
 var hours := C.START_HOUR
-var gamestage := 0
 var player: Node3D
 var running := false
 var blood_moon := false
@@ -28,13 +27,19 @@ var blood_moons_survived := 0
 func reset() -> void:
 	day = 1
 	hours = C.START_HOUR
-	gamestage = 0
 	blood_moon = false
 	blood_moons_survived = 0
 
 
+func gamestage() -> int:
+	# 还没有等级系统，先把等级当作天数；官方公式 (等级 + 存活天数) × 1.2
+	var level := maxi(1, day)
+	var days_alive := mini(day, level)
+	return maxi(1, floori((level + days_alive) * 1.2))
+
+
 func current_gamestage() -> int:
-	return maxi(1, gamestage)
+	return gamestage()
 
 
 func is_blood_moon() -> bool:

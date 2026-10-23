@@ -57,33 +57,81 @@ func update(delta: float, day: int, night: bool, horde: bool) -> void:
 			z.queue_free()
 		elif night or horde:
 			z.speed = max(z.speed, (C.ZOMBIE_HORDE_SPEED if horde else C.ZOMBIE_NIGHT_SPEED) * 0.9)
-	var target := 2 + day
-	if night:
-		target = 5 + day * 2
-	if horde:
-		target = C.ZOMBIE_MAX
-	target = min(target, C.ZOMBIE_MAX)
+	# 血月僵尸由 Horde 负责；普通刷新按游戏阶段
+	var target := 0
+	if not horde:
+		var gs := GameState.gamestage()
+		target = 3 + gs / 10
+		if night:
+			target = int(target * 1.5)
+		target = mini(target, 14 if night else 10)
 	spawn_cd -= delta
 	if alive < target and spawn_cd <= 0.0 and not Assets.zombie_models.is_empty():
-		spawn_cd = 0.6 if horde else (2.0 if night else 5.0)
-		spawn_zombie(day, night, horde)
+		spawn_cd = 2.0 if night else 5.0
+		spawn_zombie(day, night, false)
 
 
-func spawn_zombie(day: int, night: bool, horde: bool, near := Vector3.INF) -> void:
+func spawn_zombie(day: int, night: bool, horde: bool, near := Vector3.INF) -> Zombie:
+	if Assets.zombie_models.is_empty():
+		return null
+	var group := "ZombiesNight" if night else "ZombiesDowntown"
+	var model := pick_model(group)
+	if near != Vector3.INF:
+		return spawn_zombie_at(model, day, night, horde, world.free_point(near, 4.0, 10.0))
+	var at := world.free_point(player_sys.player.position, 18.0, 32.0) if not horde else world.free_point(player_sys.player.position, 14.0, 24.0)
+	return spawn_zombie_at(model, day, night, horde, at)
+
+
+func pick_model(group: String) -> String:
+	var entries = Data.get_table("entitygroups").get(group, [])
+	var models: Array[String] = []
+	var weights: Array[float] = []
+	for e in entries:
+		var id: String = e.get("id", "")
+		if id != "" and Assets.zombie_models.has(id):
+			models.append(id)
+			weights.append(maxf(0.01, float(e.get("p", 1.0))))
+	if models.is_empty():
+		return Assets.zombie_models[rng.randi_range(0, Assets.zombie_models.size() - 1)]
+	var total := 0.0
+	for w in weights:
+		total += w
+	var roll := rng.randf() * total
+	for i in models.size():
+		roll -= weights[i]
+		if roll <= 0.0:
+			return models[i]
+	return models[-1]
+
+
+func spawn_zombie_at(model: String, day: int, night: bool, horde: bool, at: Vector3) -> Zombie:
 	var z := Zombie.new()
-	var model: String = Assets.zombie_models[rng.randi_range(0, Assets.zombie_models.size() - 1)]
 	var spd := C.ZOMBIE_HORDE_SPEED if horde else (C.ZOMBIE_NIGHT_SPEED if night else C.ZOMBIE_WALK_SPEED)
 	if not z.setup(model, C.ZOMBIE_BASE_HP + C.ZOMBIE_HP_PER_DAY * (day - 1), spd, player_sys.player):
 		z.free()
-		return
+		return null
 	z.world = world
-	if near != Vector3.INF:
-		z.position = world.free_point(near, 4.0, 10.0)
-	else:
-		z.position = world.free_point(player_sys.player.position, 18.0, 32.0) if not horde else world.free_point(player_sys.player.position, 14.0, 24.0)
+	z.position = at
 	z.died.connect(_on_zombie_died)
 	z.screamed.connect(_on_scream)
 	zombie_root.add_child(z)
+	return z
+
+
+func alive_count() -> int:
+	var n := 0
+	for z in zombie_root.get_children():
+		if not z.dead:
+			n += 1
+	return n
+
+
+func horde_alive() -> int:
+	var n := 0
+	for z in zombie_root.get_children():
+		if not z.dead and z.get_meta("horde", false):
+			n += 1
+	return n
 
 
 func _on_zombie_died(z: Zombie) -> void:

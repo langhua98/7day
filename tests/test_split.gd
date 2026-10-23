@@ -61,6 +61,8 @@ func _run() -> void:
 	main.player_sys.hp = 77.0
 	main.time_sys.set_time(7 * 24.0 + 3.9)
 	main.time_sys.blood_moons_survived = 2
+	main.horde.start()
+	var horde_left: int = main.horde.remaining
 	main.save_game.save()
 	var d: Dictionary = main.save_game.read_save()
 	check_eq(d.get("version", -1), 2, "存档应有 version=2")
@@ -73,6 +75,8 @@ func _run() -> void:
 	check_eq(main.time_sys.day, 8, "读档应恢复第 8 天")
 	check_eq(main.time_sys.blood_moons_survived, 2, "读档应恢复血月次数")
 	check(main.time_sys.blood_moon, "第 8 天 03:54 读档应处于血月")
+	check(main.horde.started, "读档后血月应接着刷")
+	check_eq(main.horde.remaining, horde_left, "读档应恢复剩余血月僵尸数")
 
 	# 旧版存档没有 version 和新字段，也要能读
 	var old := {
