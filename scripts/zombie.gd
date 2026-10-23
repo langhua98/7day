@@ -222,7 +222,7 @@ func distance_to_target() -> float:
 
 ## 返回这一帧造成的伤害（0 表示没打中）。够得着就开始抬手，过一会儿才真正打中
 func try_attack() -> float:
-	if dead:
+	if dead or GameConfig.TEST_ZOMBIES_NO_ATTACK:
 		return 0.0
 	if _pending_damage > 0.0:
 		var d := _pending_damage
