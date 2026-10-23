@@ -59,6 +59,7 @@ func apply_quality(level: int) -> void:
 	RenderingServer.directional_shadow_atlas_set_size(int(p.shadow_atlas), true)
 	world.apply_quality(quality, p)
 	world.update_shadows(player.player.global_position, quality)
+	world.update_detail(player.player.global_position)
 	_perf_t = 0.0
 
 
@@ -98,6 +99,7 @@ func update(delta: float) -> void:
 	if _lod_t >= C.LOD_UPDATE_INTERVAL:
 		_lod_t = 0.0
 		world.update_shadows(player.player.global_position, quality)
+		world.update_detail(player.player.global_position)
 	var s := _governor.step(delta)
 	var vp := main.get_viewport()
 	if not is_equal_approx(s, vp.scaling_3d_scale):

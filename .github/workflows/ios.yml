@@ -27,7 +27,7 @@ env:
 jobs:
   build:
     runs-on: macos-15
-    timeout-minutes: 90
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
 
@@ -44,7 +44,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: assets
-          key: assets-v4
+          key: assets-v5
+          restore-keys: assets-v4
 
       - name: 从小桔云盘下载素材
         env:
@@ -98,6 +99,8 @@ jobs:
           "$GODOT" --headless --import || true
           # 市中心建筑：游戏的远景网格转成 Godot 网格
           "$GODOT" --headless -s tools/build_poi.gd
+          # 楼里的家具、灯、柜子、门：每个预制体的 glb 合成一个网格
+          "$GODOT" --headless -s tools/build_props.gd
           "$GODOT" --headless --import
 
       - name: 运行数据管线测试

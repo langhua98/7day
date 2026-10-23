@@ -10,12 +10,23 @@ const INDEX := "res://assets/index/world_models.json"
 const POI_INDEX := "res://assets/poi/index.json"
 ## 楼里的容器方块（tools/build_poi_full.py 输出）：{楼名: {ground, list: [{block, loot, x, y, z, rot}]}}
 const POI_CONTAINERS := "res://assets/poi/containers.json"
+## 楼里家具、灯、柜子、门的模型（tools/fetch_assets.py 的 fetch_poi_props 输出）：
+## {models: {预制体: {mesh, door}}, rot: [方块转向 → Basis 的 9 个数，按列]}。网格由 tools/build_props.gd
+## 从预制体的 glb 合成，原点在方块中心，材质（底色贴图）在网格里
+const POI_PROPS := "res://assets/poi/props.json"
 const POI_SHADER := preload("res://scripts/poi.gdshader")
 const TERRAIN_INDEX := "res://assets/terrain/terrain.json"
 ## 多远以内显示完整的楼（再远用简化的远景网格，省手机性能）
 const FULL_DETAIL_RANGE := 80.0
 ## 完整版至少要有远景网格这么多比例的顶点才用（否则当成没转好）
 const FULL_MIN_SHARE := 0.25
+## 完整版的楼走近才加载、走远就释放（67 栋全放内存手机吃不消）。距离从楼的外接圆边上算
+const FULL_LOAD_RANGE := FULL_DETAIL_RANGE + 30.0
+const FULL_FREE_RANGE := FULL_DETAIL_RANGE + 70.0
+## 楼里的家具多远以内画（按 16 米 × 8 米一块分组，每块每种模型一个 MultiMesh）
+const PROP_RANGE := 28.0
+const PROP_CHUNK := 16.0
+const PROP_CHUNK_H := 8.0
 
 ## 街道中线（x、z 两个方向一样）。原点是市中心的十字路口
 const ROADS := [-152.0, -76.0, 0.0, 76.0, 152.0]
@@ -55,6 +66,9 @@ var textures := {}
 var decals: PackedStringArray = []
 var pois := {}
 var poi_containers := {}
+var poi_props := {}
+var _prop_rot: Array[Basis] = []
+var _prop_cache := {}   # 预制体 -> {mesh, mat}，没有模型的是 {}
 ## 地面贴图（游戏的地形贴图数组）：名字 -> {albedo, normal, orm, tile}
 var terrain := {}
 var ready_ok := false
@@ -85,7 +99,8 @@ var quality := 1
 ## 按距离调整可见距离和投影的实例
 var _prop_lod: Array[Dictionary] = []
 var _poi_lod: Array[Dictionary] = []
-var _full_pois: Array[Dictionary] = []   # 换成完整版的楼：{name, pos, far, parts}，性能面板用
+## 有完整版的楼：{name, pos, far, parts, props, path, state, radius}。state 0 没加载 1 加载中 2 显示中 3 加载失败
+var _full_pois: Array[Dictionary] = []
 var _decal_lod: Array[Dictionary] = []
 ## 地面/人行道/马路按贴图合批，减少 draw call
 var _flat_groups := {}
@@ -103,6 +118,12 @@ func _ready() -> void:
 		var pc = JSON.parse_string(FileAccess.get_file_as_string(POI_CONTAINERS))
 		if pc is Dictionary:
 			poi_containers = pc
+	if FileAccess.file_exists(POI_PROPS):
+		var pp = JSON.parse_string(FileAccess.get_file_as_string(POI_PROPS))
+		if pp is Dictionary:
+			poi_props = pp.get("models", {})
+			for r in pp.get("rot", []):
+				_prop_rot.append(Basis(Vector3(r[0], r[1], r[2]), Vector3(r[3], r[4], r[5]), Vector3(r[6], r[7], r[8])))
 	if FileAccess.file_exists(TERRAIN_INDEX):
 		var t = JSON.parse_string(FileAccess.get_file_as_string(TERRAIN_INDEX))
 		if t is Dictionary:
@@ -169,6 +190,8 @@ func full_debug(player_pos: Vector3) -> String:
 			best = e
 	if best.is_empty():
 		return "没有完整版的楼"
+	if best.state != 2:
+		return "%s %dm 完整版%s" % [best.name, int(bd), ["没加载", "加载中", "", "加载失败"][best.state]]
 	var on := 0
 	var tris := 0
 	for fi in best.parts:
@@ -179,6 +202,159 @@ func full_debug(player_pos: Vector3) -> String:
 			for i in mi.mesh.get_surface_count():
 				tris += mi.mesh.surface_get_array_index_len(i) / 3
 	return "%s %dm 完整 %d/%d块 %dk面" % [best.name, int(bd), on, best.parts.size(), tris / 1000]
+
+
+## 按玩家位置加载/释放完整版的楼和楼里的家具（后台线程读文件，读完下一次再摆上）
+func update_detail(player_pos: Vector3) -> void:
+	var p := Vector2(player_pos.x, player_pos.z)
+	for e in _full_pois:
+		var d := maxf(0.0, p.distance_to(e.pos) - float(e.radius))
+		match int(e.state):
+			0:
+				if d < FULL_LOAD_RANGE:
+					e["pending"] = _full_request(e)
+					e.state = 1
+			1:
+				var done := true
+				for path in e.pending:
+					var st := ResourceLoader.load_threaded_get_status(path)
+					if st == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+						done = false
+				if not done:
+					continue
+				var full = ResourceLoader.load_threaded_get(e.path) \
+					if ResourceLoader.load_threaded_get_status(e.path) == ResourceLoader.THREAD_LOAD_LOADED else null
+				if full == null or not ("meshes" in full):
+					push_warning("%s 的完整版读不出来" % e.name)
+					e.state = 3
+					continue
+				for path in e.pending:
+					if path != e.path and ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_LOADED:
+						ResourceLoader.load_threaded_get(path)   # 进缓存，_prop_model 里 load 直接拿到
+				_show_full(e, full)
+				e.state = 2
+			2:
+				if d > FULL_FREE_RANGE:
+					_hide_full(e)
+					e.state = 0
+
+
+## 发出后台读取：完整网格 + 这栋楼用到、还没读过的家具模型
+func _full_request(e: Dictionary) -> Array:
+	var paths := [e.path]
+	ResourceLoader.load_threaded_request(e.path)
+	var entry = poi_containers.get(e.name)
+	if entry is Dictionary:
+		for key in entry.get("props", {}).get("models", []):
+			var info: Dictionary = poi_props.get(key, {})
+			if info.has("mesh") and not _prop_cache.has(key):
+				var mp := "%s/%s" % [ROOT, info.mesh]
+				if not paths.has(mp) and ResourceLoader.exists(mp):
+					ResourceLoader.load_threaded_request(mp)
+					paths.append(mp)
+	return paths
+
+
+func _show_full(e: Dictionary, full: Resource) -> void:
+	var mi: MeshInstance3D = e.far
+	for m in full.meshes:
+		var fi := MeshInstance3D.new()
+		fi.mesh = m
+		# 只有方块面的网格整个用 POI 着色器，和远景网格一样用 material_override
+		var all_blocks: bool = m.get_surface_count() > 0
+		for i in m.get_surface_count():
+			if not m.surface_get_name(i).begins_with("blocks"):
+				all_blocks = false
+		if all_blocks:
+			fi.material_override = _poi_material()
+		else:
+			for i in m.get_surface_count():
+				if m.surface_get_name(i).begins_with("blocks"):
+					fi.set_surface_override_material(i, _poi_material())
+		fi.position = mi.position
+		fi.rotation.y = e.rot
+		fi.visibility_range_end = FULL_DETAIL_RANGE
+		fi.visibility_range_end_margin = 10.0
+		# 影子用简化网格投（便宜得多），完整网格只负责看
+		fi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(fi)
+		e.parts.append(fi)
+	e.props = _build_full_props(e)
+	mi.visibility_range_begin = FULL_DETAIL_RANGE
+	mi.visibility_range_begin_margin = 10.0
+
+
+func _hide_full(e: Dictionary) -> void:
+	for fi in e.parts:
+		(fi as Node).queue_free()
+	e.parts.clear()
+	if e.props != null:
+		(e.props as Node).queue_free()
+		e.props = null
+	var mi: MeshInstance3D = e.far
+	mi.visibility_range_begin = 0.0
+	mi.visibility_range_begin_margin = 0.0
+
+
+## 实体模型（家具、灯、柜子、门）：{mesh}，没有模型返回 {}
+func _prop_model(key: String) -> Dictionary:
+	if _prop_cache.has(key):
+		return _prop_cache[key]
+	var out := {}
+	var info: Dictionary = poi_props.get(key, {})
+	if info.has("mesh") and ResourceLoader.exists("%s/%s" % [ROOT, info.mesh]):
+		var mesh = load("%s/%s" % [ROOT, info.mesh])
+		if mesh is Mesh:
+			out = {"mesh": mesh}
+	_prop_cache[key] = out
+	return out
+
+
+func _prop_basis(r: int) -> Basis:
+	return _prop_rot[r] if r >= 0 and r < _prop_rot.size() else Basis.IDENTITY
+
+
+## 楼里的家具：同一块（16×8×16 米）里同一种模型合成一个 MultiMesh。挂在和楼网格同变换的节点下
+func _build_full_props(e: Dictionary) -> Node3D:
+	var entry = poi_containers.get(e.name)
+	if not (entry is Dictionary):
+		return null
+	var pr: Dictionary = entry.get("props", {})
+	var names: Array = pr.get("models", [])
+	var groups := {}
+	for item in pr.get("items", []):
+		var mi_: int = int(item[0])
+		if mi_ < 0 or mi_ >= names.size() or _prop_model(names[mi_]).is_empty():
+			continue
+		# 方块数据是游戏的左手坐标，楼网格翻了 x，这里也翻；y 是方块底面，模型原点在方块中心
+		var pos := Vector3(-float(item[1]), float(item[2]) + 0.5, float(item[3]))
+		var gk := "%d|%d|%d|%d" % [mi_, floori(pos.x / PROP_CHUNK), floori(pos.y / PROP_CHUNK_H), floori(pos.z / PROP_CHUNK)]
+		if not groups.has(gk):
+			groups[gk] = {"key": names[mi_], "xfs": []}
+		groups[gk].xfs.append(Transform3D(_prop_basis(int(item[4])), pos))
+	if groups.is_empty():
+		return null
+	var far: MeshInstance3D = e.far
+	var holder := Node3D.new()
+	holder.name = "Props_" + str(e.name)
+	holder.position = far.position
+	holder.rotation.y = e.rot
+	for g in groups.values():
+		var pm := _prop_model(g.key)
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = pm.mesh
+		mm.instance_count = g.xfs.size()
+		for k in g.xfs.size():
+			mm.set_instance_transform(k, g.xfs[k])
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		mmi.visibility_range_end = PROP_RANGE
+		mmi.visibility_range_end_margin = 5.0
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		holder.add_child(mmi)
+	add_child(holder)
+	return holder
 
 
 ## 按玩家位置开关近处楼和道具的投影。远处不投影，手机阴影贴图只画身边。
@@ -1167,31 +1343,8 @@ func _poi(name: String, c: Vector2) -> void:
 	if not use_full and ResourceLoader.exists(full_path):
 		push_warning("%s 的完整版只有 %d 顶点（远景 %d），不用" % [name, int(info.get("full_verts", 0)), int(info.get("verts", 0))])
 	if use_full:
-		var full: Resource = load(full_path)
-		var parts := []
-		_full_pois.append({"name": name, "pos": c, "far": mi, "parts": parts})
-		for m in full.meshes:
-			var fi := MeshInstance3D.new()
-			fi.mesh = m
-			# 只有方块面的网格整个用 POI 着色器，和远景网格一样用 material_override
-			var all_blocks: bool = m.get_surface_count() > 0
-			for i in m.get_surface_count():
-				if not m.surface_get_name(i).begins_with("blocks"):
-					all_blocks = false
-			if all_blocks:
-				fi.material_override = _poi_material()
-			else:
-				for i in m.get_surface_count():
-					if m.surface_get_name(i).begins_with("blocks"):
-						fi.set_surface_override_material(i, _poi_material())
-			fi.position = mi.position
-			fi.rotation.y = rot
-			fi.visibility_range_end = FULL_DETAIL_RANGE
-			fi.visibility_range_end_margin = 10.0
-			# 影子用简化网格投（便宜得多），完整网格只负责看
-			fi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			add_child(fi)
-			parts.append(fi)
+		_full_pois.append({"name": name, "pos": c, "far": mi, "parts": [], "props": null, "path": full_path,
+			"state": 0, "rot": rot, "radius": 0.5 * Vector2(float(info.grid_w), float(info.grid_h)).length()})
 		var shadow := MeshInstance3D.new()
 		shadow.mesh = mesh
 		shadow.material_override = _poi_material()
@@ -1200,8 +1353,6 @@ func _poi(name: String, c: Vector2) -> void:
 		shadow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
 		shadow.visibility_range_end = FULL_DETAIL_RANGE + 10.0
 		add_child(shadow)
-		mi.visibility_range_begin = FULL_DETAIL_RANGE
-		mi.visibility_range_begin_margin = 10.0
 		# 近处阴影交给只投影的简化网格；远景网格始终不投影
 		_poi_lod.append({"node": shadow, "pos": c, "shadow_only": true})
 	else:
@@ -1283,23 +1434,40 @@ func _build_interior_props(ii: int, entry: Dictionary) -> void:
 	add_child(holder)
 	var slots := []
 	var lists := {"wood": [], "metal": []}
+	var door_fit := {}   # 门模型 -> 把模型缩放成以原点为中心的单位立方体（宽沿 x）
 	for i in it.doors.size():
 		var kind := "metal" if it.doors[i].metal else "wood"
+		var dm: Dictionary = {}
+		var key := str(_door_model_of(entry, i))
+		if key != "":
+			dm = _prop_model(key)
+		if not dm.is_empty():
+			kind = "m:" + key
+			if not door_fit.has(kind):
+				door_fit[kind] = _unit_fit(dm.mesh.get_aabb())
+		if not lists.has(kind):
+			lists[kind] = []
 		slots.append([kind, lists[kind].size()])
 		lists[kind].append(i)
-	var nodes := {"slots": slots}
+	var nodes := {"slots": slots, "fit": door_fit}
 	for kind in lists:
 		if lists[kind].is_empty():
 			continue
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.mesh = BoxMesh.new()
+		var mmi := MultiMeshInstance3D.new()
+		var fit := Transform3D.IDENTITY
+		if kind.begins_with("m:"):
+			var dm := _prop_model(kind.substr(2))
+			mm.mesh = dm.mesh
+			fit = door_fit[kind]
+		else:
+			mm.mesh = BoxMesh.new()
+			mmi.material_override = _prop_material(kind)
 		mm.instance_count = lists[kind].size()
 		for k in lists[kind].size():
-			mm.set_instance_transform(k, it.door_transform(lists[kind][k]))
-		var mmi := MultiMeshInstance3D.new()
+			mm.set_instance_transform(k, it.door_transform(lists[kind][k]) * fit)
 		mmi.multimesh = mm
-		mmi.material_override = _prop_material(kind)
 		mmi.visibility_range_end = FULL_DETAIL_RANGE
 		holder.add_child(mmi)
 		nodes[kind] = mmi
@@ -1309,6 +1477,8 @@ func _build_interior_props(ii: int, entry: Dictionary) -> void:
 	for e in entry.get("list", []):
 		if e.get("drawn", true):
 			continue
+		if e.get("model") is String and not poi_props.get(e.model, {}).is_empty():
+			continue   # 有实体模型，在 _build_full_props 里画
 		var sz := Vector3(float(e.get("sx", 1)), float(e.get("sy", 1)), float(e.get("sz", 1))) * 0.9
 		var c := Vector3(-float(e.get("x", 0.0)), float(e.get("y", 0.0)) + sz.y * 0.5, float(e.get("z", 0.0)))
 		boxes.append(Transform3D(Basis.from_scale(sz), c))
@@ -1324,6 +1494,27 @@ func _build_interior_props(ii: int, entry: Dictionary) -> void:
 		mmi.material_override = _prop_material("crate")
 		mmi.visibility_range_end = FULL_DETAIL_RANGE
 		holder.add_child(mmi)
+
+
+## 第 i 扇门的模型名（containers.json 里 doors[i].model），没有返回 ""
+func _door_model_of(entry: Dictionary, i: int) -> String:
+	var dl: Array = entry.get("doors", [])
+	if i < dl.size() and dl[i] is Dictionary and dl[i].get("model") is String:
+		return dl[i].model
+	return ""
+
+
+## 把 aabb 缩放、平移成以原点为中心的单位立方体；模型宽的一边沿 z 时先转 90 度让宽沿 x（门板宽沿 x）
+func _unit_fit(a: AABB) -> Transform3D:
+	var b := Basis.IDENTITY
+	var sz := a.size
+	if sz.z > sz.x:
+		b = Basis(Vector3.UP, PI / 2)
+		sz = Vector3(sz.z, sz.y, sz.x)
+	sz = sz.max(Vector3.ONE * 0.001)
+	var rotated := Transform3D(b, Vector3.ZERO) * a
+	var scale := Basis.from_scale(Vector3.ONE / sz)
+	return Transform3D(scale, -(scale * rotated.get_center())) * Transform3D(b, Vector3.ZERO)
 
 
 func _prop_material(kind: String) -> Material:
@@ -1392,7 +1583,8 @@ func set_door(ii: int, i: int, open: bool) -> void:
 	var nodes: Dictionary = _door_nodes.get(ii, {})
 	var slot: Array = nodes.get("slots", [])[i] if i < nodes.get("slots", []).size() else []
 	if slot.size() == 2 and nodes.has(slot[0]):
-		(nodes[slot[0]] as MultiMeshInstance3D).multimesh.set_instance_transform(slot[1], it.door_transform(i))
+		var fit: Transform3D = nodes.get("fit", {}).get(slot[0], Transform3D.IDENTITY)
+		(nodes[slot[0]] as MultiMeshInstance3D).multimesh.set_instance_transform(slot[1], it.door_transform(i) * fit)
 
 
 func toggle_door(ii: int, i: int) -> bool:
