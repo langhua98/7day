@@ -166,7 +166,7 @@ class BuffDataTest(unittest.TestCase):
         text = (Path(__file__).resolve().parents[1] / "scripts" / "config.gd").read_text(encoding="utf-8")
         names = build_data.status_buffs_from_gd(text)
         self.assertIn("buffInjuryBleeding", names)
-        self.assertIn("buffIllDysentery", names)
+        self.assertIn("buffDysenteryMain", names)
 
 
 if __name__ == "__main__":
