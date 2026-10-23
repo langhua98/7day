@@ -166,6 +166,14 @@ func _place_block() -> void:
 	var c = _place_target()
 	if c == null:
 		return
+	# 睡袋不进方块格子，交给 respawn.gd 摆（同时只能有一个）
+	if inventory.equipped == C.BEDROLL_ID:
+		GameState.bedroll_placed.emit(Vector3(c) + Vector3(0.5, 0.0, 0.5), player_sys.yaw)
+		arms.swing(6.0)
+		if not C.TEST_INFINITE:
+			inventory.remove(inventory.equipped)
+			inventory.refresh()
+		return
 	world.add_voxel(c, inventory.equipped)
 	GameState.block_changed.emit(c)
 	arms.swing(6.0)

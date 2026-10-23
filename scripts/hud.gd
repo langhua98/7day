@@ -59,6 +59,13 @@ var _status_row := HBoxContainer.new()
 var _status_tip := Label.new()
 var _status_tip_t := 0.0
 var _status_ids: Array = []
+## 死亡黑屏（3c）和指向尸体背包的小箭头
+var _blackout := ColorRect.new()
+var _blackout_label := Label.new()
+var _blackout_tween: Tween
+var _bag_marker := Control.new()
+var _bag_arrow := Control.new()
+var _bag_marker_label := Label.new()
 ## 设置：灵敏度、亮度、音量、音乐音量（倍数）、画质档位、性能面板，存在 user://settings.cfg
 var settings := {"sensitivity": 1.0, "brightness": 1.0, "volume": 1.0, "music": 0.8,
 	"quality": 1.0, "show_perf": 0.0}
@@ -286,8 +293,8 @@ func _ready() -> void:
 	# 背包（scripts/ui/bag_panel.gd）和容器面板（scripts/ui/container_panel.gd）
 	_bag_panel.use_pressed.connect(func(id): item_used.emit(id))
 	_bag_panel.drop_pressed.connect(func(i): item_dropped.emit(i))
-	_root.add_child(_bag_panel)
-	_root.add_child(container_panel)
+	_safe.add_child(_bag_panel)
+	_safe.add_child(container_panel)
 
 	# 摇杆：平时停在左下角，手指按在左半屏哪里就移到哪里
 	for p in [_joy_base, _joy_knob]:
@@ -314,6 +321,7 @@ func _ready() -> void:
 	_build_start_panel()
 	_build_end_panel()
 	_build_pause_panel()
+	_build_death_ui()
 	# 背包盖在摇杆上面
 	get_viewport().size_changed.connect(_update_safe_area)
 	_update_safe_area()
@@ -694,6 +702,69 @@ func toast(text: String) -> void:
 	_toast.text = text
 	_toast.modulate.a = 1.0
 	_toast_t = 2.2
+
+
+func _build_death_ui() -> void:
+	# 指向尸体背包：顶部中间一个会转的三角 + 距离
+	_bag_marker.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_bag_marker.position = Vector2(-160, 150)
+	_bag_marker.size = Vector2(320, 50)
+	_bag_marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bag_marker.visible = false
+	_root.add_child(_bag_marker)
+	_bag_arrow.position = Vector2(30, 25)
+	_bag_arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var tri := Polygon2D.new()
+	tri.polygon = PackedVector2Array([Vector2(0, -18), Vector2(13, 14), Vector2(0, 7), Vector2(-13, 14)])
+	tri.color = Color(1.0, 0.55, 0.4)
+	_bag_arrow.add_child(tri)
+	_bag_marker.add_child(_bag_arrow)
+	_bag_marker_label.position = Vector2(56, 4)
+	_bag_marker_label.size = Vector2(260, 42)
+	_bag_marker_label.add_theme_font_size_override("font_size", 26)
+	_bag_marker_label.add_theme_color_override("font_color", Color(1.0, 0.75, 0.65))
+	_bag_marker_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_bag_marker_label.add_theme_constant_override("outline_size", 6)
+	_bag_marker.add_child(_bag_marker_label)
+	# 死亡黑屏，盖在所有界面上面
+	_blackout.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_blackout.color = Color(0, 0, 0, 0)
+	_blackout.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_blackout.visible = false
+	_root.add_child(_blackout)
+	_blackout_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_blackout_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_blackout_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_blackout_label.add_theme_font_size_override("font_size", 48)
+	_blackout_label.add_theme_color_override("font_color", Color(0.85, 0.2, 0.15))
+	_blackout.add_child(_blackout_label)
+
+
+## 死亡黑屏：on = true 变黑并显示 text，false 慢慢亮回来
+func set_blackout(on: bool, text := "") -> void:
+	if _blackout_tween:
+		_blackout_tween.kill()
+	_blackout_label.text = text
+	_blackout.visible = true
+	if on:
+		_release_touches()
+	_blackout_tween = create_tween()
+	_blackout_tween.tween_property(_blackout, "color:a", 1.0 if on else 0.0, 0.35 if on else 0.8)
+	if not on:
+		_blackout_tween.tween_callback(func(): _blackout.visible = false)
+
+
+func blackout_visible() -> bool:
+	return _blackout.visible and _blackout.color.a > 0.5
+
+
+## 尸体背包方向：angle 是相对视线的角度（弧度，0 = 正前方，正数在右边），dist 米；dist < 0 隐藏
+func set_bag_marker(angle: float, dist: float) -> void:
+	_bag_marker.visible = dist >= 0.0
+	if dist < 0.0:
+		return
+	_bag_arrow.rotation = angle
+	_bag_marker_label.text = "尸体背包 %d 米" % roundi(dist)
 
 
 func hurt() -> void:

@@ -17,6 +17,7 @@ var _menu_label := Label.new()
 var _use_btn := Button.new()
 var _drop_btn := Button.new()
 var _sel := -1
+const TAP_SLOP := 24.0
 var _slots: Array = []
 var _equipped := ""
 var _cap := 45
@@ -107,8 +108,23 @@ func _rebuild() -> void:
 	for i in _slots.size():
 		var b := make_slot(_slots[i], SLOT_SIZE, _equipped != "" and _slots[i].get("id", "") == _equipped, i >= _cap)
 		var idx := i
-		b.pressed.connect(func(): _open_menu(idx))
+		# 背包能上下滑着找：手指按下后挪动超过 TAP_SLOP 算滑动，不打开菜单
+		b.mouse_filter = Control.MOUSE_FILTER_PASS
+		b.button_mask = 0
+		b.gui_input.connect(func(ev: InputEvent): _slot_input(b, idx, ev))
 		_grid.add_child(b)
+
+
+func _slot_input(b: Button, i: int, ev: InputEvent) -> void:
+	if not (ev is InputEventMouseButton) or ev.button_index != MOUSE_BUTTON_LEFT:
+		return
+	if ev.pressed:
+		b.set_meta("down_at", ev.global_position)
+	elif b.has_meta("down_at"):
+		var from: Vector2 = b.get_meta("down_at")
+		b.remove_meta("down_at")
+		if ev.global_position.distance_to(from) <= TAP_SLOP and b.get_global_rect().has_point(ev.global_position):
+			_open_menu(i)
 
 
 func _open_menu(i: int) -> void:

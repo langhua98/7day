@@ -119,6 +119,7 @@ jobs:
           "$GODOT" --headless --path . res://tests/test_smoke.tscn
           "$GODOT" --headless --path . res://tests/test_status.tscn
           "$GODOT" --headless --path . res://tests/test_injury.tscn
+          "$GODOT" --headless --path . res://tests/test_respawn.tscn
 
       - name: 导出 Xcode 工程
         env:

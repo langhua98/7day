@@ -22,6 +22,8 @@ var _e_down := false
 var crates := {}
 ## 容器面板正开着的容器
 var _open := {}
+## 尸体背包（3c）：[{items, pos, name, r, node, bag: true}]，拿空了就消失
+var corpse_bags: Array = []
 
 const CRATE_ID := "cntWoodWritableCrate"
 const LOOT_SCRIPT := "res://scripts/loot.gd"
@@ -40,7 +42,7 @@ func setup(parent: Node3D, world_ref: World, player_ref: PlayerSystem, inv_ref: 
 func build() -> void:
 	main.add_child(loot_root)
 	GameState.block_changed.connect(_on_block_changed)
-	hud.container_panel.closed.connect(func(): _open = {})
+	hud.container_panel.closed.connect(_on_panel_closed)
 
 
 func reset() -> void:
@@ -50,6 +52,7 @@ func reset() -> void:
 	_search_t = 0.0
 	_search_from = Vector3.ZERO
 	crates.clear()
+	_clear_corpse_bags()
 	_open = {}
 	hud.container_panel.close_panel()
 	hud.set_progress(-1.0)
@@ -267,12 +270,18 @@ func open_panel(c: Dictionary) -> void:
 	hud.container_panel.open(c.name, c.items, inventory)
 
 
-## 离玩家最近、够得着的储物箱
+func _on_panel_closed() -> void:
+	var was := _open
+	_open = {}
+	if was.get("bag", false) and not _has_items(was):
+		_remove_corpse_bag(was)
+
+
+## 离玩家最近、够得着的储物箱（尸体背包也算）
 func nearest_crate() -> Dictionary:
 	var best := {}
 	var best_d := 1.9
-	for cell in crates:
-		var cr: Dictionary = crates[cell]
+	for cr in crates.values() + corpse_bags:
 		var to: Vector3 = cr.pos - player_sys.player.position
 		var d := Vector2(to.x, to.z).length()
 		if d < best_d and absf(to.y) < 2.2:
@@ -320,6 +329,78 @@ func drop_slot(index: int) -> void:
 	inventory.refresh()
 
 
+# —— 尸体背包（死亡时身上的全部东西） ——
+
+## 在死亡位置放一个尸体背包，items 是背包格子（非空的）
+func add_corpse_bag(pos: Vector3, items: Array) -> Dictionary:
+	var list: Array = items.duplicate()
+	while list.size() < C.CONTAINER_SLOTS:
+		list.append({})
+	var bag := {"items": list, "pos": pos, "name": "尸体背包", "r": 0.4, "bag": true}
+	bag.node = _corpse_bag_node(pos)
+	main.add_child(bag.node)
+	corpse_bags.append(bag)
+	return bag
+
+
+func _remove_corpse_bag(bag: Dictionary) -> void:
+	corpse_bags.erase(bag)
+	if bag.get("node") and is_instance_valid(bag.node):
+		bag.node.queue_free()
+	hud.toast("尸体背包拿空了")
+
+
+func _clear_corpse_bags() -> void:
+	for b in corpse_bags:
+		if b.get("node") and is_instance_valid(b.node):
+			b.node.queue_free()
+	corpse_bags.clear()
+
+
+## 尸体背包的样子：云盘有模型（assets/world/corpse_bag.obj）就用，没有先用棕色小方块顶上
+func _corpse_bag_node(pos: Vector3) -> Node3D:
+	var holder := Node3D.new()
+	holder.position = pos
+	var mi := MeshInstance3D.new()
+	var path := "res://assets/world/corpse_bag.obj"
+	if ResourceLoader.exists(path) and load(path) is Mesh:
+		mi.mesh = load(path)
+		var tex := "res://assets/world/corpse_bag.png"
+		var mat := StandardMaterial3D.new()
+		if ResourceLoader.exists(tex):
+			mat.albedo_texture = load(tex)
+		mi.material_override = mat
+	else:
+		var box := BoxMesh.new()
+		box.size = Vector3(0.55, 0.35, 0.4)
+		mi.mesh = box
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.36, 0.25, 0.14)
+		mi.material_override = mat
+		mi.position.y = 0.175
+	holder.add_child(mi)
+	var label := Label3D.new()
+	label.text = "尸体背包"
+	label.font = _cjk_font()
+	label.font_size = 36
+	label.outline_size = 10
+	label.fixed_size = true
+	label.pixel_size = 0.0011
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.no_depth_test = true
+	label.position.y = 0.9
+	label.visibility_range_end = 12.0
+	label.modulate = Color(1, 0.6, 0.5)
+	holder.add_child(label)
+	var glow := OmniLight3D.new()
+	glow.light_color = Color(1.0, 0.45, 0.35)
+	glow.light_energy = 0.8
+	glow.omni_range = 1.8
+	glow.position.y = 0.6
+	holder.add_child(glow)
+	return holder
+
+
 ## 存档：容器里没拿完的东西、储物箱里的东西
 func save_data() -> Dictionary:
 	var left := {}
@@ -330,7 +411,10 @@ func save_data() -> Dictionary:
 	var cr := []
 	for cell in crates:
 		cr.append([cell.x, cell.y, cell.z, _pack(crates[cell].items)])
-	return {"container_items": left, "crates": cr}
+	var bags := []
+	for b in corpse_bags:
+		bags.append({"pos": [b.pos.x, b.pos.y, b.pos.z], "items": _pack(b.items)})
+	return {"container_items": left, "crates": cr, "corpse_bags": bags}
 
 
 ## 在 world.voxel_load 之后调用
@@ -349,6 +433,12 @@ func load_data(d: Dictionary) -> void:
 			var cell := Vector3i(int(e[0]), int(e[1]), int(e[2]))
 			if crates.has(cell):
 				crates[cell].items = _unpack(e[3], C.CRATE_SLOTS)
+	_clear_corpse_bags()
+	for e in d.get("corpse_bags", []):
+		if e is Dictionary and e.get("pos") is Array and e.pos.size() >= 3:
+			var items := _unpack(e.get("items", []), C.CONTAINER_SLOTS)
+			if _has_items({"items": items}):
+				add_corpse_bag(Vector3(float(e.pos[0]), float(e.pos[1]), float(e.pos[2])), items)
 
 
 static func _pack(items: Array) -> Array:
