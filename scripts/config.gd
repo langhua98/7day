@@ -64,24 +64,46 @@ const TEST_ZOMBIES_NO_ATTACK := true
 
 const MAX_HP := 100.0
 const MAX_FOOD := 100.0
-## 每真实秒消耗的饱食度
-const FOOD_DRAIN := 0.12
-## 饱食度为 0 时每秒掉血
-const STARVE_DAMAGE := 1.0
 const MAX_WATER := 100.0
-## 每真实秒消耗的水分（比饿得快）
-const WATER_DRAIN := 0.17
-## 水分为 0 时每秒掉血
-const THIRST_DAMAGE := 1.4
-## 被僵尸打中后开始流血的几率、流血每秒掉血、流血多久自己止住（秒）
+## 生存数值都按「游戏小时」算，改 DAY_LENGTH_MIN 后节奏不变
+## 每游戏小时掉多少饱食、水分；冲刺时再乘 SPRINT_HUNGER_MULT
+const FOOD_PER_HOUR := 1.6
+const WATER_PER_HOUR := 2.5
+const SPRINT_HUNGER_MULT := 2.0
+## 饱食 / 水分低于多少算饥饿 / 口渴
+const HUNGRY_BELOW := 25.0
+const THIRSTY_BELOW := 25.0
+## 吃饱喝足（饱食 > 60、水 > 50、没有掉血的状态）时每游戏小时回血
+const HP_REGEN_PER_HOUR := 24.0
+const REGEN_FOOD_ABOVE := 60.0
+const REGEN_WATER_ABOVE := 50.0
+## 被僵尸打中后开始流血的几率
 const BLEED_CHANCE := 0.3
-const BLEED_DAMAGE := 0.7
-const BLEED_TIME := 40.0
-## 腹泻持续秒数，期间水分掉得快几倍
-const SICK_TIME := 75.0
-const SICK_WATER_MULT := 3.5
-## 咖啡因：体力恢复倍数
-const BUFF_STAMINA_MULT := 2.2
+
+## 状态效果表：id → 定义。所有持续状态都走 scripts/status_effects.gd。
+##   zh 中文名  short 图标牌上的字  desc 说明  buff 官方 buffs.xml 名（有就用官方中文名）
+##   hours 默认持续游戏小时（0 = 一直有，直到移除）  stack 能否叠加（max_stack 上限）
+##   hp / food / water：每游戏小时的增减（叠加时乘层数）  hp_sec：每真实秒（流血）
+##   mult：倍率修正 {stat: 倍数}，例如 move_speed、stamina_regen、food_drain、water_drain
+##   add：加值修正 {stat: 值}，例如 stamina_max
+##   flags：禁止的动作，例如 no_sprint、no_jump（3b 骨折用）
+##   bad：坏状态（红牌），否则绿牌
+const STATUS := {
+	"hungry": {"zh": "饥饿", "short": "饿", "buff": "buffStatusHungry1", "bad": true,
+		"desc": "饱食低于 25，体力恢复减半。吃东西解除。", "mult": {"stamina_regen": 0.5}},
+	"starving": {"zh": "饿肚子", "short": "饿死", "buff": "buffStatusHungry2", "bad": true,
+		"desc": "饱食为 0，每游戏小时掉 6 血。吃东西解除。", "hp": -6.0},
+	"thirsty": {"zh": "口渴", "short": "渴", "buff": "buffStatusThirsty1", "bad": true,
+		"desc": "水分低于 25，体力上限 −25。喝东西解除。", "add": {"stamina_max": -25.0}},
+	"dehydrated": {"zh": "脱水", "short": "脱水", "buff": "buffStatusThirsty2", "bad": true,
+		"desc": "水分为 0，每游戏小时掉 10 血。喝东西解除。", "hp": -10.0},
+	"bleeding": {"zh": "流血", "short": "血", "buff": "buffInjuryBleeding", "bad": true, "hours": 0.67,
+		"desc": "每秒掉 0.7 血。用绷带或急救包止血。", "hp_sec": -0.7},
+	"dysentery": {"zh": "腹泻", "short": "泻", "buff": "buffIllDysentery", "bad": true, "hours": 1.25,
+		"desc": "水分掉得快 3.5 倍。喝金棒茶或用急救包治好。", "mult": {"water_drain": 3.5}},
+	"caffeine": {"zh": "咖啡因", "short": "咖", "buff": "buffCoffeeStaminaRegen", "hours": 1.5,
+		"desc": "体力恢复 ×2.2。", "mult": {"stamina_regen": 2.2}},
+}
 
 const FIST_DAMAGE := 8.0
 const MELEE_RANGE := 2.3

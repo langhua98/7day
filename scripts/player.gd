@@ -18,10 +18,9 @@ var pitch := 0.0
 var hp := C.MAX_HP
 var food := C.MAX_FOOD
 var water := C.MAX_WATER
-var bleed_t := 0.0
-var sick_t := 0.0
-var buff_t := 0.0
 var stamina := 100.0
+var _sprinting := false
+var _hud_t := 0.0
 
 var _vy := 0.0
 var _recoil := 0.0
@@ -62,10 +61,9 @@ func reset() -> void:
 	hp = C.MAX_HP
 	food = C.MAX_FOOD
 	water = C.MAX_WATER
-	bleed_t = 0.0
-	sick_t = 0.0
-	buff_t = 0.0
+	Status.clear()
 	stamina = 100.0
+	_sprinting = false
 	_vy = 0.0
 	_recoil = 0.0
 	_land_dip = 0.0
@@ -85,11 +83,15 @@ func update(delta: float) -> void:
 	var mv := hud.move.limit_length(1.0)
 	# 冲刺：摇杆推到底往前；耗体力
 	var sprint := mv.length() > 0.92 and mv.y > 0.6
-	sprint = sprint and stamina > 1.0 and mv.y > 0.3
+	sprint = sprint and stamina > 1.0 and mv.y > 0.3 and not Status.blocked("no_sprint")
+	_sprinting = sprint
+	# 体力上限、恢复速度受状态影响（口渴 −25 上限，饥饿恢复减半，咖啡因 ×2.2）
+	var st_max := stamina_max()
 	if sprint:
 		stamina = max(0.0, stamina - C.SPRINT_DRAIN * delta)
 	else:
-		stamina = min(100.0, stamina + C.STAMINA_REGEN * (C.BUFF_STAMINA_MULT if buff_t > 0.0 else 1.0) * delta * (0.5 if mv.length() > 0.1 else 1.0))
+		stamina = stamina + C.STAMINA_REGEN * Status.modifier("stamina_regen") * delta * (0.5 if mv.length() > 0.1 else 1.0)
+	stamina = minf(stamina, st_max)
 	hud.set_stamina(stamina)
 	# 跳（hud 的跳键调 jump()）：简单的竖直速度和重力
 	# 地面是 0；站在自己摆的方块上就是方块顶
@@ -120,7 +122,7 @@ func update(delta: float) -> void:
 	camera.position.y = C.PLAYER_EYE_HEIGHT - _land_dip
 	var fwd := -player.global_basis.z
 	var right := player.global_basis.x
-	var vel := (fwd * mv.y + right * mv.x) * C.PLAYER_SPEED * (C.SPRINT_MULT if sprint else 1.0)
+	var vel := (fwd * mv.y + right * mv.x) * C.PLAYER_SPEED * (C.SPRINT_MULT if sprint else 1.0) * Status.modifier("move_speed")
 	var before := player.position
 	player.position = world.push_out(player.position + vel * delta, 0.35)
 	if _grounded:
@@ -131,31 +133,37 @@ func update(delta: float) -> void:
 	arms.set_meta("walking", mv.length() * (1.6 if sprint else 1.0))
 
 
-func update_survival(delta: float) -> void:
-	food = max(0.0, food - C.FOOD_DRAIN * delta)
-	water = max(0.0, water - C.WATER_DRAIN * delta * (C.SICK_WATER_MULT if sick_t > 0.0 else 1.0))
-	if food <= 0.0:
-		hp -= C.STARVE_DAMAGE * delta
-	if water <= 0.0:
-		hp -= C.THIRST_DAMAGE * delta
-	if bleed_t > 0.0:
-		bleed_t -= delta
-		hp -= C.BLEED_DAMAGE * delta
-	sick_t = maxf(0.0, sick_t - delta)
-	buff_t = maxf(0.0, buff_t - delta)
-	if food > 60.0 and water > 50.0 and bleed_t <= 0.0:
-		hp = min(C.MAX_HP, hp + delta * 0.4)
-	var st := []
-	if bleed_t > 0.0: st.append("流血")
-	if sick_t > 0.0: st.append("腹泻")
-	if buff_t > 0.0: st.append("咖啡因")
-	if water < 20.0: st.append("口渴")
-	if food < 20.0: st.append("饥饿")
-	hud.set_survival(water, "  ".join(st))
+## 体力上限：100 加上状态修正（口渴 −25），最少 10
+func stamina_max() -> float:
+	return maxf(10.0, 100.0 + Status.offset("stamina_max"))
+
+
+## 生存数值：delta 真实秒，dh 这一帧走过的游戏小时
+func update_survival(delta: float, dh: float) -> void:
+	var hunger_mult := C.SPRINT_HUNGER_MULT if _sprinting else 1.0
+	food = maxf(0.0, food - C.FOOD_PER_HOUR * dh * hunger_mult * Status.modifier("food_drain"))
+	water = maxf(0.0, water - C.WATER_PER_HOUR * dh * hunger_mult * Status.modifier("water_drain"))
+	# 条件型状态跟着饱食、水分走
+	Status.toggle("hungry", food < C.HUNGRY_BELOW)
+	Status.toggle("starving", food <= 0.0)
+	Status.toggle("thirsty", water < C.THIRSTY_BELOW)
+	Status.toggle("dehydrated", water <= 0.0)
+	var d: Dictionary = Status.tick(delta, dh)
+	hp += float(d.hp)
+	food = clampf(food + float(d.food), 0.0, C.MAX_FOOD)
+	water = clampf(water + float(d.water), 0.0, C.MAX_WATER)
+	if food > C.REGEN_FOOD_ABOVE and water > C.REGEN_WATER_ABOVE and not Status.losing_hp():
+		hp = minf(C.MAX_HP, hp + C.HP_REGEN_PER_HOUR * dh)
+	# 状态条每秒刷新 4 次就够
+	_hud_t -= delta
+	if _hud_t <= 0.0:
+		_hud_t = 0.25
+		hud.set_survival(water, "")
+		hud.set_effects(Status.active())
 
 
 func jump() -> void:
-	if _grounded and stamina > 8.0:
+	if _grounded and stamina > 8.0 and not Status.blocked("no_jump"):
 		_vy = C.JUMP_SPEED
 		stamina -= 8.0
 		Sfx.play("jump", Vector3.INF, -6.0)
@@ -173,9 +181,9 @@ func take_damage(amount: float, source: String, bleed_chance := 0.0) -> void:
 	if source == "zombie":
 		Sfx.play("pain", Vector3.INF, -3.0)
 	if bleed_chance > 0.0 and rng.randf() < bleed_chance:
-		if bleed_t <= 0.0:
+		if not Status.has("bleeding"):
 			hud.toast("你在流血！用绷带止血")
-		bleed_t = C.BLEED_TIME
+		Status.add("bleeding")
 
 
 func add_food(value: float) -> void:
@@ -191,28 +199,26 @@ func heal(value: float) -> void:
 
 
 func add_stamina(value: float) -> void:
-	stamina = minf(100.0, stamina + value)
+	stamina = minf(stamina_max(), stamina + value)
 
 
+## 物品效果 → 状态（survival.gd 的效果表输出这些）
 func stop_bleed() -> bool:
-	var had := bleed_t > 0.0
-	bleed_t = 0.0
-	return had
+	return Status.remove("bleeding")
 
 
 func cure_sickness() -> bool:
-	var had := sick_t > 0.0
-	sick_t = 0.0
-	return had
+	return Status.remove("dysentery")
 
 
-func add_buff(seconds: float) -> void:
-	buff_t = maxf(buff_t, seconds)
+## 咖啡因，hours 游戏小时
+func add_buff(hours: float) -> void:
+	Status.add("caffeine", hours)
 
 
 func roll_sickness(chance: float) -> bool:
-	if rng.randf() < chance:
-		sick_t = C.SICK_TIME
+	if chance > 0.0 and rng.randf() < chance:
+		Status.add("dysentery")
 		return true
 	return false
 
@@ -220,7 +226,6 @@ func roll_sickness(chance: float) -> bool:
 func save_data() -> Dictionary:
 	return {
 		"hp": hp, "food": food, "water": water, "stamina": stamina,
-		"bleed": bleed_t, "sick": sick_t, "buff": buff_t,
 		"pos": [player.position.x, player.position.z], "y": player.position.y, "yaw": yaw,
 	}
 
@@ -230,9 +235,6 @@ func load_data(d: Dictionary) -> void:
 	food = float(d.get("food", C.MAX_FOOD))
 	water = float(d.get("water", C.MAX_WATER))
 	stamina = float(d.get("stamina", 100.0))
-	bleed_t = float(d.get("bleed", 0.0))
-	sick_t = float(d.get("sick", 0.0))
-	buff_t = float(d.get("buff", 0.0))
 	if d.has("pos"):
 		player.position = world.push_out(Vector3(d.pos[0], float(d.get("y", 0.0)), d.pos[1]), 0.35)
 		player.position.y = world.floor_under(player.position + Vector3.UP * 0.5, 0.3)

@@ -146,5 +146,28 @@ class HordeDataTest(unittest.TestCase):
         self.assertEqual(build_data.blood_moon_total(stage, 0.5), 2)
 
 
+BUFFS_XML = """<buffs>
+  <buff name="buffInjuryBleeding" name_key="buffInjuryBleedingName" description_key="buffInjuryBleedingDesc" icon="ui_game_symbol_bleeding"/>
+  <buff name="buffOther" name_key="buffOtherName"/>
+</buffs>
+"""
+
+BUFF_LOC = {"buffInjuryBleedingName": "流血", "buffInjuryBleedingDesc": "正在失血", "buffOtherName": "别的"}
+
+
+class BuffDataTest(unittest.TestCase):
+    def test_parse_buffs_only_wanted(self):
+        out = build_data.parse_buffs(BUFFS_XML, BUFF_LOC, ["buffInjuryBleeding", "buffMissing"])
+        self.assertEqual(list(out), ["buffInjuryBleeding"])
+        self.assertEqual(out["buffInjuryBleeding"]["zh"], "流血")
+        self.assertEqual(out["buffInjuryBleeding"]["icon"], "ui_game_symbol_bleeding")
+
+    def test_status_buffs_from_config(self):
+        text = (Path(__file__).resolve().parents[1] / "scripts" / "config.gd").read_text(encoding="utf-8")
+        names = build_data.status_buffs_from_gd(text)
+        self.assertIn("buffInjuryBleeding", names)
+        self.assertIn("buffIllDysentery", names)
+
+
 if __name__ == "__main__":
     unittest.main()

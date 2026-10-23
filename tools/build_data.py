@@ -250,6 +250,32 @@ def build_items(items: dict, loc: dict, index_rows: list, blocks: list) -> dict:
     return out
 
 
+def status_buffs_from_gd(text: str) -> list:
+    """scripts/config.gd 的 STATUS 表里用到的官方 buff 名。"""
+    return sorted(set(re.findall(r'"buff"\s*:\s*"([^"]+)"', text)))
+
+
+def parse_buffs(text: str, loc: dict, wanted) -> dict:
+    """buffs.xml → {buff 名: {zh, desc, icon}}，只导 wanted 里的。"""
+    wanted = set(wanted)
+    out = {}
+    if not text:
+        return out
+    root = ET.fromstring(text)
+    for el in root.iter("buff"):
+        name = el.get("name") or ""
+        if name not in wanted:
+            continue
+        name_key = el.get("name_key") or name + "Name"
+        desc_key = el.get("description_key") or name + "Desc"
+        out[name] = {
+            "zh": loc.get(name_key) or loc.get(name) or "",
+            "desc": loc.get(desc_key) or "",
+            "icon": el.get("icon") or "",
+        }
+    return out
+
+
 def parse_gamestages(text: str) -> dict:
     root = ET.fromstring(text)
     out = {}
@@ -374,6 +400,12 @@ def read_config_zip(path: Path):
     return items, loc, gamestages, entitygroups
 
 
+def read_buffs_xml(path: Path) -> str:
+    with zipfile.ZipFile(path) as zf:
+        name = next((i.filename for i in zf.infolist() if i.filename.endswith("Config/buffs.xml")), None)
+        return zf.read(name).decode("utf-8-sig") if name else ""
+
+
 def build_all(dest: Path, zip_path: Path, index_path: Path, only: str = "all") -> dict:
     items_xml, loc_csv, gs_xml, eg_xml = read_config_zip(zip_path)
     if only in ("items", "all"):
@@ -396,6 +428,17 @@ def build_all(dest: Path, zip_path: Path, index_path: Path, only: str = "all") -
         print(f"  → {out_path}")
     else:
         out = {}
+    if only in ("buffs", "all"):
+        wanted = status_buffs_from_gd((ROOT / "scripts" / "config.gd").read_text(encoding="utf-8"))
+        buffs = parse_buffs(read_buffs_xml(zip_path), load_localization(loc_csv), wanted)
+        out_dir = dest / "data"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        path = out_dir / "buffs.json"
+        path.write_text(json.dumps(buffs, ensure_ascii=False, indent=1), encoding="utf-8")
+        missing = [w for w in wanted if w not in buffs]
+        print(f"状态效果: 需要 {len(wanted)} 个，找到 {len(buffs)} 个 → {path}")
+        if missing:
+            print(f"  buffs.xml 里没有: {', '.join(missing)}（游戏里用 config.gd 的中文名）")
     if only in ("gamestages", "all"):
         stages = parse_gamestages(gs_xml)
         out_dir = dest / "data"
@@ -423,7 +466,7 @@ def main() -> int:
     ap.add_argument("--dest", default=str(DEFAULT_DEST), help="assets 目录")
     ap.add_argument("--zip", default="", help="本地 Data_Config.zip（不传就从云盘下载）")
     ap.add_argument("--index", default="", help="icon_to_model.json（默认 assets/index/）")
-    ap.add_argument("--only", default="all", choices=["all", "items", "gamestages", "entitygroups"], help="只生成某张表")
+    ap.add_argument("--only", default="all", choices=["all", "items", "buffs", "gamestages", "entitygroups"], help="只生成某张表")
     args = ap.parse_args()
     dest = Path(args.dest)
     zip_path = Path(args.zip) if args.zip else dest / "cache" / ZIP_NAME

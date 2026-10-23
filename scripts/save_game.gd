@@ -63,6 +63,7 @@ func save() -> void:
 	}
 	d.merge(time_sys.save_data())
 	d.merge(player_sys.save_data())
+	d.merge(Status.save_data())
 	d.merge(horde.save_data())
 	d.merge(inventory.save_data())
 	d["kills"] = spawner.kills
@@ -89,6 +90,7 @@ func continue_game() -> void:
 			world.containers[int(i)].searched = true
 	world.voxel_load(d.get("blocks", []))
 	player_sys.load_data(d)
+	Status.load_data(d, time_sys.seconds_per_hour())
 	inventory.load_data(d)
 	spawner.load_data(d)
 	horde.load_data(d)

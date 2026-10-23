@@ -190,7 +190,7 @@ func apply_effect(id: String, kind: int) -> void:
 	if e.get("cure", false) and player_sys.cure_sickness():
 		msg += "，肚子好了"
 	if e.has("buff"):
-		player_sys.add_buff(e.buff)
+		player_sys.add_buff(float(e.buff))
 		msg += "，精神一振"
 	if player_sys.roll_sickness(e.get("sick", 0.0)):
 		msg += "……肚子不对劲"

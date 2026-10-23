@@ -1,15 +1,15 @@
 class_name Survival
 ## 吃喝用药的效果，按七日杀物品名判断。返回字典：
 ##   food 饱食  water 水分  hp 血量  stamina 体力
-##   stop_bleed 止血  cure 治腹泻  sick 生病几率(0~1)  buff 咖啡因秒数  msg 提示
+##   stop_bleed 止血  cure 治腹泻  sick 生病几率(0~1)  buff 咖啡因游戏小时（这些都由 player.gd 转成状态效果，见 status_effects.gd）  msg 提示
 
 ## [名字里含的词, food, water, hp, 额外]
 const TABLE := [
 	["RiverWater", 0, 30, 0, {"sick": 0.45}],
 	["BoiledWater", 0, 35, 0, {}],
 	["PureMineralWater", 0, 40, 5, {}],
-	["MegaCrush", 0, 20, 0, {"stamina": 100, "buff": 120}],
-	["Coffee", 0, 20, 0, {"buff": 90}],
+	["MegaCrush", 0, 20, 0, {"stamina": 100, "buff": 2.0}],
+	["Coffee", 0, 20, 0, {"buff": 1.5}],
 	["GoldenRodTea", 0, 25, 0, {"cure": true}],
 	["RedTea", 0, 25, 5, {}],
 	["HoneyTea", 0, 25, 8, {}],

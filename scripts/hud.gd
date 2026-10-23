@@ -53,6 +53,11 @@ var _pause_btn := Button.new()
 var _pause_panel := PanelContainer.new()
 var _continue_btn := Button.new()
 var _perf := Label.new()
+## 右上角状态图标条（饥饿、流血……），点一下显示说明
+var _status_row := HBoxContainer.new()
+var _status_tip := Label.new()
+var _status_tip_t := 0.0
+var _status_ids: Array = []
 ## 设置：灵敏度、亮度、音量、音乐音量（倍数）、画质档位、性能面板，存在 user://settings.cfg
 var settings := {"sensitivity": 1.0, "brightness": 1.0, "volume": 1.0, "music": 0.8,
 	"quality": 1.0, "show_perf": 0.0}
@@ -329,6 +334,7 @@ func _ready() -> void:
 	_pause_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_safe.add_child(_pause_btn)
 
+	_build_status_bar()
 	_build_start_panel()
 	_build_end_panel()
 	_build_pause_panel()
@@ -829,6 +835,9 @@ func _bag_slot_input(b: Button, id: String, ev: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	if _status_tip_t > 0.0:
+		_status_tip_t -= delta
+		_status_tip.visible = _status_tip_t > 0.0
 	if _toast_t > 0.0:
 		_toast_t -= delta
 		if _toast_t < 0.6:
@@ -950,6 +959,8 @@ func _touch_down(index: int, pos: Vector2) -> void:
 		_tap_feedback()
 		set_paused(true)
 		return
+	if _status_touch(pos):
+		return
 	if _bag_btn.get_global_rect().grow(10).has_point(pos):
 		open_bag()
 		_press_button(_bag_btn)
@@ -1017,3 +1028,89 @@ func _input(event: InputEvent) -> void:
 		elif _drag_last.has(event.index):
 			look_delta += event.position - _drag_last[event.index]
 			_drag_last[event.index] = event.position
+
+
+# —— 状态图标条 ——
+
+func _build_status_bar() -> void:
+	var holder := Control.new()
+	holder.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	holder.offset_left = -700
+	holder.offset_right = -30
+	holder.offset_top = 146
+	holder.offset_bottom = 214
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(holder)
+	_status_row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_status_row.alignment = BoxContainer.ALIGNMENT_END
+	_status_row.add_theme_constant_override("separation", 6)
+	_status_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(_status_row)
+	_status_tip.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_status_tip.offset_left = -700
+	_status_tip.offset_right = -30
+	_status_tip.offset_top = 220
+	_status_tip.offset_bottom = 300
+	_status_tip.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_status_tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_status_tip.add_theme_font_size_override("font_size", 22)
+	_status_tip.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_status_tip.add_theme_constant_override("outline_size", 6)
+	_status_tip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_status_tip.visible = false
+	_root.add_child(_status_tip)
+
+
+## 剩余游戏小时 → "1:30"；一直有的不显示时间
+static func status_time_text(left: float) -> String:
+	if left == INF or left <= 0.0:
+		return ""
+	var mins := ceili(left * 60.0)
+	return "%d:%02d" % [mins / 60, mins % 60]
+
+
+## list 来自 Status.active()：[{id, zh, short, desc, left, stacks, bad}]
+func set_effects(list: Array) -> void:
+	var ids := list.map(func(e): return e.id)
+	if ids != _status_ids:
+		_status_ids = ids
+		for c in _status_row.get_children():
+			c.queue_free()
+		for e in list:
+			var b := Button.new()
+			b.custom_minimum_size = Vector2(66, 66)
+			b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			b.focus_mode = Control.FOCUS_NONE
+			b.add_theme_font_size_override("font_size", 18)
+			var sb := StyleBoxFlat.new()
+			sb.bg_color = Color(0.55, 0.1, 0.08, 0.8) if e.bad else Color(0.12, 0.42, 0.2, 0.8)
+			sb.set_corner_radius_all(10)
+			sb.border_color = Color(1, 1, 1, 0.35)
+			sb.set_border_width_all(2)
+			for st in ["normal", "hover", "pressed"]:
+				b.add_theme_stylebox_override(st, sb)
+			_status_row.add_child(b)
+	var buttons := _status_row.get_children().filter(func(c): return not c.is_queued_for_deletion())
+	for i in mini(buttons.size(), list.size()):
+		var e: Dictionary = list[i]
+		var b: Button = buttons[i]
+		var t := status_time_text(float(e.left))
+		var label: String = str(e.short) + (" ×%d" % e.stacks if int(e.stacks) > 1 else "")
+		b.text = label if t == "" else "%s\n%s" % [label, t]
+		b.set_meta("info", e)
+
+
+func _status_touch(pos: Vector2) -> bool:
+	for b in _status_row.get_children():
+		if b.is_queued_for_deletion() or not (b as Control).get_global_rect().grow(6).has_point(pos):
+			continue
+		var e: Dictionary = b.get_meta("info", {})
+		if e.is_empty():
+			return true
+		_flash(b)
+		var t := status_time_text(float(e.left))
+		_status_tip.text = "%s：%s%s" % [e.zh, e.desc, ("  剩余 " + t) if t != "" else ""]
+		_status_tip.visible = true
+		_status_tip_t = 3.5
+		return true
+	return false
