@@ -140,8 +140,11 @@ func start(fresh := true) -> void:
 	world.clear_voxels()
 	for i in C.LOOT_COUNT / 2:
 		looting.spawn_loot(world.free_point(Vector3.ZERO, 4.0, 60.0))
-	if C.TEST_ALL_ITEMS and fresh:
-		inventory.give_all_items()
+	if fresh:
+		if C.TEST_ALL_ITEMS:
+			inventory.give_all_items()
+		else:
+			inventory.give_starter_kit()
 	# 开局在面前放一件近战武器，马上就能看到手里的模型
 	var weapons: Array = Assets.loot_pool.get(Assets.Kind.MELEE, [])
 	if not weapons.is_empty() and not C.TEST_ALL_ITEMS:

@@ -68,6 +68,7 @@ scripts/game_state.gd  全局信号和共享状态（自动加载为 GameState�
 scripts/main.gd        组装世界和系统，连接信号
 scripts/time_of_day.gd 昼夜推进、无尽时间和血月周期
 scripts/horde.gd       血月刷怪阶段、总数和同时上限
+scripts/weapons.gd     枪械弹匣/射速/换弹，官方 items.xml 优先
 scripts/player.gd      移动、视角、体力、生存数值
 scripts/inventory.gd   背包、装备、弹匣
 scripts/combat.gd      近战、枪械、换弹、爆炸、摆放/拆方块

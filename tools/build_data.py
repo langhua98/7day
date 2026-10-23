@@ -95,6 +95,42 @@ def _durability(el) -> float:
     return best
 
 
+def _ammo_prefix(first: str) -> str:
+    for suffix in ("BreachingSlug", "BulletBall", "BulletHP", "BulletAP", "SteelAP", "Exploding",
+                   "Flaming", "Regular", "Shell", "Slug", "Stone", "Iron", "HE", "Frag", "AP", "HP"):
+        if first.endswith(suffix):
+            return first[:-len(suffix)]
+    return first
+
+
+def _gun_stats(el) -> dict:
+    out = {}
+    for pr in el.iter("property"):
+        name = pr.get("name")
+        value = pr.get("value", "")
+        if name == "Magazine_items" and value and "ammo" not in out:
+            out["ammo"] = _ammo_prefix(value.split(",")[0].strip())
+        elif name == "Reload_time" and value:
+            out["reload"] = _float(value, 0.0)
+    for node in el.iter():
+        if node.tag not in ("passive_effect", "stat"):
+            continue
+        name = node.get("name")
+        if name not in ("MagazineSize", "RoundsPerMinute", "EntityDamage"):
+            continue
+        nums = [float(x) for x in re.findall(r"-?\d+(?:\.\d+)?", node.get("value", ""))]
+        if not nums:
+            continue
+        value = max(nums)
+        if name == "MagazineSize" and value > 0:
+            out["magazine"] = int(value)
+        elif name == "RoundsPerMinute" and value > 0:
+            out["rpm"] = value
+        elif name == "EntityDamage" and value > 0:
+            out["damage"] = value
+    return out
+
+
 def parse_items_xml(text: str) -> dict:
     """解析 items.xml，处理 <property name="Extends" value="..."> 继承。"""
     root = ET.fromstring(text)
@@ -108,6 +144,7 @@ def parse_items_xml(text: str) -> dict:
             key = pr.get("name")
             if key:
                 props[key] = pr.get("value", "")
+        props.update(_gun_stats(el))
         raw[name] = props
         raw_dur[name] = _durability(el)
 
@@ -141,6 +178,11 @@ def parse_items_xml(text: str) -> dict:
             "value": _int(props.get("EconomicValue"), 0),
             "tags": props.get("Tags", ""),
             "durability": dur,
+            "magazine": _int(props.get("magazine"), 0),
+            "rpm": _float(props.get("rpm"), 0.0),
+            "ammo": props.get("ammo", ""),
+            "reload": _float(props.get("reload"), 0.0),
+            "damage": _float(props.get("damage"), 0.0),
         }
     return out
 
@@ -188,6 +230,11 @@ def build_items(items: dict, loc: dict, index_rows: list, blocks: list) -> dict:
             "durability": row["durability"],
             "tags": row["tags"],
             "zh": loc.get(item_id) or index_zh.get(item_id) or item_id,
+            "magazine": row.get("magazine", 0),
+            "rpm": row.get("rpm", 0.0),
+            "ammo": row.get("ammo", ""),
+            "reload": row.get("reload", 0.0),
+            "damage": row.get("damage", 0.0),
         }
     for block in blocks:
         if block["id"] in out:

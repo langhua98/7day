@@ -98,6 +98,7 @@ jobs:
           GODOT="$HOME/godot/Godot.app/Contents/MacOS/Godot"
           "$GODOT" --headless --path . res://tests/test_time.tscn
           "$GODOT" --headless --path . res://tests/test_horde.tscn
+          "$GODOT" --headless --path . res://tests/test_weapons.tscn
           "$GODOT" --headless --path . res://tests/test_split.tscn
           "$GODOT" --headless --path . res://tests/test_data.tscn
 

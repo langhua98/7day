@@ -24,6 +24,16 @@ ITEMS_XML = """<?xml version="1.0" encoding="UTF-8"?>
       <passive_effect name="DegradationMax" operation="base_set" value="250,500"/>
     </effect_group>
   </item>
+  <item name="gunTest">
+    <property class="Action0">
+      <property name="Magazine_items" value="ammo9mmBulletBall,ammo9mmBulletHP"/>
+      <property name="Reload_time" value="1.8"/>
+    </property>
+    <effect_group>
+      <passive_effect name="MagazineSize" value="15"/>
+      <passive_effect name="RoundsPerMinute" value="180"/>
+    </effect_group>
+  </item>
 </items>
 """
 
@@ -47,6 +57,14 @@ class BuildDataTest(unittest.TestCase):
         self.assertEqual(items["childItem"]["value"], 5)
         self.assertEqual(items["childItem"]["tags"], "base,tag")
         self.assertEqual(items["baseItem"]["stack"], 10)
+
+    def test_gun_stats(self):
+        items = build_data.parse_items_xml(ITEMS_XML)
+        gun = items["gunTest"]
+        self.assertEqual(gun["magazine"], 15)
+        self.assertEqual(gun["rpm"], 180.0)
+        self.assertEqual(gun["ammo"], "ammo9mm")
+        self.assertAlmostEqual(gun["reload"], 1.8)
 
     def test_durability_from_passive_effect(self):
         items = build_data.parse_items_xml(ITEMS_XML)
