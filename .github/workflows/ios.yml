@@ -130,6 +130,12 @@ jobs:
           GODOT="$HOME/godot/Godot.app/Contents/MacOS/Godot"
           # 没配置开发者账号时填个占位 Team ID，后面编译时不签名
           team="${APPLE_TEAM_ID:-ABCDE12345}"
+          # 每次编译版本号都不一样（用编译序号），手机上装新包一定会覆盖旧的；
+          # 游戏标题页和暂停菜单会显示这个编号，一眼能看出装的是哪个包
+          run="${GITHUB_RUN_NUMBER:-0}"
+          sed -i '' "s/^application\/version=.*/application\/version=\"$run\"/" export_presets.cfg
+          sed -i '' "s/^application\/short_version=.*/application\/short_version=\"0.1.$run\"/" export_presets.cfg
+          printf '{"run": "%s", "commit": "%s"}\n' "$run" "$(git rev-parse --short HEAD)" > build_info.json
           sed -i '' "s/^application\/app_store_team_id=.*/application\/app_store_team_id=\"$team\"/" export_presets.cfg
           if [ -n "$BUNDLE_ID" ]; then
             sed -i '' "s/^application\/bundle_identifier=.*/application\/bundle_identifier=\"$BUNDLE_ID\"/" export_presets.cfg

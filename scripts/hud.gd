@@ -460,7 +460,23 @@ func _build_start_panel() -> void:
 	help.modulate = Color(1, 1, 1, 0.6)
 	help.add_theme_font_size_override("font_size", 20)
 	v.add_child(help)
+	var ver := Label.new()
+	ver.text = build_label()
+	ver.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ver.modulate = Color(1, 1, 1, 0.45)
+	ver.add_theme_font_size_override("font_size", 18)
+	v.add_child(ver)
 	_root.add_child(_start_panel)
+
+
+## 安装包编号（GitHub 上的第几次编译 + 提交号），CI 编译时写进 build_info.json；本地运行显示「本地版本」
+static func build_label() -> String:
+	if not FileAccess.file_exists("res://build_info.json"):
+		return "本地版本"
+	var d = JSON.parse_string(FileAccess.get_file_as_string("res://build_info.json"))
+	if not d is Dictionary:
+		return "本地版本"
+	return "安装包 7day-%s · %s" % [d.get("run", "?"), d.get("commit", "?")]
 
 
 func _build_end_panel() -> void:
@@ -562,6 +578,11 @@ func _build_pause_panel() -> void:
 		quit_to_title.emit())
 	btns.add_child(quit)
 	v.add_child(btns)
+	var ver := Label.new()
+	ver.text = build_label()
+	ver.modulate = Color(1, 1, 1, 0.45)
+	ver.add_theme_font_size_override("font_size", 18)
+	v.add_child(ver)
 	_root.add_child(_pause_panel)
 
 
