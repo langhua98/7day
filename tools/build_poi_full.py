@@ -107,6 +107,15 @@ class Blocks:
         self.b = {}
         for bl in ET.parse(path).getroot().iter("block"):
             props = {pr.get("name"): pr.get("value") for pr in bl.findall("property") if pr.get("name")}
+            # 新版的功能块是 <property class="Loot"><property name="LootList" …/></property>，
+            # 记成 "@Loot" 和 "Loot.LootList"
+            for pr in bl.findall("property"):
+                cls = pr.get("class")
+                if cls:
+                    props["@" + cls] = "1"
+                    for sub in pr.findall("property"):
+                        if sub.get("name"):
+                            props[cls + "." + sub.get("name")] = sub.get("value")
             self.b[bl.get("name")] = props
 
     def get(self, name, key, depth=0):
@@ -609,12 +618,26 @@ def diagnose(name, blocks, names, db, shapes, info):
 
 
 def container_name(db, nm):
-    """方块是不是可翻的容器：名字 cnt 开头，或 blocks.xml 里 Class 带 Loot。返回官方 LootList（不是返回 None）"""
+    """方块是不是可翻的容器：名字 cnt 开头，或 Class / 功能块带 Loot。
+    返回官方 LootList；新版很多容器（…RandomLootHelper）没写 LootList，就返回方块名。不是容器返回 None"""
     b = base_name(nm)
     cls = db.get(b, "Class") or ""
-    if not (b.startswith("cnt") or "Loot" in cls):
+    if not (b.startswith("cnt") or "Loot" in cls or db.get(b, "@Loot")):
         return None
-    return db.get(b, "LootList") or None
+    low = b.lower()
+    if "filler" in low or "empty" in low:
+        return None   # 柜子的装饰填充块、空书架，不能翻
+    return db.get(b, "LootList") or db.get(b, "Loot.LootList") or b
+
+
+def is_door(db, nm):
+    """门、活板门（不含掉人的陷阱板 TrapDoor、假柜门）"""
+    b = base_name(nm)
+    low = b.lower()
+    cls = db.get(b, "Class") or ""
+    if cls == "TrapDoor" or "trap" in low or "fake" in low:
+        return False
+    return "Door" in cls or bool(db.get(b, "@Door")) or "door" in low or "hatch" in low
 
 
 def find_containers(blocks, names, size, db, offset):
@@ -697,7 +720,7 @@ def block_col_kind(db, nm, bi):
         return COL_FULL
     b = base_name(nm)
     cls = db.get(b, "Class") or ""
-    if bi is None and "Door" in cls:
+    if bi is None and is_door(db, nm):
         return COL_DOOR
     if cls == "Ladder" or (db.get(b, "Climbable") or "").lower() == "true" or b.lower().startswith("ladder"):
         return COL_LADDER

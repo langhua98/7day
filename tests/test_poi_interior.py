@@ -63,6 +63,12 @@ BLOCKS_XML = """<blocks>
 <block name="cntFridge"><property name="Class" value="Loot"/><property name="LootList" value="fridge"/>
   <property name="Shape" value="Ext3dModel"/><property name="Model" value="x"/><property name="MultiBlockDim" value="1,2,1"/></block>
 <block name="plantTall"><property name="Shape" value="New"/><property name="Texture" value="1"/><property name="Collide" value="melee,bullet"/></block>
+<block name="cntDeskWoodRandomLootHelper"><property name="Class" value="CompositeTileEntity"/>
+  <property name="Shape" value="ModelEntity"/><property name="Model" value="z"/><property class="Loot"><property name="LootContainer" value="x"/></property></block>
+<block name="commercialDoorV2Blue"><property name="Class" value="CompositeTileEntity"/><property name="Shape" value="ModelEntity"/>
+  <property name="Model" value="d"/><property name="MultiBlockDim" value="1,2,1"/></block>
+<block name="cntCabinetBottomFiller"><property name="Shape" value="New"/><property name="Texture" value="1"/></block>
+<block name="looseBoardsTrapPlate1x1"><property name="Class" value="TrapDoor"/><property name="Shape" value="ModelEntity"/><property name="Model" value="t"/></block>
 <block name="sofa"><property name="Shape" value="Ext3dModel"/><property name="Model" value="y"/></block>
 </blocks>"""
 SHAPES_XML = """<shapes>
@@ -71,7 +77,9 @@ SHAPES_XML = """<shapes>
 <shape name="paneTest"><property name="Model" value="@:Shapes/pane_test.fbx"/></shape>
 </shapes>"""
 NAMES = {1: "concrete", 2: "concreteShapes:rampTest", 3: "doorWood", 4: "ladderWood", 5: "cntFridge",
-         6: "concreteShapes:halfTest", 7: "concreteShapes:paneTest", 8: "plantTall", 9: "sofa"}
+         6: "concreteShapes:halfTest", 7: "concreteShapes:paneTest", 8: "plantTall", 9: "sofa",
+         10: "cntDeskWoodRandomLootHelper", 11: "commercialDoorV2Blue", 12: "cntCabinetBottomFiller",
+         13: "looseBoardsTrapPlate1x1"}
 
 
 def build_fixture(root):
@@ -93,6 +101,11 @@ def build_fixture(root):
     cells[(1, 1, 1)] = 7                    # 玻璃竖板
     cells[(2, 1, 1)] = 8                    # 不挡人的植物
     cells[(5, 1, 1)] = 9                    # 沙发（画不出来的家具）
+    cells[(4, 1, 5)] = 10                   # 新版容器：功能块 Loot，没写 LootList
+    cells[(0, 1, 3)] = 11                   # 新版门：CompositeTileEntity，名字带 Door
+    cells.pop((0, 2, 3))
+    cells[(3, 1, 4)] = 12                   # 柜子填充块，不能翻
+    cells[(4, 1, 3)] = 13                   # 掉人的陷阱板，不是门
     vals = [0] * (X * Y * Z)
     for (x, y, z), t in cells.items():
         vals[x + y * X + z * X * Y] = t
@@ -154,7 +167,8 @@ def main():
         js = json.load(open(os.path.join(poi, "containers.json")))["test_poi"]
         check(js.get("col") is True, "containers.json 标了 col")
         doors = js["doors"]
-        check(len(doors) == 1, "一扇门")
+        check(len(doors) == 2, "两扇门 %s" % [d["block"] for d in doors])
+        check(any(d["block"] == "commercialDoorV2Blue" and d["axis"] == "z" for d in doors), "新版门，门板沿 z")
         if doors:
             dd = doors[0]
             check((dd["x0"], dd["y0"], dd["z0"], dd["y1"]) == (3, 1, 0, 2), "门的格子 %s" % dd)
@@ -162,6 +176,9 @@ def main():
         fr = [c for c in js["list"] if c["block"] == "cntFridge"]
         check(len(fr) == 1 and fr[0]["drawn"] is False and fr[0]["sy"] == 2, "冰箱：没画、两格高 %s" % fr)
         check(all("_t" not in c for c in js["list"]), "内部字段不写进 json")
+        desk = [c for c in js["list"] if c["block"] == "cntDeskWoodRandomLootHelper"]
+        check(len(desk) == 1 and desk[0]["loot"] == "cntDeskWoodRandomLootHelper", "新版容器认出来 %s" % desk)
+        check(not any(c["block"] == "cntCabinetBottomFiller" for c in js["list"]), "填充块不算容器")
     for f in fails:
         print("FAIL:", f)
     print("test_poi_interior", "OK" if not fails else "FAIL")
