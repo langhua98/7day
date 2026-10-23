@@ -25,6 +25,8 @@ var stamina := 100.0
 
 var _vy := 0.0
 var _recoil := 0.0
+var _land_dip := 0.0
+var aiming := false
 var _step_d := 0.0
 var _grounded := true
 
@@ -42,7 +44,7 @@ func build() -> void:
 	camera.position.y = C.PLAYER_EYE_HEIGHT
 	camera.near = 0.03
 	camera.far = 260.0
-	camera.fov = 70.0
+	camera.fov = C.BASE_FOV
 	player.add_child(camera)
 	arms = FpArms.new()
 	camera.add_child(arms)
@@ -54,7 +56,7 @@ func reset() -> void:
 	player.rotation.y = 0.0
 	camera.rotation.x = 0.0
 	camera.position.y = C.PLAYER_EYE_HEIGHT
-	camera.fov = 70.0
+	camera.fov = C.BASE_FOV
 	yaw = 0.0
 	pitch = 0.0
 	hp = C.MAX_HP
@@ -66,14 +68,19 @@ func reset() -> void:
 	stamina = 100.0
 	_vy = 0.0
 	_recoil = 0.0
+	_land_dip = 0.0
+	aiming = false
 	_step_d = 0.0
 	_grounded = true
 
 
 func update(delta: float) -> void:
 	var look := hud.consume_look()
-	yaw -= look.x * C.LOOK_SENSITIVITY * hud.settings.sensitivity
-	pitch = clamp(pitch - look.y * C.LOOK_SENSITIVITY * hud.settings.sensitivity, -1.3, 1.3)
+	arms.look(look)
+	arms.set_aiming(aiming)
+	var look_sens: float = C.LOOK_SENSITIVITY * hud.settings.sensitivity * (C.AIM_SENSITIVITY if aiming else 1.0)
+	yaw -= look.x * look_sens
+	pitch = clamp(pitch - look.y * look_sens, -1.3, 1.3)
 	# 电脑上调试：WASD 移动、方向键看
 	var mv := hud.move
 	if Input.is_physical_key_pressed(KEY_W): mv.y += 1
@@ -106,15 +113,22 @@ func update(delta: float) -> void:
 	if _grounded:
 		if _vy < -3.0:
 			Sfx.play("land", Vector3.INF, -6.0)
+			_land_dip = minf(C.LAND_DIP_MAX, -_vy * 0.012)
 		player.position.y = floor_y
 		_vy = 0.0
-	# 后坐力：镜头往上一跳，慢慢回落
-	if _recoil > 0.0:
-		var r := minf(_recoil, delta * 1.6)
-		_recoil -= r
-		pitch = clamp(pitch + r, -1.3, 1.3)
+	# 后坐力：先往上跳再回弹，只有一小部分留在准星上
+	_recoil = lerp(_recoil, 0.0, 1.0 - exp(-delta * C.RECOIL_RECOVERY))
 	player.rotation.y = yaw
-	camera.rotation.x = pitch
+	camera.rotation.x = clampf(pitch + _recoil, -1.4, 1.4)
+	# 冲刺拉宽视野，开镜收窄，落地轻轻压头
+	var fov_target := C.BASE_FOV
+	if aiming:
+		fov_target = C.AIM_FOV
+	elif sprint:
+		fov_target = C.BASE_FOV + C.SPRINT_FOV_BONUS
+	camera.fov = lerp(camera.fov, fov_target, 1.0 - exp(-delta * 8.0))
+	_land_dip = lerp(_land_dip, 0.0, 1.0 - exp(-delta * 9.0))
+	camera.position.y = C.PLAYER_EYE_HEIGHT - _land_dip
 	var fwd := -player.global_basis.z
 	var right := player.global_basis.x
 	var vel := (fwd * mv.y + right * mv.x) * C.PLAYER_SPEED * (C.SPRINT_MULT if sprint else 1.0)
@@ -165,6 +179,7 @@ func add_recoil(amount: float) -> void:
 func take_damage(amount: float, source: String, bleed_chance := 0.0) -> void:
 	hp -= amount
 	hud.hurt()
+	Input.vibrate_handheld(60)
 	GameState.player_damaged.emit(amount, source)
 	if source == "zombie":
 		Sfx.play("pain", Vector3.INF, -3.0)

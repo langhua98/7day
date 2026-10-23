@@ -77,6 +77,7 @@ func update(delta: float) -> void:
 
 
 func attack() -> void:
+	hud.crosshair_kick()
 	var row: Dictionary = Assets.items_by_id.get(inventory.equipped, {})
 	var kind: int = row.get("kind", -1)
 	if kind == Assets.Kind.GUN:
@@ -218,12 +219,17 @@ func _fire(row: Dictionary) -> void:
 	var mods := Weapons.ammo_mods(ammo_id)
 	st.damage = float(st.damage) * float(mods.get("entity", 1.0))
 	st.damage *= Weapons.quality_mult(int(inventory.qualities.get(inventory.equipped, 1)))
+	if player_sys.aiming:
+		st.spread = float(st.spread) * 0.5
 	attack_cd = st.rate
 	arms.swing(7.0)
 	Fx.muzzle(arms, arms.muzzle_position())
 	Sfx.play(st.fire_snd, Vector3.INF, -2.0, 0.05)
+	Input.vibrate_handheld(20)
 	GameState.noise.emit(player_sys.player.global_position, 45.0, "gun")
-	player_sys.add_recoil(0.012 + st.damage * 0.0004 * st.pellets)
+	var kick: float = 0.012 + st.damage * 0.0004 * st.pellets
+	player_sys.add_recoil(kick)
+	player_sys.pitch = clampf(player_sys.pitch + kick * C.RECOIL_AIM_SHARE, -1.3, 1.3)
 	var eye := player_sys.camera.global_position
 	var aim := -player_sys.camera.global_basis.z
 	for p in st.pellets:
@@ -303,6 +309,7 @@ func _hit_zombie(z: Zombie, dmg: float, head: bool, at: Vector3, dir: Vector3) -
 	var gun: bool = Assets.items_by_id.get(inventory.equipped, {}).get("kind", -1) == Assets.Kind.GUN
 	Sfx.play("bullet_flesh" if gun else "hit_flesh", at, -2.0)
 	GameState.noise.emit(player_sys.player.global_position, 6.0, "hit")
+	hud.hitmarker(head)
 	if head:
 		hud.toast("爆头！")
 

@@ -39,6 +39,14 @@ const GRAVITY := 12.0
 const JUMP_SPEED := 5.2
 const PLAYER_EYE_HEIGHT := 1.65
 const LOOK_SENSITIVITY := 0.0045
+## 第一人称手感：基础视野、冲刺拉宽、开镜 FOV、后坐力回弹、落地压头
+const BASE_FOV := 70.0
+const SPRINT_FOV_BONUS := 7.0
+const AIM_FOV := 55.0
+const AIM_SENSITIVITY := 0.6
+const RECOIL_RECOVERY := 12.0
+const RECOIL_AIM_SHARE := 0.16
+const LAND_DIP_MAX := 0.06
 ## 测试模式：背包里就有全部武器、吃的喝的、药、建造方块，每种子弹 300 发，不用去捡（读档时也会补齐）。正式玩时改成 false
 const TEST_ALL_ITEMS := true
 const TEST_AMMO := 300

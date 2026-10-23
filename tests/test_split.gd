@@ -57,6 +57,20 @@ func _run() -> void:
 	main.player_sys.take_damage(10.0, "test")
 	check_close(main.player_sys.hp, C.MAX_HP - 10.0, 0.01, "受伤应扣血")
 
+	# 手感：后坐力应回弹，开镜应收窄 FOV，命中标记应出现
+	main.player_sys.add_recoil(0.2)
+	for i in 30:
+		main.player_sys.update(1.0 / 60.0)
+	check(main.player_sys._recoil < 0.2, "后坐力应随时间回弹")
+	main.player_sys.aiming = true
+	for i in 60:
+		main.player_sys.update(1.0 / 60.0)
+	check(main.player_sys.camera.fov < C.BASE_FOV, "开镜 FOV 应收窄")
+	main.player_sys.aiming = false
+	main.hud.hitmarker(true)
+	main.hud.crosshair_kick()
+	check(main.hud._hitmarker.modulate.a > 0.0, "命中标记应显示")
+
 	# 存档写入版本号、时间、血月次数，并能读回玩家状态
 	main.player_sys.hp = 77.0
 	main.time_sys.set_time(7 * 24.0 + 3.9)
