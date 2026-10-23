@@ -13,6 +13,7 @@ var combat: CombatSystem
 var spawner: SpawnerSystem
 var horde: Horde
 var looting: LootingSystem
+var crafting: Crafting
 var save_game: SaveGame
 var time_sys: TimeOfDay
 var rng := RandomNumberGenerator.new()
@@ -70,6 +71,12 @@ func _ready() -> void:
 	inventory.combat = combat
 	player_sys.inventory = inventory
 
+	crafting = Crafting.new()
+	crafting.name = "Crafting"
+	add_child(crafting)
+	crafting.setup(inventory, looting, player_sys, hud)
+	hud.craft_panel.bind(crafting)
+
 	save_game = SaveGame.new()
 	save_game.setup(self, world, player_sys, inventory, combat, spawner, horde, atmosphere, hud, time_sys)
 
@@ -87,6 +94,7 @@ func _ready() -> void:
 		GameState.running = false
 		combat.running = false
 		looting.running = false
+		crafting.running = false
 		Sfx.stop_loops()
 		hud.show_start(true))
 	hud.settings_changed.connect(_apply_settings)
@@ -133,6 +141,7 @@ func start(fresh := true) -> void:
 	time_sys.reset()
 	player_sys.reset()
 	inventory.reset()
+	crafting.reset()
 	combat.reset()
 	atmosphere.reset()
 	GameState.running = true
@@ -157,6 +166,7 @@ func start(fresh := true) -> void:
 	running = true
 	combat.running = true
 	looting.running = true
+	crafting.running = true
 	hud.set_banner("")
 	inventory.refresh()
 	save_game.reset_timer()
@@ -172,6 +182,7 @@ func _end() -> void:
 	GameState.running = false
 	combat.running = false
 	looting.running = false
+	crafting.running = false
 	save_game.delete_save()
 	Sfx.stop_loops()
 	Sfx.play("death")

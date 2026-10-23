@@ -135,6 +135,15 @@ const CONTAINER_CLOSE_DIST := 2.0
 ## 路边容器面板最少几格
 const CONTAINER_SLOTS := 9
 
+## 合成：时间 = 官方 craft_time × 0.5，材料 = 官方 × 0.5（向上取整，至少 1），队列最多 4 项
+const CRAFT_TIME_MULT := 0.5
+const RECIPE_COST_MULT := 0.5
+const CRAFT_QUEUE_MAX := 4
+## 需要学习（tags 带 learnable）的配方先全开；第 7 步改成 false，靠读书解锁
+const RECIPES_ALL_UNLOCKED := true
+## 测试模式：还没有工作站（4c）时，当作所有工作站都在旁边
+const TEST_STATIONS_NEAR := true
+
 ## 地上零散物品的数量（主要的东西要翻容器找）
 const LOOT_COUNT := 8
 const LOOT_SIZE := 0.55

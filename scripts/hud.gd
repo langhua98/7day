@@ -43,6 +43,8 @@ var _progress_label := Label.new()
 var _bag_btn := Button.new()
 var _bag_panel := BagPanel.new()
 var container_panel := ContainerPanel.new()
+var _craft_btn := Button.new()
+var craft_panel := CraftPanel.new()
 var _start_panel := PanelContainer.new()
 var _start_info := Label.new()
 var _end_panel := PanelContainer.new()
@@ -252,6 +254,15 @@ func _ready() -> void:
 	_bag_panel.drop_pressed.connect(func(i): item_dropped.emit(i))
 	_root.add_child(_bag_panel)
 	_root.add_child(container_panel)
+
+	# 合成按钮在背包下面，面板在 scripts/ui/craft_panel.gd
+	_craft_btn.text = "合成"
+	_craft_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_craft_btn.position = Vector2(-220, 144)
+	_craft_btn.size = Vector2(130, 64)
+	_craft_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_craft_btn)
+	_root.add_child(craft_panel)
 
 	# 摇杆：平时停在左下角，手指按在左半屏哪里就移到哪里
 	for p in [_joy_base, _joy_knob]:
@@ -661,7 +672,7 @@ func consume_look() -> Vector2:
 
 
 func _panel_open() -> bool:
-	return _bag_panel.visible or container_panel.visible or _start_panel.visible or _end_panel.visible or _pause_panel.visible
+	return _bag_panel.visible or container_panel.visible or craft_panel.visible or _start_panel.visible or _end_panel.visible or _pause_panel.visible
 
 
 func _press_attack(pressed: bool) -> void:
@@ -715,6 +726,11 @@ func _touch_down(index: int, pos: Vector2) -> void:
 		_bag_panel.visible = true
 		_release_touches()
 		_flash(_bag_btn)
+		return
+	if _craft_btn.get_global_rect().grow(10).has_point(pos):
+		craft_panel.open()
+		_release_touches()
+		_flash(_craft_btn)
 		return
 	for slot in _hotbar.get_children():
 		if (slot as Control).get_global_rect().has_point(pos):

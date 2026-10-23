@@ -13,6 +13,10 @@ signal item_used(id: String)
 signal blood_moon_warning(hour: int)
 signal blood_moon_started
 signal blood_moon_ended(count: int)
+## 合成完成一批（成品 id、数量）
+signal item_crafted(id: String, count: int)
+## 合成队列变了（加入、完成、取消）
+signal craft_queue_changed
 
 const C = preload("res://scripts/config.gd")
 

@@ -66,6 +66,7 @@ func save() -> void:
 	d.merge(horde.save_data())
 	d.merge(inventory.save_data())
 	d.merge(main.looting.save_data())
+	d.merge(main.crafting.save_data())
 	d["kills"] = spawner.kills
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:
@@ -92,6 +93,7 @@ func continue_game() -> void:
 	main.looting.load_data(d)
 	player_sys.load_data(d)
 	inventory.load_data(d)
+	main.crafting.load_data(d)
 	spawner.load_data(d)
 	horde.load_data(d)
 	atmosphere.set_night_announced(time_sys.day, fmod(time_sys.hours, 24.0))
