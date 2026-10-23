@@ -213,7 +213,7 @@ func _ready() -> void:
 
 	# 性能面板：左上角血条下面，默认关闭
 	_perf.position = Vector2(28, 168)
-	_perf.size = Vector2(360, 110)
+	_perf.size = Vector2(520, 160)
 	_perf.add_theme_font_override("font", number_font())
 	_perf.add_theme_font_size_override("font_size", 19)
 	_perf.add_theme_color_override("font_color", Color(0.65, 1.0, 0.7))
