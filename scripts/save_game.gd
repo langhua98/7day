@@ -15,6 +15,9 @@ var atmosphere: Atmosphere
 var hud: Hud
 var time_sys: TimeOfDay
 var _save_t := 0.0
+## 后台写存档的任务（-1 = 没有）。测试模式背包里东西多，存档转成文字要 20 多毫秒，
+## 放在主线程做会让画面每 30 秒顿一下
+var _write_task := -1
 
 
 func setup(parent: Node3D, world_ref: World, player_ref: PlayerSystem, inv_ref: InventorySystem,
@@ -47,10 +50,12 @@ func update(delta: float) -> void:
 	_save_t += delta
 	if _save_t > 30.0:
 		_save_t = 0.0
-		save()
+		save(true)
 
 
-func save() -> void:
+## background = true：数据在这一帧收好，转文字和写文件放到后台线程（定时自动存档用）。
+## 切后台、回标题、死亡这些时候用默认的立刻写完，免得 App 被挂起时还没写进去。
+func save(background := false) -> void:
 	var searched := []
 	for i in world.containers.size():
 		if world.containers[i].searched:
@@ -71,6 +76,22 @@ func save() -> void:
 	d.merge(main.respawn.save_data())
 	d.merge(main.crafting.save_data())
 	d["kills"] = spawner.kills
+	wait_pending()
+	if background:
+		# 深拷贝一份：后台转文字时游戏还在改背包等数据
+		_write_task = WorkerThreadPool.add_task(_write.bind(d.duplicate(true)), false, "save")
+	else:
+		_write(d)
+
+
+## 等后台那次写完（再写或删存档前调用，免得旧数据后写完把新的盖掉）
+func wait_pending() -> void:
+	if _write_task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_write_task)
+		_write_task = -1
+
+
+static func _write(d: Dictionary) -> void:
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify(d))
@@ -78,6 +99,7 @@ func save() -> void:
 
 
 func delete_save() -> void:
+	wait_pending()
 	if FileAccess.file_exists(SAVE_PATH):
 		DirAccess.remove_absolute(SAVE_PATH)
 

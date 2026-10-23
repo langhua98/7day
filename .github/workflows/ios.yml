@@ -117,6 +117,7 @@ jobs:
           "$GODOT" --headless --path . res://tests/test_bag.tscn
           "$GODOT" --headless --path . res://tests/test_data.tscn
           "$GODOT" --headless --path . -s tests/test_perf.gd
+          "$GODOT" --headless --path . -s tests/test_flow.gd
           "$GODOT" --headless --path . -s tests/test_config.gd
           "$GODOT" --headless --path . res://tests/test_smoke.tscn
           "$GODOT" --headless --path . res://tests/test_status.tscn
