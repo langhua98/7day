@@ -342,13 +342,9 @@ func _finish_reload() -> void:
 	var ammo_id: String = inventory.ammo_choice.get(inventory.equipped, "")
 	if ammo_id == "" or inventory.inventory.get(ammo_id, 0) <= 0 or not ammo_id.begins_with(st.ammo):
 		ammo_id = ammo_list[0]
-	var take: int = mini(need, inventory.inventory[ammo_id])
-	inventory.inventory[ammo_id] -= take
+	var take: int = inventory.remove(ammo_id, need)
 	inventory.mags[inventory.equipped] = inventory.mags.get(inventory.equipped, 0) + take
 	inventory.mags_type[inventory.equipped] = ammo_id
-	if inventory.inventory[ammo_id] <= 0:
-		inventory.inventory.erase(ammo_id)
-		inventory.pickup_order.erase(ammo_id)
 	inventory.refresh()
 
 

@@ -69,6 +69,7 @@ func _ready() -> void:
 	add_child(combat)
 	combat.build()
 	inventory.combat = combat
+	player_sys.inventory = inventory
 
 	graphics = GraphicsSystem.new()
 	graphics.setup(self, world, atmosphere, player_sys, hud, spawner.zombie_root)
@@ -79,6 +80,7 @@ func _ready() -> void:
 	hud.start_pressed.connect(start)
 	hud.restart_pressed.connect(start)
 	hud.item_used.connect(inventory.use_item)
+	hud.item_dropped.connect(looting.drop_slot)
 	hud.action_pressed.connect(looting.action)
 	hud.reload_pressed.connect(combat.reload)
 	hud.jump_pressed.connect(player_sys.jump)
@@ -144,6 +146,7 @@ func start(fresh := true) -> void:
 
 	for c in world.containers:
 		c.searched = false
+		c.erase("items")
 	world.clear_voxels()
 	for i in C.LOOT_COUNT / 2:
 		looting.spawn_loot(world.free_point(Vector3.ZERO, 4.0, 60.0))

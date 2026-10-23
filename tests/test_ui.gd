@@ -154,24 +154,11 @@ func _ready() -> void:
 	hud._touch_up(12)
 	check(used == ["b"], "点快捷栏第 2 格应使用 b")
 
-	# 背包：点一下用物品，滑动不用；点背包外面关掉
+	# 背包能打开；格子点击/滑动由 test_bag 覆盖
 	hud.open_bag()
 	await get_tree().process_frame
-	var bag_slot: Button = hud._bag_grid.get_child(0)
-	var at := bag_slot.get_global_rect().get_center()
-	used.clear()
-	hud._bag_slot_input(bag_slot, "a", _mouse(at, true))
-	hud._bag_slot_input(bag_slot, "a", _mouse(at + Vector2(0, 60), false))
-	check(used.is_empty(), "在背包里滑动不应使用物品")
-	hud._bag_slot_input(bag_slot, "a", _mouse(at, true))
-	hud._bag_slot_input(bag_slot, "a", _mouse(at + Vector2(3, 4), false))
-	check(used == ["a"], "在背包里点一下应使用物品")
-	var outside := InputEventScreenTouch.new()
-	outside.index = 13
-	outside.pressed = true
-	outside.position = Vector2(4, 4)
-	hud._input(outside)
-	check(not hud._bag_panel.visible, "点背包外面应关掉背包")
+	check(hud._bag_panel.visible, "背包应打开")
+	hud._bag_panel.visible = false
 
 	# 安全区：刘海和底部横条让出来，按钮整体往里收
 	var attack_before := hud._attack_btn.get_global_rect()

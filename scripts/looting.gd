@@ -17,6 +17,14 @@ var running := false
 var _search := {}
 var _search_t := 0.0
 var _search_from := Vector3.ZERO
+var _e_down := false
+## 玩家摆的储物箱：格子坐标 → {items, pos, name, r}
+var crates := {}
+## 容器面板正开着的容器
+var _open := {}
+
+const CRATE_ID := "cntWoodWritableCrate"
+const LOOT_SCRIPT := "res://scripts/loot.gd"
 
 
 func setup(parent: Node3D, world_ref: World, player_ref: PlayerSystem, inv_ref: InventorySystem,
@@ -31,6 +39,8 @@ func setup(parent: Node3D, world_ref: World, player_ref: PlayerSystem, inv_ref: 
 
 func build() -> void:
 	main.add_child(loot_root)
+	GameState.block_changed.connect(_on_block_changed)
+	hud.container_panel.closed.connect(func(): _open = {})
 
 
 func reset() -> void:
@@ -39,6 +49,9 @@ func reset() -> void:
 	_search = {}
 	_search_t = 0.0
 	_search_from = Vector3.ZERO
+	crates.clear()
+	_open = {}
+	hud.container_panel.close_panel()
 	hud.set_progress(-1.0)
 
 
@@ -130,6 +143,14 @@ func nearest_loot() -> Node3D:
 
 ## 每帧决定「搜索 / 拾取」按钮显示什么，推进翻找进度
 func update_action(delta: float) -> void:
+	if not _open.is_empty():
+		# 面板开着：离开 2 米自动关
+		var to: Vector3 = player_sys.player.position - _open.pos
+		if Vector2(to.x, to.z).length() - float(_open.get("r", 0.5)) > C.CONTAINER_CLOSE_DIST or not hud.container_panel.visible:
+			hud.container_panel.close_panel()
+			_open = {}
+		hud.set_action("")
+		return
 	if not _search.is_empty():
 		var c: Dictionary = _search
 		var need: float = C.SEARCH_TIME_CAR if c.kind == "car" else C.SEARCH_TIME
@@ -148,9 +169,15 @@ func update_action(delta: float) -> void:
 	if loot:
 		hud.set_action("拾取\n%s" % Assets.display_name(loot.get_meta("item")))
 		return
+	var crate := nearest_crate()
+	if not crate.is_empty():
+		hud.set_action("打开\n%s" % crate.name)
+		return
 	var c := world.nearest_container(player_sys.player.position)
 	if c.is_empty():
 		hud.set_action("")
+	elif c.searched and _has_items(c):
+		hud.set_action("打开\n%s" % c.name)
 	elif c.searched:
 		hud.set_action("%s\n已翻过" % c.name, false)
 	else:
@@ -162,11 +189,23 @@ func action() -> void:
 		return
 	var loot := nearest_loot()
 	if loot:
-		inventory.pickup(loot.get_meta("item"), int(loot.get_meta("quality", 0)), int(loot.get_meta("amount", 0)))
-		loot.queue_free()
+		var amount := int(loot.get_meta("amount", 0))
+		var left := inventory.pickup(loot.get_meta("item"), int(loot.get_meta("quality", 0)), amount)
+		if left <= 0:
+			loot.queue_free()
+		elif amount > 0 and left < amount:
+			loot.set_meta("amount", left)
+		return
+	var crate := nearest_crate()
+	if not crate.is_empty():
+		open_panel(crate)
 		return
 	var c := world.nearest_container(player_sys.player.position)
-	if c.is_empty() or c.searched:
+	if c.is_empty():
+		return
+	if c.searched:
+		if _has_items(c):
+			open_panel(c)
 		return
 	_search = c
 	_search_t = 0.0
@@ -178,23 +217,156 @@ func _finish_search(c: Dictionary) -> void:
 	_search = {}
 	hud.set_progress(-1.0)
 	c.searched = true
-	if rng.randf() < C.SEARCH_EMPTY_CHANCE:
+	var got := roll_container(c)
+	var items: Array = []
+	items.resize(maxi(C.CONTAINER_SLOTS, got.size()))
+	for i in items.size():
+		items[i] = got[i] if i < got.size() else {}
+	c["items"] = items
+	if got.is_empty():
 		hud.toast("%s里什么也没有" % c.name)
 		return
-	var n := rng.randi_range(C.SEARCH_MIN, C.SEARCH_MAX)
-	var names := []
-	for i in n:
+	open_panel(c)
+
+
+## 容器里有什么：有 Loot.roll（2a 的官方掉落表）就用它，没有先用 Assets.random_loot 顶上
+func roll_container(c: Dictionary) -> Array:
+	var out: Array = []
+	if ResourceLoader.exists(LOOT_SCRIPT):
+		var loot_cls = load(LOOT_SCRIPT)
+		if loot_cls and loot_cls.has_method("roll"):
+			for e in loot_cls.roll(str(c.get("loot_name", c.get("loot", "any"))), GameState.gamestage(), rng):
+				if Assets.items_by_id.has(str(e.get("id", ""))):
+					out.append({"id": str(e.id), "count": maxi(1, int(e.get("count", 1))),
+						"quality": int(e.get("quality", 0)), "durability": 0.0})
+			return out
+	if rng.randf() < C.SEARCH_EMPTY_CHANCE:
+		return out
+	for i in rng.randi_range(C.SEARCH_MIN, C.SEARCH_MAX):
 		var id := Assets.random_loot(rng, c.loot)
 		if id == "":
 			continue
 		var quality := 0
 		if Assets.items_by_id[id].kind in [Assets.Kind.GUN, Assets.Kind.MELEE]:
 			quality = Weapons.roll_quality(GameState.gamestage(), rng)
-		# 掉在容器和玩家之间的地上
-		var dir: Vector3 = player_sys.player.position - c.pos
-		dir.y = 0.0
-		dir = dir.normalized() if dir.length() > 0.01 else Vector3.FORWARD
-		var p: Vector3 = c.pos + dir * (c.r + 0.5) + Vector3(rng.randf_range(-0.6, 0.6), 0, rng.randf_range(-0.6, 0.6))
-		spawn_loot(world.push_out(p, 0.2), id, quality)
-		names.append(Assets.display_name(id) + (" Q%d" % quality if quality > 1 else ""))
-	hud.toast("翻到：" + "、".join(names) if not names.is_empty() else "%s里什么也没有" % c.name)
+		var n: int = Weapons.pickup_count(id, rng) if Weapons.is_ammo(id) else 1
+		out.append({"id": id, "count": n, "quality": quality, "durability": 0.0})
+	return out
+
+
+func _has_items(c: Dictionary) -> bool:
+	for s in c.get("items", []):
+		if not s.is_empty():
+			return true
+	return false
+
+
+func open_panel(c: Dictionary) -> void:
+	_open = c
+	Sfx.play("search", c.pos + Vector3.UP * 0.6, -6.0)
+	hud.container_panel.open(c.name, c.items, inventory)
+
+
+## 离玩家最近、够得着的储物箱
+func nearest_crate() -> Dictionary:
+	var best := {}
+	var best_d := 1.9
+	for cell in crates:
+		var cr: Dictionary = crates[cell]
+		var to: Vector3 = cr.pos - player_sys.player.position
+		var d := Vector2(to.x, to.z).length()
+		if d < best_d and absf(to.y) < 2.2:
+			best_d = d
+			best = cr
+	return best
+
+
+func _new_crate(cell: Vector3i) -> Dictionary:
+	var items: Array = []
+	items.resize(C.CRATE_SLOTS)
+	for i in items.size():
+		items[i] = {}
+	return {"items": items, "pos": Vector3(cell) + Vector3(0.5, 0.0, 0.5), "name": "储物箱", "r": 0.5}
+
+
+## 方块变了：摆下储物箱就登记；箱子被拆掉，里面的东西掉在地上
+func _on_block_changed(cell: Vector3i) -> void:
+	var v: Dictionary = world.voxels.get(cell, {})
+	if v.get("id", "") == CRATE_ID:
+		if not crates.has(cell):
+			crates[cell] = _new_crate(cell)
+		return
+	if crates.has(cell):
+		var cr: Dictionary = crates[cell]
+		crates.erase(cell)
+		if is_same(_open, cr):
+			hud.container_panel.close_panel()
+		for s in cr.items:
+			if not s.is_empty():
+				spawn_loot(world.push_out(cr.pos + Vector3(rng.randf_range(-0.6, 0.6), 0, rng.randf_range(-0.6, 0.6)), 0.2),
+					s.id, int(s.quality), int(s.count))
+
+
+## 背包面板里点「丢弃」：整格丢在面前的地上
+func drop_slot(index: int) -> void:
+	var s := inventory.take_slot(index)
+	if s.is_empty():
+		return
+	var fwd := -player_sys.player.global_basis.z
+	fwd.y = 0.0
+	var p: Vector3 = player_sys.player.position + fwd.normalized() * 1.2
+	spawn_loot(world.push_out(p, 0.2), s.id, int(s.quality), int(s.count))
+	hud.toast("丢掉了%s" % Assets.display_name(s.id))
+	inventory.refresh()
+
+
+## 存档：容器里没拿完的东西、储物箱里的东西
+func save_data() -> Dictionary:
+	var left := {}
+	for i in world.containers.size():
+		var c: Dictionary = world.containers[i]
+		if c.has("items"):
+			left[str(i)] = _pack(c.items)
+	var cr := []
+	for cell in crates:
+		cr.append([cell.x, cell.y, cell.z, _pack(crates[cell].items)])
+	return {"container_items": left, "crates": cr}
+
+
+## 在 world.voxel_load 之后调用
+func load_data(d: Dictionary) -> void:
+	var left: Dictionary = d.get("container_items", {})
+	for k in left:
+		var i := int(k)
+		if i < world.containers.size():
+			world.containers[i]["items"] = _unpack(left[k], C.CONTAINER_SLOTS)
+	crates.clear()
+	for cell in world.voxels:
+		if world.voxels[cell].id == CRATE_ID:
+			crates[cell] = _new_crate(cell)
+	for e in d.get("crates", []):
+		if e is Array and e.size() >= 4:
+			var cell := Vector3i(int(e[0]), int(e[1]), int(e[2]))
+			if crates.has(cell):
+				crates[cell].items = _unpack(e[3], C.CRATE_SLOTS)
+
+
+static func _pack(items: Array) -> Array:
+	var out := []
+	for s in items:
+		out.append(s if not s.is_empty() else null)
+	return out
+
+
+static func _unpack(list, size: int) -> Array:
+	var out: Array = []
+	if list is Array:
+		for e in list:
+			if e is Dictionary and Assets.items_by_id.has(str(e.get("id", ""))):
+				out.append({"id": str(e.id), "count": int(e.get("count", 1)), "quality": int(e.get("quality", 0)),
+					"durability": float(e.get("durability", 0.0))})
+			else:
+				out.append({})
+	while out.size() < size:
+		out.append({})
+	return out
