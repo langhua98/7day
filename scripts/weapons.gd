@@ -21,11 +21,32 @@ const TABLE := [
 
 static func stats(id: String) -> Dictionary:
 	var low := id.to_lower().trim_prefix("gun")
+	var base := _row(TABLE[8])   # 认不出来的当手枪
 	for row in TABLE:
+		var hit := false
 		for word in row[0]:
 			if low.contains(word):
-				return _row(row)
-	return _row(TABLE[8])   # 认不出来的当手枪
+				hit = true
+				break
+		if hit:
+			base = _row(row)
+			break
+	# 官方 items.xml 的弹匣、射速、换弹、弹药类型优先
+	var info: Dictionary = Data.items.get(id, {})
+	if not info.is_empty():
+		var mag := int(info.get("magazine", 0))
+		if mag > 0:
+			base.mag = mag
+		var rpm := float(info.get("rpm", 0.0))
+		if rpm > 0.0:
+			base.rate = 60.0 / rpm
+		var reload := float(info.get("reload", 0.0))
+		if reload > 0.0:
+			base.reload = reload
+		var ammo: String = info.get("ammo", "")
+		if ammo != "":
+			base.ammo = ammo
+	return base
 
 
 static func _row(r: Array) -> Dictionary:
