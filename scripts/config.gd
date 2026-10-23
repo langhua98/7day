@@ -16,6 +16,9 @@ const DAWN_HOUR := 4.0
 const DUSK_HOUR := 22.0
 ## 每 7 天一次血月，夜里 22:00 到次日 04:00
 const BLOOD_MOON_EVERY := 7
+## 手机版血月：官方总数乘 0.5，同时存活上限 8 + 2 × 第几次血月（最多 16）
+const HORDE_COUNT_MULT := 0.5
+const HORDE_MAX_ALIVE := 16
 
 ## 夜里的亮度：月光强度、环境光颜色和强度。嫌夜里太黑就调大
 const MOON_LIGHT := 0.55

@@ -11,6 +11,7 @@ var player_sys: PlayerSystem
 var inventory: InventorySystem
 var combat: CombatSystem
 var spawner: SpawnerSystem
+var horde: Horde
 var looting: LootingSystem
 var save_game: SaveGame
 var time_sys: TimeOfDay
@@ -59,6 +60,9 @@ func _ready() -> void:
 	spawner.setup(self, world, player_sys, hud, looting, rng)
 	spawner.build()
 
+	horde = Horde.new()
+	horde.setup(self, spawner, world, player_sys, time_sys, rng)
+
 	combat = CombatSystem.new()
 	combat.setup(self, get_tree(), player_sys, inventory, world, hud, player_sys.arms, spawner.zombie_root, rng)
 	add_child(combat)
@@ -66,7 +70,7 @@ func _ready() -> void:
 	inventory.combat = combat
 
 	save_game = SaveGame.new()
-	save_game.setup(self, world, player_sys, inventory, combat, spawner, atmosphere, hud, time_sys)
+	save_game.setup(self, world, player_sys, inventory, combat, spawner, horde, atmosphere, hud, time_sys)
 
 	hud.start_pressed.connect(start)
 	hud.restart_pressed.connect(start)
@@ -122,6 +126,7 @@ func _count_loot() -> int:
 
 func start(fresh := true) -> void:
 	spawner.reset()
+	horde.reset()
 	looting.reset()
 	time_sys.reset()
 	player_sys.reset()
@@ -179,18 +184,19 @@ func _process(delta: float) -> void:
 	var day := time_sys.day
 	var hour := fmod(time_sys.hours, 24.0)
 	var night := time_sys.night
-	var horde := time_sys.blood_moon
+	var blood_moon := time_sys.blood_moon
 
 	player_sys.update(delta)
 	looting.update(delta)
 	combat.update(delta)
-	spawner.update(delta, day, night, horde)
+	spawner.update(delta, day, night, blood_moon)
+	horde.update(delta, blood_moon, day)
 	looting.update_loot(delta)
 	looting.update_action(delta)
 	player_sys.update_survival(delta)
 	atmosphere.update_sky(time_sys.hours)
-	atmosphere.update_music(delta, night, horde, spawner.zombie_root)
-	atmosphere.update_banner(day, hour, night, horde)
+	atmosphere.update_music(delta, night, blood_moon, spawner.zombie_root)
+	atmosphere.update_banner(day, hour, night, blood_moon)
 	save_game.update(delta)
 
 	var near := 0
@@ -198,6 +204,6 @@ func _process(delta: float) -> void:
 		if not z.dead and z.distance_to_target() < C.TENSION_DISTANCE:
 			near += 1
 	hud.set_status(day, hour, player_sys.hp, player_sys.food, spawner.kills, near, night,
-		day % C.BLOOD_MOON_EVERY == 0 or horde, horde, GameState.next_blood_moon_day())
+		day % C.BLOOD_MOON_EVERY == 0 or blood_moon, blood_moon, GameState.next_blood_moon_day())
 	if player_sys.hp <= 0.0:
 		_end()

@@ -74,6 +74,59 @@ class BuildDataTest(unittest.TestCase):
         self.assertEqual(out["frameShapes"]["stack"], 999)
         self.assertEqual(out["woodShapes"]["durability"], 100.0)
 
+GAMESTAGES_XML = """<gamestages>
+  <spawner name="BloodMoonHorde">
+    <gamestage stage="1">
+      <spawn group="g1" num="2" maxAlive="3" duration="1" interval="5"/>
+      <spawn group="g1" num="999" maxAlive="1"/>
+    </gamestage>
+    <gamestage stage="4">
+      <spawn group="g2" num="4" maxAlive="5"/>
+    </gamestage>
+  </spawner>
+</gamestages>
+"""
+
+ENTITYGROUPS_XML = """<entitygroups>
+  <entitygroup name="g1">
+    <e n="zombieJoe"/>
+    <e n="zombieNurse" p="0.5"/>
+  </entitygroup>
+  <entitygroup name="g2">
+    <e n="zombieBoeFeral"/>
+    <e n="zombieUnknown"/>
+  </entitygroup>
+</entitygroups>
+"""
+
+
+class HordeDataTest(unittest.TestCase):
+    def test_parse_gamestages(self):
+        stages = build_data.parse_gamestages(GAMESTAGES_XML)
+        bm = stages["BloodMoonHorde"]
+        self.assertEqual(len(bm), 2)
+        self.assertEqual(bm[0]["stage"], 1)
+        self.assertEqual(bm[0]["spawns"][0]["num"], 2)
+        self.assertEqual(bm[0]["spawns"][0]["max_alive"], 3)
+        self.assertEqual(bm[0]["spawns"][1]["num"], 999)
+        self.assertEqual(build_data.select_horde_stage(bm, 4)["stage"], 4)
+        self.assertEqual(build_data.select_horde_stage(bm, 99)["stage"], 4)
+
+    def test_map_entitygroups(self):
+        groups = build_data.parse_entitygroups(ENTITYGROUPS_XML)
+        self.assertEqual(groups["g1"][0]["name"], "zombieJoe")
+        mapped = build_data.map_entitygroups(groups, {"joe", "nurse", "boe"})
+        self.assertEqual(mapped["g1"][0]["id"], "joe")
+        self.assertFalse(mapped["g1"][0]["feral"])
+        self.assertEqual(mapped["g2"][0]["id"], "boe")
+        self.assertTrue(mapped["g2"][0]["feral"])
+        self.assertEqual(len(mapped["g2"]), 1)  # unknown 被过滤
+
+    def test_blood_moon_total(self):
+        stages = build_data.parse_gamestages(GAMESTAGES_XML)
+        stage = build_data.select_horde_stage(stages["BloodMoonHorde"], 4)
+        self.assertEqual(build_data.blood_moon_total(stage, 0.5), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

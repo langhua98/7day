@@ -95,7 +95,6 @@ func set_time(total_hours: float) -> void:
 func _sync() -> void:
 	GameState.hours = hours
 	GameState.day = day
-	GameState.gamestage = day
 	GameState.blood_moon = blood_moon
 	GameState.blood_moons_survived = blood_moons_survived
 
