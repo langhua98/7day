@@ -17,6 +17,10 @@ signal blood_moon_ended(count: int)
 signal player_died(pos: Vector3)
 signal player_respawned(pos: Vector3)
 signal bedroll_placed(pos: Vector3, yaw: float)
+## 合成完成一批（成品 id、数量）
+signal item_crafted(id: String, count: int)
+## 合成队列变了（加入、完成、取消）
+signal craft_queue_changed
 
 const C = preload("res://scripts/config.gd")
 
