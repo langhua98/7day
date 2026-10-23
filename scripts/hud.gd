@@ -60,6 +60,8 @@ var _look_last := Vector2.ZERO
 var _toast_t := 0.0
 var _blood_day := false
 const JOY_RADIUS := 90.0
+const QUALITY_COLORS := [Color(0.7, 0.7, 0.7), Color(0.65, 0.45, 0.25), Color(0.9, 0.8, 0.2),
+	Color(0.3, 0.8, 0.3), Color(0.3, 0.55, 1.0), Color(0.7, 0.35, 1.0)]
 
 
 func _ready() -> void:
@@ -587,6 +589,15 @@ func _slot(id: String, list: Array, with_name := false) -> Control:
 		sb.set_corner_radius_all(12)
 		b.add_theme_stylebox_override("normal", sb)
 	b.set_meta("item", id)
+	var quality: int = int(entry.get("quality", 0))
+	if quality > 1:
+		var ql := Label.new()
+		ql.text = "Q%d" % quality
+		ql.position = Vector2(6, 6)
+		ql.add_theme_font_size_override("font_size", 16)
+		ql.add_theme_color_override("font_color", QUALITY_COLORS[clampi(quality, 1, 6) - 1])
+		ql.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.add_child(ql)
 	if with_name:
 		b.pressed.connect(func(): item_used.emit(id))
 	else:

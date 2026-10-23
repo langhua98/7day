@@ -33,6 +33,17 @@ func _ready() -> void:
 		failures.append("AP 弹伤害倍率应为 0.9")
 	if Weapons.ammo_label("ammo9mmBulletHP") != "9mm HP":
 		failures.append("HUD 弹种名应为 9mm HP")
+	if absf(Weapons.quality_mult(1) - 1.0) > 0.001 or absf(Weapons.quality_mult(6) - 1.5) > 0.001:
+		failures.append("品质伤害倍率应为 1 + 0.1×(品质-1)")
+	var qrng := RandomNumberGenerator.new()
+	qrng.seed = 1
+	for i in 20:
+		var q := Weapons.roll_quality(60, qrng)
+		if q < 1 or q > 6:
+			failures.append("GS60 品质应在 1–6")
+			break
+	if Weapons.roll_quality(1, qrng) != 1:
+		failures.append("GS1 品质应只有 1")
 	if failures.is_empty():
 		print("PASS test_weapons")
 		get_tree().quit(0)

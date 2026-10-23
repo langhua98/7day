@@ -136,6 +136,17 @@ static func ammo_label(ammo_id: String) -> String:
 	return caliber + " " + str(mods.get("label", "普通"))
 
 
+## 品质 1–6：武器/工具伤害和耐久 ×(1 + 0.1×(品质−1))
+static func quality_mult(quality: int) -> float:
+	return 1.0 + 0.1 * (clampi(quality, 1, 6) - 1)
+
+
+## 按游戏阶段掷品质：第 1 天大多 1 级，GS 60 能到 5–6 级
+static func roll_quality(gs: int, rng: RandomNumberGenerator) -> int:
+	var maxq := clampi(1 + int(gs / 10.0), 1, 6)
+	return rng.randi_range(1, maxq)
+
+
 ## 捡到一盒子弹给几发
 static func pickup_count(id: String, rng: RandomNumberGenerator) -> int:
 	if id.begins_with("ammoRocket"):

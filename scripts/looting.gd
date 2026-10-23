@@ -51,7 +51,7 @@ func update(delta: float) -> void:
 	_e_down = Input.is_physical_key_pressed(KEY_E)
 
 
-func spawn_loot(pos: Vector3, id := "") -> void:
+func spawn_loot(pos: Vector3, id := "", quality := 0, amount := 0) -> void:
 	if id == "":
 		id = Assets.random_loot(rng)
 	if id == "":
@@ -61,6 +61,10 @@ func spawn_loot(pos: Vector3, id := "") -> void:
 		return
 	var holder := Node3D.new()
 	holder.set_meta("item", id)
+	if quality > 0:
+		holder.set_meta("quality", quality)
+	if amount > 0:
+		holder.set_meta("amount", amount)
 	holder.position = pos
 	var spin := Node3D.new()
 	spin.name = "Spin"
@@ -69,7 +73,7 @@ func spawn_loot(pos: Vector3, id := "") -> void:
 	holder.add_child(spin)
 	# 物品名字，走近才显示
 	var label := Label3D.new()
-	label.text = Assets.display_name(id)
+	label.text = Assets.display_name(id) + ("  Q%d" % quality if quality > 1 else "")
 	label.font = _cjk_font()
 	label.font_size = 36
 	label.outline_size = 10
@@ -166,7 +170,7 @@ func action() -> void:
 		return
 	var loot := nearest_loot()
 	if loot:
-		inventory.pickup(loot.get_meta("item"))
+		inventory.pickup(loot.get_meta("item"), int(loot.get_meta("quality", 0)), int(loot.get_meta("amount", 0)))
 		loot.queue_free()
 		return
 	var c := world.nearest_container(player_sys.player.position)
@@ -191,11 +195,14 @@ func _finish_search(c: Dictionary) -> void:
 		var id := Assets.random_loot(rng, c.loot)
 		if id == "":
 			continue
+		var quality := 0
+		if Assets.items_by_id[id].kind in [Assets.Kind.GUN, Assets.Kind.MELEE]:
+			quality = Weapons.roll_quality(GameState.gamestage(), rng)
 		# 掉在容器和玩家之间的地上
 		var dir: Vector3 = player_sys.player.position - c.pos
 		dir.y = 0.0
 		dir = dir.normalized() if dir.length() > 0.01 else Vector3.FORWARD
 		var p: Vector3 = c.pos + dir * (c.r + 0.5) + Vector3(rng.randf_range(-0.6, 0.6), 0, rng.randf_range(-0.6, 0.6))
-		spawn_loot(world.push_out(p, 0.2), id)
-		names.append(Assets.display_name(id))
+		spawn_loot(world.push_out(p, 0.2), id, quality)
+		names.append(Assets.display_name(id) + (" Q%d" % quality if quality > 1 else ""))
 	hud.toast("翻到：" + "、".join(names) if not names.is_empty() else "%s里什么也没有" % c.name)

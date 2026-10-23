@@ -19,6 +19,7 @@ var equipped := ""
 var mags := {}
 var mags_type := {}
 var ammo_choice := {}
+var qualities := {}
 
 
 func setup(parent: Node3D, hud_ref: Hud, arms_ref: FpArms, player_ref: PlayerSystem, rng_ref: RandomNumberGenerator) -> void:
@@ -36,6 +37,7 @@ func reset() -> void:
 	mags.clear()
 	mags_type.clear()
 	ammo_choice.clear()
+	qualities.clear()
 	arms.hold("")
 	changed.emit()
 
@@ -74,7 +76,8 @@ func remove(id: String, amount := 1) -> int:
 func refresh() -> void:
 	var list := []
 	for id in pickup_order:
-		list.append({"id": id, "count": inventory.get(id, 0), "equipped": id == equipped})
+		list.append({"id": id, "count": inventory.get(id, 0), "equipped": id == equipped,
+			"quality": qualities.get(id, 0)})
 	# 快捷栏：当前武器 + 能吃能用的，最多 6 格
 	var bar: Array[String] = []
 	if equipped != "":
@@ -108,14 +111,21 @@ func equip(id: String) -> void:
 	changed.emit()
 
 
-func pickup(id: String) -> void:
-	var n := Weapons.pickup_count(id, rng) if Weapons.is_ammo(id) else 1
+func pickup(id: String, quality := 0, amount := 0) -> void:
+	var n: int = amount
+	if n <= 0:
+		n = Weapons.pickup_count(id, rng) if Weapons.is_ammo(id) else 1
 	inventory[id] = inventory.get(id, 0) + n
 	if not pickup_order.has(id):
 		pickup_order.append(id)
 	var row: Dictionary = Assets.items_by_id[id]
+	if quality > 0 and row.kind in [Assets.Kind.GUN, Assets.Kind.MELEE]:
+		qualities[id] = maxi(qualities.get(id, 1), quality)
 	Sfx.play("loot", Vector3.INF, -8.0)
-	hud.toast("捡到：%s" % Assets.display_name(id) + (" ×%d" % n if n > 1 else ""))
+	var extra := (" ×%d" % n if n > 1 else "")
+	if quality > 1:
+		extra += "  Q%d" % quality
+	hud.toast("捡到：%s%s" % [Assets.display_name(id), extra])
 	# 捡到更好的武器自动换上
 	if row.kind in [Assets.Kind.MELEE, Assets.Kind.GUN]:
 		var cur: Dictionary = Assets.items_by_id.get(equipped, {})
@@ -197,33 +207,30 @@ func consume(id: String, msg: String) -> void:
 
 ## 测试模式：全部物品直接进背包，枪装满，每种子弹、每种方块给足。
 func give_all_items(top_up := false) -> void:
-	var kinds := [Assets.Kind.GUN, Assets.Kind.MELEE, Assets.Kind.FOOD, Assets.Kind.DRINK, Assets.Kind.MEDICAL]
-	for k in kinds:
-		for row in Assets.items:
-			var id: String = row.id
-			if row.kind != k or id.ends_with("Parts") or id.begins_with("gunBot"):
-				continue
-			var want := 1 if k in [Assets.Kind.MELEE, Assets.Kind.GUN] else 5
-			if inventory.get(id, 0) < want:
-				inventory[id] = want
-			if not pickup_order.has(id):
-				pickup_order.append(id)
-			if k == Assets.Kind.GUN:
-				if not mags.has(id):
-					mags[id] = Weapons.stats(id).mag
-				if not mags_type.has(id):
-					mags_type[id] = Weapons.default_ammo(id)
-	for row in Assets.items:
-		if Weapons.is_ammo(row.id):
-			inventory[row.id] = maxi(inventory.get(row.id, 0), C.TEST_AMMO)
-			if not pickup_order.has(row.id):
-				pickup_order.append(row.id)
-	for t in Blocks.TYPES:
-		var id: String = t[0]
-		if Assets.items_by_id.has(id):
-			inventory[id] = maxi(inventory.get(id, 0), C.TEST_BLOCKS)
-			if not pickup_order.has(id):
-				pickup_order.append(id)
+	# 测试模式：官方物品表里的东西全部进背包，数量按类别给
+	for id in Data.items:
+		if not Assets.items_by_id.has(id):
+			continue
+		var row: Dictionary = Assets.items_by_id[id]
+		var kind: int = row.kind
+		var want := 20
+		if kind in [Assets.Kind.GUN, Assets.Kind.MELEE]:
+			want = 1
+		elif kind in [Assets.Kind.FOOD, Assets.Kind.DRINK, Assets.Kind.MEDICAL]:
+			want = 5
+		elif kind == Assets.Kind.BLOCK:
+			want = C.TEST_BLOCKS
+		elif Weapons.is_ammo(id):
+			want = C.TEST_AMMO
+		if inventory.get(id, 0) < want:
+			inventory[id] = want
+		if not pickup_order.has(id):
+			pickup_order.append(id)
+		if kind == Assets.Kind.GUN:
+			if not mags.has(id):
+				mags[id] = Weapons.stats(id).mag
+			if not mags_type.has(id):
+				mags_type[id] = Weapons.default_ammo(id)
 	if top_up:
 		return
 	# 快捷栏先放手枪和步枪（不然按字母排第一把是弓）
@@ -295,7 +302,7 @@ func _give_starter_gun(id: String) -> void:
 
 
 func save_data() -> Dictionary:
-	return {"inventory": inventory, "order": pickup_order, "equipped": equipped, "mags": mags, "mags_type": mags_type, "ammo_choice": ammo_choice}
+	return {"inventory": inventory, "order": pickup_order, "equipped": equipped, "mags": mags, "mags_type": mags_type, "ammo_choice": ammo_choice, "qualities": qualities}
 
 
 func load_data(d: Dictionary) -> void:
@@ -311,6 +318,8 @@ func load_data(d: Dictionary) -> void:
 		mags_type[id] = str(d.mags_type[id])
 	for id in d.get("ammo_choice", {}):
 		ammo_choice[id] = str(d.ammo_choice[id])
+	for id in d.get("qualities", {}):
+		qualities[id] = int(d.qualities[id])
 	for id in mags:
 		if not mags_type.has(id):
 			mags_type[id] = Weapons.default_ammo(id)
