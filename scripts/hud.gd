@@ -870,6 +870,9 @@ func set_effects(list: Array) -> void:
 		var b: Button = buttons[i]
 		var t := status_time_text(float(e.left))
 		var label: String = str(e.short) + (" ×%d" % e.stacks if int(e.stacks) > 1 else "")
+		# 感染这类按百分比显示
+		if str(e.get("unit", "")) == "%":
+			label = "%s\n%d%%" % [e.short, int(e.stacks)]
 		b.text = label if t == "" else "%s\n%s" % [label, t]
 		b.set_meta("info", e)
 
@@ -883,7 +886,8 @@ func _status_touch(pos: Vector2) -> bool:
 			return true
 		_flash(b)
 		var t := status_time_text(float(e.left))
-		_status_tip.text = "%s：%s%s" % [e.zh, e.desc, ("  剩余 " + t) if t != "" else ""]
+		var pct := (" %d%%" % int(e.stacks)) if str(e.get("unit", "")) == "%" else ""
+		_status_tip.text = "%s%s：%s%s" % [e.zh, pct, e.desc, ("  剩余 " + t) if t != "" else ""]
 		_status_tip.visible = true
 		_status_tip_t = 3.5
 		return true

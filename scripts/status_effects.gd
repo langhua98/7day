@@ -6,7 +6,7 @@ extends Node
 ##
 ## 给其它系统用的接口：
 ##   add(id, hours := -1.0, stacks := 1)   hours < 0 用表里默认值，0 = 一直有
-##   remove(id) / has(id) / remaining(id) / stacks(id)
+##   remove(id) / has(id) / remaining(id) / stacks(id) / set_stacks(id, n)
 ##   modifier(stat) 倍率（默认 1）  offset(stat) 加值（默认 0）  blocked(flag) 是否禁止某动作
 ##   active() 当前状态列表（HUD 用）  save_data() / load_data(d)
 
@@ -79,6 +79,16 @@ func stacks(id: String) -> int:
 	return int(_active[id].stacks) if _active.has(id) else 0
 
 
+## 直接设层数（感染度用层数表示百分比）；≤ 0 就移除
+func set_stacks(id: String, n: int) -> void:
+	if n <= 0:
+		remove(id)
+		return
+	if not _active.has(id):
+		add(id, -1.0, n)
+	_active[id].stacks = mini(n, int(def(id).get("max_stack", 99)))
+
+
 ## 倍率修正，所有状态相乘，例如 modifier("stamina_regen")
 func modifier(stat: String) -> float:
 	var m := 1.0
@@ -149,7 +159,7 @@ func active() -> Array:
 		var d := def(id)
 		list.append({"id": id, "zh": display_name(id), "short": str(d.get("short", "?")),
 			"desc": description(id), "left": remaining(id), "stacks": int(_active[id].stacks),
-			"bad": bool(d.get("bad", false))})
+			"bad": bool(d.get("bad", false)), "unit": str(d.get("unit", ""))})
 	list.sort_custom(func(a, b): return a.bad and not b.bad)
 	return list
 
