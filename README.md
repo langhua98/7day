@@ -70,3 +70,7 @@ scripts/music.gd       音乐切换
 scripts/config.gd      数值
 tools/fetch_assets.py  从云盘同步素材
 ```
+
+## 七日杀素材对应表
+
+`research/7dtd-index/` 是从 xiaoju-survival 仓库合并过来的素材索引（物品、角色、POI 和资源包的对应关系，只有索引，不含游戏文件），由 `tools/build_7dtd_index.py` 生成，说明见该目录的 README。
