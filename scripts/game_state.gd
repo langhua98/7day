@@ -60,3 +60,21 @@ func days_until_blood_moon() -> int:
 
 func next_blood_moon_day() -> int:
 	return int(hours / 24.0) + 1 + days_until_blood_moon()
+
+
+## 6a：热量来源（合成、篝火等每秒调用 heat.emit），HeatMap 订阅
+signal heat(pos: Vector3, amount: float, kind: String)
+## 6a：玩家是否蹲着（player.gd 写，僵尸感官读）
+var player_crouching := false
+
+
+func is_night() -> bool:
+	var h := fmod(hours, 24.0)
+	return h >= C.DUSK_HOUR or h < C.DAWN_HOUR
+
+
+## 发噪音：半径从 config 的 NOISE 表取，没有就用 fallback
+func make_noise(pos: Vector3, kind: String, fallback := 0.0) -> void:
+	var r: float = C.NOISE.get(kind, fallback)
+	if r > 0.0:
+		noise.emit(pos, r, kind)

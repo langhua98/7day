@@ -29,6 +29,9 @@ var _land_dip := 0.0
 var aiming := false
 var _step_d := 0.0
 var _grounded := true
+## 6a：蹲伏（HUD「蹲」按钮切换）
+var crouching := false
+var _crouch_h := 0.0
 
 
 func setup(parent: Node3D, world_ref: World, hud_ref: Hud, rng_ref: RandomNumberGenerator) -> void:
@@ -53,6 +56,9 @@ func build() -> void:
 
 func reset() -> void:
 	player.position = Vector3.ZERO
+	crouching = false
+	_crouch_h = 0.0
+	GameState.player_crouching = false
 	player.rotation.y = 0.0
 	camera.rotation.x = 0.0
 	camera.position.y = C.PLAYER_EYE_HEIGHT
@@ -94,7 +100,7 @@ func update(delta: float) -> void:
 	mv = mv.limit_length(1.0)
 	# 冲刺：摇杆推到底往前，或者按 Shift；耗体力
 	var sprint := (mv.length() > 0.92 and mv.y > 0.6) or Input.is_physical_key_pressed(KEY_SHIFT)
-	sprint = sprint and stamina > 1.0 and mv.y > 0.3
+	sprint = sprint and stamina > 1.0 and mv.y > 0.3 and not crouching
 	if sprint:
 		stamina = max(0.0, stamina - C.SPRINT_DRAIN * delta)
 	else:
@@ -128,17 +134,20 @@ func update(delta: float) -> void:
 		fov_target = C.BASE_FOV + C.SPRINT_FOV_BONUS
 	camera.fov = lerp(camera.fov, fov_target, 1.0 - exp(-delta * 8.0))
 	_land_dip = lerp(_land_dip, 0.0, 1.0 - exp(-delta * 9.0))
-	camera.position.y = C.PLAYER_EYE_HEIGHT - _land_dip
+	_crouch_h = lerp(_crouch_h, C.CROUCH_DROP if crouching else 0.0, 1.0 - exp(-delta * 10.0))
+	camera.position.y = C.PLAYER_EYE_HEIGHT - _land_dip - _crouch_h
 	var fwd := -player.global_basis.z
 	var right := player.global_basis.x
-	var vel := (fwd * mv.y + right * mv.x) * C.PLAYER_SPEED * (C.SPRINT_MULT if sprint else 1.0)
+	var vel := (fwd * mv.y + right * mv.x) * C.PLAYER_SPEED * (C.SPRINT_MULT if sprint else 1.0) * (C.CROUCH_SPEED_MULT if crouching else 1.0)
 	var before := player.position
 	player.position = world.push_out(player.position + vel * delta, 0.35)
 	if _grounded:
 		_step_d += Vector2(player.position.x - before.x, player.position.z - before.z).length()
 		if _step_d > (1.9 if sprint else 1.5):
 			_step_d = 0.0
-			Sfx.play("step", Vector3.INF, -10.0 if not sprint else -6.0, 0.12)
+			Sfx.play("step", Vector3.INF, -16.0 if crouching else (-10.0 if not sprint else -6.0), 0.12)
+			# 脚步噪音：冲刺 8、走路 4、蹲走 1.5 米
+			GameState.make_noise(player.global_position, "crouch" if crouching else ("sprint" if sprint else "walk"))
 	arms.set_meta("walking", mv.length() * (1.6 if sprint else 1.0))
 
 
@@ -163,6 +172,12 @@ func update_survival(delta: float) -> void:
 	if water < 20.0: st.append("口渴")
 	if food < 20.0: st.append("饥饿")
 	hud.set_survival(water, "  ".join(st))
+
+
+func toggle_crouch() -> void:
+	crouching = not crouching
+	GameState.player_crouching = crouching
+	hud.set_crouch(crouching)
 
 
 func jump() -> void:

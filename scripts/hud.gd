@@ -8,6 +8,8 @@ signal item_used(id: String)
 signal action_pressed
 signal reload_pressed
 signal jump_pressed
+## 6a：蹲伏切换
+signal crouch_pressed
 signal continue_pressed
 signal settings_changed(settings: Dictionary)
 signal quit_to_title
@@ -27,6 +29,7 @@ var _water_bar := ProgressBar.new()
 var _effects := Label.new()
 var _reload_btn := Button.new()
 var _jump_btn := Button.new()
+var _crouch_btn := Button.new()
 var _ammo := Label.new()
 var _kills := Label.new()
 var _toast := Label.new()
@@ -196,7 +199,8 @@ func _ready() -> void:
 	_root.add_child(_action_btn)
 
 	# 换弹、跳：按钮也在 _input 里按触点处理
-	for pair in [[_reload_btn, "换弹", Vector2(-240, -470), Vector2(180, 90)], [_jump_btn, "跳", Vector2(-420, -470), Vector2(160, 90)]]:
+	for pair in [[_reload_btn, "换弹", Vector2(-240, -470), Vector2(180, 90)], [_jump_btn, "跳", Vector2(-420, -470), Vector2(160, 90)],
+			[_crouch_btn, "蹲", Vector2(-600, -470), Vector2(160, 90)]]:
 		var b: Button = pair[0]
 		b.text = pair[1]
 		b.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
@@ -518,6 +522,12 @@ func show_end(text: String) -> void:
 
 
 ## 拿着枪时显示「弹匣 / 背包」子弹数和换弹键；text 为空就隐藏
+## 蹲着时按钮高亮
+func set_crouch(on: bool) -> void:
+	_crouch_btn.text = "站" if on else "蹲"
+	_crouch_btn.modulate = Color(1.0, 0.85, 0.4) if on else Color.WHITE
+
+
 func set_ammo(text: String) -> void:
 	_ammo.visible = text != ""
 	_ammo.text = text
@@ -723,6 +733,10 @@ func _touch_down(index: int, pos: Vector2) -> void:
 	if _jump_btn.get_global_rect().grow(10).has_point(pos):
 		_flash(_jump_btn)
 		jump_pressed.emit()
+		return
+	if _crouch_btn.get_global_rect().grow(10).has_point(pos):
+		_flash(_crouch_btn)
+		crouch_pressed.emit()
 		return
 	if _action_btn.visible and _action_btn.get_global_rect().grow(12).has_point(pos):
 		_flash(_action_btn)
