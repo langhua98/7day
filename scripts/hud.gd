@@ -52,8 +52,10 @@ var _hurt := ColorRect.new()
 var _pause_btn := Button.new()
 var _pause_panel := PanelContainer.new()
 var _continue_btn := Button.new()
-## 设置：灵敏度、亮度、音量、音乐音量（倍数），存在 user://settings.cfg
-var settings := {"sensitivity": 1.0, "brightness": 1.0, "volume": 1.0, "music": 0.8}
+var _perf := Label.new()
+## 设置：灵敏度、亮度、音量、音乐音量（倍数）、画质档位、性能面板，存在 user://settings.cfg
+var settings := {"sensitivity": 1.0, "brightness": 1.0, "volume": 1.0, "music": 0.8,
+	"quality": 1.0, "show_perf": 0.0}
 const SETTINGS_PATH := "user://settings.cfg"
 
 var _joy_id := -1
@@ -78,6 +80,19 @@ const JOY_DEADZONE := 0.12
 const TAP_SLOP := 24.0
 const QUALITY_COLORS := [Color(0.7, 0.7, 0.7), Color(0.65, 0.45, 0.25), Color(0.9, 0.8, 0.2),
 	Color(0.3, 0.8, 0.3), Color(0.3, 0.55, 1.0), Color(0.7, 0.35, 1.0)]
+var _status_text := ""
+var _kills_text := ""
+var _ammo_text := ""
+var _effects_text := ""
+var _banner_text := ""
+var _action_text := ""
+var _action_enabled := true
+var _progress_text := ""
+var _progress_shown := false
+var _water_value := -1.0
+var _stamina_value := -1.0
+var _hp_value := -1.0
+var _food_value := -1.0
 
 
 func _ready() -> void:
@@ -177,6 +192,16 @@ func _ready() -> void:
 	_hitmarker.modulate = Color(1, 1, 1, 0)
 	_hitmarker.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_hitmarker)
+
+	# 性能面板：左上角血条下面，默认关闭
+	_perf.position = Vector2(28, 168)
+	_perf.size = Vector2(360, 110)
+	_perf.add_theme_font_override("font", number_font())
+	_perf.add_theme_font_size_override("font_size", 19)
+	_perf.add_theme_color_override("font_color", Color(0.65, 1.0, 0.7))
+	_perf.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_perf.visible = false
+	_root.add_child(_perf)
 
 	# 底部快捷栏
 	# 往两边长，格子多少都居中
@@ -461,7 +486,7 @@ func _build_end_panel() -> void:
 func _build_pause_panel() -> void:
 	_pause_panel.set_anchors_preset(Control.PRESET_CENTER)
 	_pause_panel.custom_minimum_size = Vector2(640, 0)
-	_pause_panel.position = Vector2(-320, -260)
+	_pause_panel.position = Vector2(-320, -335)
 	_pause_panel.visible = false
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 18)
@@ -493,6 +518,29 @@ func _build_pause_panel() -> void:
 			settings_changed.emit(settings))
 		h.add_child(sl)
 		v.add_child(h)
+
+	# 画质：省电 / 均衡 / 高清
+	var qh := HBoxContainer.new()
+	var ql := Label.new()
+	ql.text = "画质"
+	ql.custom_minimum_size = Vector2(180, 0)
+	qh.add_child(ql)
+	var q := OptionButton.new()
+	for i in GameConfig.QUALITY_PRESETS.size():
+		q.add_item(GameConfig.QUALITY_PRESETS[i].name, i)
+	q.selected = clampi(int(settings.quality), 0, GameConfig.QUALITY_PRESETS.size() - 1)
+	q.custom_minimum_size = Vector2(380, 50)
+	q.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	q.item_selected.connect(_on_quality_selected)
+	qh.add_child(q)
+	v.add_child(qh)
+
+	var perf_toggle := CheckButton.new()
+	perf_toggle.text = "显示性能信息"
+	perf_toggle.button_pressed = settings.show_perf > 0.5
+	perf_toggle.toggled.connect(_on_show_perf_toggled)
+	v.add_child(perf_toggle)
+
 	var btns := HBoxContainer.new()
 	btns.alignment = BoxContainer.ALIGNMENT_CENTER
 	btns.add_theme_constant_override("separation", 30)
@@ -531,6 +579,8 @@ func _load_settings() -> void:
 	if cf.load(SETTINGS_PATH) == OK:
 		for k in settings:
 			settings[k] = float(cf.get_value("settings", k, settings[k]))
+		settings.quality = clampf(settings.quality, 0.0, GameConfig.QUALITY_PRESETS.size() - 1.0)
+		settings.show_perf = 1.0 if settings.show_perf > 0.5 else 0.0
 
 
 func _save_settings() -> void:
@@ -538,6 +588,18 @@ func _save_settings() -> void:
 	for k in settings:
 		cf.set_value("settings", k, settings[k])
 	cf.save(SETTINGS_PATH)
+
+
+func _on_quality_selected(index: int) -> void:
+	settings.quality = float(clampi(index, 0, GameConfig.QUALITY_PRESETS.size() - 1))
+	_save_settings()
+	settings_changed.emit(settings)
+
+
+func _on_show_perf_toggled(on: bool) -> void:
+	settings.show_perf = 1.0 if on else 0.0
+	_save_settings()
+	settings_changed.emit(settings)
 
 
 func set_start_info(text: String) -> void:
@@ -552,6 +614,9 @@ func show_end(text: String) -> void:
 
 ## 拿着枪时显示「弹匣 / 背包」子弹数和换弹键；text 为空就隐藏
 func set_ammo(text: String) -> void:
+	if text == _ammo_text:
+		return
+	_ammo_text = text
 	_ammo.visible = text != ""
 	_ammo.text = text
 	_reload_btn.visible = text != ""
@@ -561,11 +626,18 @@ func set_ammo(text: String) -> void:
 
 
 func set_survival(water: float, effects: String) -> void:
-	_water_bar.value = water
-	_effects.text = effects
+	if not is_equal_approx(water, _water_value):
+		_water_value = water
+		_water_bar.value = water
+	if effects != _effects_text:
+		_effects_text = effects
+		_effects.text = effects
 
 
 func set_stamina(v: float) -> void:
+	if is_equal_approx(v, _stamina_value):
+		return
+	_stamina_value = v
 	_stamina_bar.value = v
 
 
@@ -573,22 +645,39 @@ func set_status(day: int, hour: float, hp: float, food: float, kills: int, zombi
 		blood_day := false, blood_now := false, next_blood := 0) -> void:
 	var h := int(hour)
 	var m := int((hour - h) * 60.0)
-	_status.text = "第 %d 天  %02d:%02d %s" % [day, h, m, "夜" if night else ""]
+	var status := "第 %d 天  %02d:%02d %s" % [day, h, m, "夜" if night else ""]
+	if status != _status_text:
+		_status_text = status
+		_status.text = status
 	if blood_day != _blood_day:
 		_blood_day = blood_day
 		_status.add_theme_color_override("font_color", Color(1, 0.35, 0.25) if blood_day else Color(0.95, 0.92, 0.85))
 	_blood_info.text = "血月中" if blood_now else "下次血月：第 %d 天" % next_blood
-	_hp_bar.value = hp
-	_food_bar.value = food
-	_kills.text = "击杀 %d   附近 %d" % [kills, zombies]
+	if not is_equal_approx(hp, _hp_value):
+		_hp_value = hp
+		_hp_bar.value = hp
+	if not is_equal_approx(food, _food_value):
+		_food_value = food
+		_food_bar.value = food
+	var kills_text := "击杀 %d   附近 %d" % [kills, zombies]
+	if kills_text != _kills_text:
+		_kills_text = kills_text
+		_kills.text = kills_text
 
 
 func set_banner(text: String) -> void:
+	if text == _banner_text:
+		return
+	_banner_text = text
 	_banner.text = text
 
 
 ## 搜索 / 拾取按钮上的字；空字符串就隐藏。enabled=false 时变灰（比如容器已经翻过了）
 func set_action(text: String, enabled := true) -> void:
+	if text == _action_text and enabled == _action_enabled:
+		return
+	_action_text = text
+	_action_enabled = enabled
 	_action_btn.visible = text != ""
 	_action_btn.text = text
 	_action_btn.modulate = Color.WHITE if enabled else Color(1, 1, 1, 0.45)
@@ -597,11 +686,27 @@ func set_action(text: String, enabled := true) -> void:
 ## 翻找进度：value < 0 隐藏
 func set_progress(value: float, text := "") -> void:
 	var show := value >= 0.0
+	if show == _progress_shown and (not show or text == _progress_text):
+		if show:
+			_progress.value = value
+		return
+	_progress_shown = show
+	_progress_text = text
 	_progress.visible = show
 	_progress_label.visible = show
 	if show:
 		_progress.value = value
 		_progress_label.text = text
+
+
+## 暂停菜单里的「显示性能信息」
+func set_perf_visible(on: bool) -> void:
+	_perf.visible = on
+
+
+func set_perf(text: String) -> void:
+	if text != _perf.text:
+		_perf.text = text
 
 
 func toast(text: String) -> void:
