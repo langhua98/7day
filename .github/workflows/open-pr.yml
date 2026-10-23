@@ -1,0 +1,27 @@
+name: Open integration PR
+
+on:
+  push:
+    branches: [integrate-steps]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  open:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create PR if missing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -e
+          if gh pr list --head integrate-steps --base main --state open --json number --jq 'length' | grep -qE '^[1-9]'; then
+            echo "PR already exists"
+            exit 0
+          fi
+          gh pr create --base main --head integrate-steps \
+            --title "整合第 2/3/4/6 步：状态、背包、受伤、死亡、感官、合成" \
+            --body "整合 open PR #20–#26：状态效果、背包格子/容器、楼内容器、受伤感染、死亡重生、僵尸感官、配方合成。冲突已解；本地 14 个 Godot 测试和 Python 10/10 通过；真实数据 540 物品、426 配方、322 个血月阶段。已知待补：楼内网格和碰撞，楼内容器暂时够不到。"
