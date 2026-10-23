@@ -14,6 +14,7 @@ config/icon="res://icon.svg"
 
 Assets="*res://scripts/asset_db.gd"
 Sfx="*res://scripts/sfx.gd"
+Data="*res://scripts/data.gd"
 
 [display]
 

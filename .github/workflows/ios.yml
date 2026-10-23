@@ -89,6 +89,15 @@ jobs:
           "$GODOT" --headless -s tools/build_poi.gd
           "$GODOT" --headless --import
 
+      - name: 运行数据管线测试
+        run: python3 tests/test_build_data.py
+
+      - name: 运行无头测试
+        run: |
+          set -e
+          GODOT="$HOME/godot/Godot.app/Contents/MacOS/Godot"
+          "$GODOT" --headless --path . res://tests/test_data.tscn
+
       - name: 导出 Xcode 工程
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}

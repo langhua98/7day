@@ -63,6 +63,7 @@ python3 tools/fetch_assets.py --zombies all --music 12   # 想要更多
 project.godot          Godot 项目
 scenes/main.tscn       主场景
 scripts/asset_db.gd    读取素材、物品分类（自动加载为 Assets）
+scripts/data.gd        读取官方配置 JSON（自动加载为 Data）
 scripts/main.gd        世界、昼夜、刷怪、战斗、背包
 scripts/zombie.gd      僵尸（代码驱动骨骼走路）
 scripts/fp_arms.gd     第一人称手臂和手持武器
@@ -71,4 +72,5 @@ scripts/hud.gd         界面和触屏操作
 scripts/music.gd       音乐切换
 scripts/config.gd      数值
 tools/fetch_assets.py  从云盘同步素材
+tools/build_data.py    官方 Data_Config.zip → assets/data/*.json
 ```
