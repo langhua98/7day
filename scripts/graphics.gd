@@ -105,6 +105,7 @@ func _update_perf(delta: float) -> void:
 	var draws := int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
 	var prims := int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
 	var nodes := int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
-	hud.set_perf("FPS %d  %.1f ms\n绘制 %d  三角面 %dk\n3D %.2f  僵尸 %d  节点 %d" % [
+	hud.set_perf("FPS %d  %.1f ms\n绘制 %d  三角面 %dk\n3D %.2f  僵尸 %d  节点 %d\n%s %s" % [
 		fps, ms, draws, prims / 1000, main.get_viewport().scaling_3d_scale,
-		zombie_root.get_child_count(), nodes])
+		zombie_root.get_child_count(), nodes, RenderingServer.get_current_rendering_driver_name(),
+		world.full_debug(player.player.global_position)])

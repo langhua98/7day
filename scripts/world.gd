@@ -85,6 +85,7 @@ var quality := 1
 ## 按距离调整可见距离和投影的实例
 var _prop_lod: Array[Dictionary] = []
 var _poi_lod: Array[Dictionary] = []
+var _full_pois: Array[Dictionary] = []   # 换成完整版的楼：{name, pos, far, parts}，性能面板用
 var _decal_lod: Array[Dictionary] = []
 ## 地面/人行道/马路按贴图合批，减少 draw call
 var _flat_groups := {}
@@ -153,6 +154,31 @@ func apply_quality(level: int, preset: Dictionary) -> void:
 	for e in _decal_lod:
 		var mi: GeometryInstance3D = e.node
 		mi.visibility_range_end = preset.decal_range + e.get("pad", 0.0)
+
+
+## 性能面板的一行：最近一栋完整版的楼、离多远、完整网格有几块在可见距离内。
+## 走近楼时三角面数应该跳一大截；没跳说明完整网格没画出来。
+func full_debug(player_pos: Vector3) -> String:
+	var best := {}
+	var bd := INF
+	var p := Vector2(player_pos.x, player_pos.z)
+	for e in _full_pois:
+		var d := p.distance_to(e.pos)
+		if d < bd:
+			bd = d
+			best = e
+	if best.is_empty():
+		return "没有完整版的楼"
+	var on := 0
+	var tris := 0
+	for fi in best.parts:
+		var mi: MeshInstance3D = fi
+		var c: Vector3 = mi.global_transform * mi.get_aabb().get_center()
+		if player_pos.distance_to(c) < mi.visibility_range_end:
+			on += 1
+			for i in mi.mesh.get_surface_count():
+				tris += mi.mesh.surface_get_array_index_len(i) / 3
+	return "%s %dm 完整 %d/%d块 %dk面" % [best.name, int(bd), on, best.parts.size(), tris / 1000]
 
 
 ## 按玩家位置开关近处楼和道具的投影。远处不投影，手机阴影贴图只画身边。
@@ -1056,6 +1082,8 @@ func _poi(name: String, c: Vector2) -> void:
 		push_warning("%s 的完整版只有 %d 顶点（远景 %d），不用" % [name, int(info.get("full_verts", 0)), int(info.get("verts", 0))])
 	if use_full:
 		var full: Resource = load(full_path)
+		var parts := []
+		_full_pois.append({"name": name, "pos": c, "far": mi, "parts": parts})
 		for m in full.meshes:
 			var fi := MeshInstance3D.new()
 			fi.mesh = m
@@ -1069,6 +1097,7 @@ func _poi(name: String, c: Vector2) -> void:
 			# 影子用简化网格投（便宜得多），完整网格只负责看
 			fi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			add_child(fi)
+			parts.append(fi)
 		var shadow := MeshInstance3D.new()
 		shadow.mesh = mesh
 		shadow.material_override = _poi_material()

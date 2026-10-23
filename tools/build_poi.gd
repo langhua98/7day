@@ -177,6 +177,10 @@ func _convert_full(name: String) -> int:
 		normals.resize(nv)
 		var uv2 := PackedVector2Array()
 		uv2.resize(nv)
+		# 着色器不用 UV，但顶点格式要和远景网格一模一样（顶点、法线、UV、UV2、颜色）。
+		# 少了 UV 的网格在 iPhone（Metal）上整块不画，近处换成完整版时楼就没了。
+		var uvs := PackedVector2Array()
+		uvs.resize(nv)
 		var colors := PackedColorArray()
 		colors.resize(nv)
 		for i in nv:
@@ -195,6 +199,7 @@ func _convert_full(name: String) -> int:
 		arrays.resize(Mesh.ARRAY_MAX)
 		arrays[Mesh.ARRAY_VERTEX] = verts
 		arrays[Mesh.ARRAY_NORMAL] = normals
+		arrays[Mesh.ARRAY_TEX_UV] = uvs
 		arrays[Mesh.ARRAY_TEX_UV2] = uv2
 		arrays[Mesh.ARRAY_COLOR] = colors
 		arrays[Mesh.ARRAY_INDEX] = idx
