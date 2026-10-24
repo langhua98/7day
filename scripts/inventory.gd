@@ -204,6 +204,7 @@ func compact() -> void:
 		_slots[i] = kept[i] if i < kept.size() else {}
 	_reindex()
 	changed.emit()
+	refresh()
 
 
 func remove(id: String, amount := 1) -> int:

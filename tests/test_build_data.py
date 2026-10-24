@@ -169,10 +169,6 @@ class BuffDataTest(unittest.TestCase):
         self.assertIn("buffDysenteryMain", names)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 RECIPES_XML = """<recipes>
   <recipe name="meleeToolStoneAxe" count="1" tags="learnable,tool">
     <ingredient name="resourceRockSmall" count="2"/>
@@ -238,3 +234,7 @@ class RecipesTest(unittest.TestCase):
         self.assertNotIn("meleeToolMissing", out)
         self.assertEqual(sum(dropped.values()), 3)
         self.assertEqual(len(out), 5)
+
+
+if __name__ == "__main__":
+    unittest.main()

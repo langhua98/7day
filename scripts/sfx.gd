@@ -29,7 +29,11 @@ func _ready() -> void:
 			AudioServer.set_bus_send(AudioServer.bus_count - 1, "Master")
 	if not FileAccess.file_exists(INDEX):
 		return
-	var idx: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(INDEX))
+	var json := JSON.new()
+	if json.parse(FileAccess.get_file_as_string(INDEX)) != OK or not (json.data is Dictionary):
+		push_warning("assets/sounds/index.json 格式不对，音效跳过")
+		return
+	var idx: Dictionary = json.data
 	for g in idx:
 		var list := []
 		for path in idx[g]:

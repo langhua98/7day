@@ -53,7 +53,7 @@ func reset() -> void:
 
 
 func set_night_announced(day: int, hour: float) -> void:
-	_night_announced = day if hour >= C.DUSK_HOUR else -1
+	_night_announced = day if (hour >= C.DUSK_HOUR or hour < C.DAWN_HOUR) else -1
 
 
 func update_sky(game_hours: float) -> void:
@@ -146,9 +146,10 @@ func update_banner(day: int, hour: float, night: bool, horde: bool) -> void:
 	elif day % C.BLOOD_MOON_EVERY == 0 and hour >= 18.0:
 		hud.set_banner("今晚是血月……")
 	elif night:
-		if _night_announced != day:
+		if _night_announced < 0:
 			_night_announced = day
 			hud.toast("天黑了，僵尸会跑起来")
 		hud.set_banner("")
 	else:
+		_night_announced = -1
 		hud.set_banner("")

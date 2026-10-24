@@ -132,10 +132,15 @@ func nearest_loot() -> Node3D:
 	for l in loot_root.get_children():
 		if l.is_queued_for_deletion():
 			continue
-		var to: Vector3 = l.position - player_sys.player.position
+		var raw: Vector3 = l.position - player_sys.player.position
+		if absf(raw.y) > 1.8:
+			continue
+		var to: Vector3 = raw
 		to.y = 0.0
 		var d := to.length()
 		if d > C.PICKUP_RADIUS:
+			continue
+		if world.line_blocked(player_sys.player.position + Vector3.UP * 1.2, l.position + Vector3.UP * 0.2):
 			continue
 		var score := d - (aim.dot(to / d) if d > 0.01 else 1.0) * 0.8
 		if score < best_score:
@@ -204,15 +209,17 @@ func action() -> void:
 		var left := inventory.pickup(loot.get_meta("item"), int(loot.get_meta("quality", 0)), amount)
 		if left <= 0:
 			loot.queue_free()
-		elif amount > 0 and left < amount:
+		else:
 			loot.set_meta("amount", left)
 		return
 	var crate := nearest_crate()
 	if not crate.is_empty():
+		hud.release_touches()
 		open_panel(crate)
 		return
 	var station := world.nearest_station(player_sys.player.position, C.STATION_REACH)
 	if not station.is_empty():
+		hud.release_touches()
 		hud.craft_panel.open(station.area, station.get("cell"))
 		main.crafting.station_open(station.area, station.pos)
 		return
@@ -225,6 +232,7 @@ func action() -> void:
 		return
 	if c.searched:
 		if _has_items(c):
+			hud.release_touches()
 			open_panel(c)
 		return
 	_search = c
@@ -312,6 +320,7 @@ func _has_items(c: Dictionary) -> bool:
 
 func open_panel(c: Dictionary) -> void:
 	_open = c
+	hud.release_touches()
 	Sfx.play("search", c.pos + Vector3.UP * 0.6, -6.0)
 	hud.container_panel.open(c.name, c.items, inventory)
 

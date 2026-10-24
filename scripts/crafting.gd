@@ -246,7 +246,10 @@ func set_tool(cell: Vector3i, id := "") -> bool:
 	if id == "":
 		var old := str(st.get("tool", ""))
 		if old != "":
-			inventory.add(old, 1)
+			if inventory.add(old, 1) > 0:
+				if hud:
+					hud.toast("背包满了，拿不回来")
+				return false
 			st["tool"] = ""
 			inventory.refresh()
 			GameState.craft_queue_changed.emit()
@@ -257,7 +260,10 @@ func set_tool(cell: Vector3i, id := "") -> bool:
 	if prev == id:
 		return true
 	if prev != "":
-		inventory.add(prev, 1)
+		if inventory.add(prev, 1) > 0:
+			if hud:
+				hud.toast("背包满了，换不了锅")
+			return false
 	inventory.remove(id, 1)
 	st["tool"] = id
 	inventory.refresh()
@@ -324,6 +330,7 @@ func _process(delta: float) -> void:
 	for cell in station_queues.keys():
 		var st := station_state(cell)
 		if st.is_empty():
+			_refund_station(cell, station_states.get(cell, {}))
 			station_queues.erase(cell)
 			station_states.erase(cell)
 			_set_light(cell, false)
@@ -401,6 +408,23 @@ func _station_effects(cell: Vector3i, st: Dictionary, delta: float) -> void:
 	var pos := station_pos(cell)
 	GameState.make_noise(pos, area, 6.0)
 	GameState.heat.emit(pos, 0.5 if area == "campfire" else 1.0, area)
+
+
+func _refund_station(cell: Vector3i, st: Dictionary) -> void:
+	var q: Array = station_queues.get(cell, [])
+	for e in q:
+		var left := int(e.get("n", 1)) - int(e.get("done", 0))
+		if left > 0:
+			for ing in ingredients(str(e.get("key", "")), left):
+				_give(str(ing.id), int(ing.need))
+	var fuel := int(st.get("fuel", 0))
+	if fuel > 0:
+		_give(C.CAMPFIRE_FUEL, fuel)
+	var tool := str(st.get("tool", ""))
+	if tool != "":
+		_give(tool, 1)
+	if (not q.is_empty() or fuel > 0 or tool != "") and hud:
+		hud.toast("工作站拆掉了，东西已退回")
 
 
 ## 放进背包，放不下的掉在脚边

@@ -102,11 +102,16 @@ func attack() -> void:
 		if z.dead:
 			continue
 		var to: Vector3 = z.global_position - player_sys.player.global_position
+		if absf(to.y) > 1.8:
+			continue
 		to.y = 0
 		var d := to.length()
 		if d > C.MELEE_RANGE or d < 0.001:
 			continue
 		if flat_aim.dot(to / d) < 0.6 and d > 0.9:
+			continue
+		if world.line_blocked(player_sys.player.global_position + Vector3.UP * 1.4,
+				z.global_position + Vector3.UP * z.height() * 0.55):
 			continue
 		if d < best_d:
 			best_d = d
@@ -195,8 +200,12 @@ func _hit_block(dmg: float) -> void:
 	GameState.block_changed.emit(c)
 	if got != "":
 		if not C.TEST_INFINITE:
-			inventory.add(got)
+			var left := inventory.add(got)
 			inventory.refresh()
+			if left > 0 and main.looting:
+				main.looting.spawn_loot(Vector3(c) + Vector3(0.5, 0.2, 0.5), got, 0, left)
+				hud.toast("背包满了，%s 掉在地上" % Assets.display_name(got))
+				return
 		hud.toast("拆掉了%s" % Assets.display_name(got))
 	else:
 		var vox = world.voxels.get(c)

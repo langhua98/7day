@@ -108,6 +108,7 @@ func _ready() -> void:
 		looting.running = false
 		graphics.on_stop()
 		crafting.running = false
+		music.stop_all()
 		Sfx.stop_loops()
 		hud.show_start(true))
 	hud.settings_changed.connect(_apply_settings)
@@ -149,6 +150,7 @@ func _count_loot() -> int:
 # —— 开局 / 结束 ——
 
 func start(fresh := true) -> void:
+	hud.close_game_panels()
 	spawner.reset()
 	horde.reset()
 	looting.reset()
@@ -203,8 +205,10 @@ func _die() -> void:
 	running = false
 	combat.running = false
 	looting.running = false
-	hud.container_panel.close_panel()
+	crafting.running = false
+	hud.close_game_panels()
 	respawn.die()
+	save_game.save()
 
 
 func _on_respawned(_pos: Vector3) -> void:
@@ -213,6 +217,7 @@ func _on_respawned(_pos: Vector3) -> void:
 	running = true
 	combat.running = true
 	looting.running = true
+	crafting.running = true
 	save_game.save()
 
 
@@ -224,6 +229,7 @@ func _end() -> void:
 	graphics.on_stop()
 	crafting.running = false
 	save_game.delete_save()
+	music.stop_all()
 	Sfx.stop_loops()
 	Sfx.play("death")
 	music.request("Sus", 99.0)

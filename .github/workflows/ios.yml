@@ -126,6 +126,12 @@ jobs:
           "$GODOT" --headless --path . res://tests/test_status.tscn
           "$GODOT" --headless --path . res://tests/test_injury.tscn
           "$GODOT" --headless --path . res://tests/test_respawn.tscn
+          "$GODOT" --headless --path . res://tests/test_brain.tscn
+          "$GODOT" --headless --path . res://tests/test_items.tscn
+          "$GODOT" --headless --path . res://tests/test_spawner.tscn
+          "$GODOT" --headless --path . res://tests/test_world.tscn
+          "$GODOT" --headless --path . res://tests/test_save_atomic.tscn
+          "$GODOT" --headless --path . res://tests/test_doors.tscn
           "$GODOT" --headless --path . -s tests/test_poi_containers.gd
           "$GODOT" --headless --path . -s tests/test_poi_interior.gd
           "$GODOT" --headless --path . res://tests/test_craft.tscn

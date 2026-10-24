@@ -139,20 +139,20 @@ func die() -> void:
 	inventory.refresh()
 	GameState.lose_days_alive(C.DAYS_ALIVE_LOST_ON_DEATH)
 	GameState.player_died.emit(pos)
+	Status.clear()
+	Status.add("near_death_trauma")
+	var at := respawn_point()
+	player_sys.revive(at, C.RESPAWN_STATS)
 	Sfx.play("death")
 	hud.set_blackout(true, "你死了")
 	main.get_tree().create_timer(C.DEATH_BLACKOUT).timeout.connect(respawn_now)
 
 
-## 醒来：血、饱食、水 50%，清掉身上的状态，加濒死创伤（体力上限 −20，1 游戏天）
+## 黑屏结束：只负责揭开黑屏；复活数值在 die() 里已经结算
 func respawn_now() -> void:
 	if not dying:
 		return
 	dying = false
-	var at := respawn_point()
-	player_sys.revive(at, C.RESPAWN_STATS)
-	Status.clear()
-	Status.add("near_death_trauma")
 	hud.set_blackout(false)
 	hud.toast("你死了，在睡袋醒来" if has_bedroll() else "你死了，在出生点醒来（没有睡袋）")
 	GameState.player_respawned.emit(player_sys.player.position)

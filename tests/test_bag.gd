@@ -7,12 +7,17 @@ const C = preload("res://scripts/config.gd")
 var failures: Array[String] = []
 var _save_existed := false
 var _save_data := PackedByteArray()
+var _bak_existed := false
+var _bak_data := PackedByteArray()
 
 
 func _ready() -> void:
 	if FileAccess.file_exists("user://save.json"):
 		_save_existed = true
 		_save_data = FileAccess.get_file_as_bytes("user://save.json")
+	if FileAccess.file_exists("user://save.bak"):
+		_bak_existed = true
+		_bak_data = FileAccess.get_file_as_bytes("user://save.bak")
 	_run.call_deferred()
 	get_tree().create_timer(90.0).timeout.connect(func():
 		push_error("test_bag 超时")
@@ -42,7 +47,13 @@ func _run() -> void:
 	inv.add({"id": "testKnife", "count": 1, "quality": 5})
 	check_eq(_slots_of(inv, "testKnife"), 3, "刀不叠加")
 	check_eq(int(inv.qualities.get("testKnife", 0)), 5, "汇总品质取最高")
+	main.hud.open_bag()
+	await get_tree().process_frame
+	var old_first: Node = main.hud._bag_panel._grid.get_child(0)
 	inv.compact()
+	await get_tree().process_frame
+	check(main.hud._bag_panel._grid.get_child(0) != old_first, "整理后背包面板应刷新")
+	main.hud._bag_panel.visible = false
 	check_eq(_slots_of(inv, "testKnife"), 2, "整理后同品质只留一把")
 
 	check_eq(inv.remove("testAmmo", 200), 200, "扣 200 发")
@@ -62,6 +73,7 @@ func _run() -> void:
 	check(panel.visible, "容器面板应打开")
 	panel.take(0)
 	check(items[0].is_empty(), "拿走后容器格子变空")
+	check(panel._top.get_child(0).icon == null, "拿走后容器面板第一格应刷新为空")
 	check_eq(inv.count("testFood"), 603, "拿到背包里")
 	var knife_slot := -1
 	for i in inv.slots().size():
@@ -138,6 +150,12 @@ func _finish() -> void:
 		f.close()
 	elif FileAccess.file_exists("user://save.json"):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://save.json"))
+	if _bak_existed:
+		var b := FileAccess.open("user://save.bak", FileAccess.WRITE)
+		b.store_buffer(_bak_data)
+		b.close()
+	elif FileAccess.file_exists("user://save.bak"):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://save.bak"))
 	if failures.is_empty():
 		print("PASS test_bag")
 		get_tree().quit(0)

@@ -9,6 +9,8 @@ var failures: Array[String] = []
 var _elapsed := 0.0
 var _save_existed := false
 var _save_data := PackedByteArray()
+var _bak_existed := false
+var _bak_data := PackedByteArray()
 var _main: Node
 
 
@@ -16,6 +18,9 @@ func _ready() -> void:
 	if FileAccess.file_exists("user://save.json"):
 		_save_existed = true
 		_save_data = FileAccess.get_file_as_bytes("user://save.json")
+	if FileAccess.file_exists("user://save.bak"):
+		_bak_existed = true
+		_bak_data = FileAccess.get_file_as_bytes("user://save.bak")
 	_run.call_deferred()
 
 
@@ -153,6 +158,12 @@ func _restore_save() -> void:
 			f.close()
 	elif FileAccess.file_exists("user://save.json"):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://save.json"))
+	if _bak_existed:
+		var b := FileAccess.open("user://save.bak", FileAccess.WRITE)
+		b.store_buffer(_bak_data)
+		b.close()
+	elif FileAccess.file_exists("user://save.bak"):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://save.bak"))
 
 
 func _finish() -> void:

@@ -26,7 +26,13 @@ func _ready() -> void:
 	GameState.player_crouching = true
 	player.position = Vector3(0.8, 0, -0.8)
 	check(not b.sees(body, player, null), "蹲着贴背后走过不应被发现")
+	# 贴身也不能隔着楼板发现：水平距离 0，但视线被挡
+	var blocked_world := BlockedWorld.new()
+	GameState.player_crouching = false
+	player.position = Vector3(0, 3, 0)
+	check(not b.sees(body, player, blocked_world), "贴身但视线被楼板挡住时不应发现")
 	# 蹲着正前方 20 米：白天视距 25 × 0.5 = 12.5，看不见
+	GameState.player_crouching = true
 	player.position = Vector3(0, 0, 20)
 	check(not b.sees(body, player, null), "蹲着正前方 20 米看不见")
 	GameState.player_crouching = false
@@ -109,6 +115,11 @@ func _ready() -> void:
 		for f in failures:
 			printerr("失败：", f)
 		get_tree().quit(1)
+
+
+class BlockedWorld extends World:
+	func line_blocked(_a: Vector3, _b: Vector3) -> bool:
+		return true
 
 
 func check(ok: bool, msg: String) -> void:

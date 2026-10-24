@@ -30,6 +30,13 @@ func _ready() -> void:
 	scan()
 
 
+func zombie_key(id: String) -> String:
+	if zombie_models.has(id):
+		return id
+	var pref := "zombie_" + id
+	return pref if zombie_models.has(pref) else ""
+
+
 func scan() -> void:
 	items.clear()
 	items_by_id.clear()
@@ -276,7 +283,7 @@ func _classify(row: Dictionary) -> void:
 			if id.contains(word) and word.length() > best:
 				best = word.length()
 				row.power = MELEE_POWER[word]
-	elif id.begins_with("medical"):
+	elif id.begins_with("medical") or id.begins_with("drug"):
 		row.kind = Kind.MEDICAL
 		row.power = 35.0
 	elif id.begins_with("drinkingfountain") or id == "drinkJarEmpty":
