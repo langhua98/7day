@@ -14,6 +14,7 @@ signal rotate_pressed
 signal continue_pressed
 signal settings_changed(settings: Dictionary)
 signal quit_to_title
+signal back_to_title
 signal item_dropped(index: int)
 signal bag_compact_pressed
 
@@ -73,9 +74,21 @@ var _blackout_tween: Tween
 var _bag_marker := Control.new()
 var _bag_arrow := Control.new()
 var _bag_marker_label := Label.new()
+var _settings_panel := PanelContainer.new()
+var _settings_from_start := false
+var _setting_sliders := {}
+var _setting_values := {}
+var _quality_option: OptionButton
+var _perf_toggle: CheckButton
+var _start_settings_btn: Button
+var _pause_settings_btn: Button
+var _end_back_btn: Button
+var _settings_back_btn: Button
+var _settings_reset_btn: Button
 ## 设置：灵敏度、亮度、音量、音乐音量（倍数）、画质档位、性能面板，存在 user://settings.cfg
-var settings := {"sensitivity": 1.0, "brightness": 1.0, "volume": 1.0, "music": 0.8,
+const DEFAULT_SETTINGS := {"sensitivity": 1.0, "brightness": 1.0, "volume": 1.0, "music": 0.8,
 	"quality": 1.0, "show_perf": 0.0}
+var settings := DEFAULT_SETTINGS.duplicate()
 const SETTINGS_PATH := "user://settings.cfg"
 
 var _joy_id := -1
@@ -338,6 +351,7 @@ func _ready() -> void:
 	_build_start_panel()
 	_build_end_panel()
 	_build_pause_panel()
+	_build_settings_panel()
 	_build_death_ui()
 	# 背包盖在摇杆上面
 	get_viewport().size_changed.connect(_update_safe_area)
@@ -429,15 +443,16 @@ func _build_start_panel() -> void:
 	title.add_theme_color_override("font_color", Color(0.85, 0.2, 0.15))
 	v.add_child(title)
 	var sub := Label.new()
-	sub.text = "活过七天。第七天夜里是血月尸潮，撑到第八天早上 6 点就算赢。"
+	sub.text = "无尽生存：白天搜刮、合成、造基地，夜里躲僵尸，每七天一次血月。"
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(sub)
 	_start_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_start_info.modulate = Color(1, 1, 1, 0.7)
 	_start_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(_start_info)
 	var btn := Button.new()
-	btn.text = "开始"
+	btn.text = "新的一局"
 	btn.custom_minimum_size = Vector2(280, 90)
 	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	btn.add_theme_font_size_override("font_size", 40)
@@ -453,10 +468,16 @@ func _build_start_panel() -> void:
 		_start_panel.visible = false
 		continue_pressed.emit())
 	v.add_child(_continue_btn)
-	btn.text = "新的一局"
 	v.add_child(btn)
+	_start_settings_btn = Button.new()
+	_start_settings_btn.text = "设置"
+	_start_settings_btn.custom_minimum_size = Vector2(280, 76)
+	_start_settings_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_start_settings_btn.add_theme_font_size_override("font_size", 32)
+	_start_settings_btn.pressed.connect(func(): open_settings(true))
+	v.add_child(_start_settings_btn)
 	var help := Label.new()
-	help.text = "左半屏拖动移动 · 右半屏拖动看 · 按住开火（按住拖动也能转视角）· 走近垃圾桶、车、箱子按「搜索」· 地上的东西按「拾取」"
+	help.text = "左半屏拖动移动 · 右半屏拖动看 · 按住开火键开火 · 点弹药数字换弹 · 走近东西按「搜索」· 背包里选方块和形状"
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	help.modulate = Color(1, 1, 1, 0.6)
 	help.add_theme_font_size_override("font_size", 20)
@@ -493,103 +514,211 @@ func _build_end_panel() -> void:
 	_end_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_end_label.add_theme_font_size_override("font_size", 44)
 	v.add_child(_end_label)
-	var btn := Button.new()
-	btn.text = "再来一局"
-	btn.custom_minimum_size = Vector2(280, 90)
-	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	btn.add_theme_font_size_override("font_size", 36)
-	btn.pressed.connect(func():
+	var btns := HBoxContainer.new()
+	btns.alignment = BoxContainer.ALIGNMENT_CENTER
+	btns.add_theme_constant_override("separation", 30)
+	var again := Button.new()
+	again.text = "再来一局"
+	again.custom_minimum_size = Vector2(240, 86)
+	again.add_theme_font_size_override("font_size", 34)
+	again.pressed.connect(func():
 		_end_panel.visible = false
 		restart_pressed.emit())
-	v.add_child(btn)
+	btns.add_child(again)
+	_end_back_btn = Button.new()
+	_end_back_btn.text = "回标题"
+	_end_back_btn.custom_minimum_size = Vector2(240, 86)
+	_end_back_btn.add_theme_font_size_override("font_size", 34)
+	_end_back_btn.pressed.connect(func():
+		_end_panel.visible = false
+		back_to_title.emit())
+	btns.add_child(_end_back_btn)
+	v.add_child(btns)
 	_root.add_child(_end_panel)
 
 
 func _build_pause_panel() -> void:
 	_pause_panel.set_anchors_preset(Control.PRESET_CENTER)
-	_pause_panel.custom_minimum_size = Vector2(640, 0)
-	_pause_panel.position = Vector2(-320, -335)
+	_pause_panel.custom_minimum_size = Vector2(520, 0)
+	_pause_panel.position = Vector2(-260, -220)
 	_pause_panel.visible = false
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 18)
+	v.add_theme_constant_override("separation", 22)
 	_pause_panel.add_child(v)
 	var title := Label.new()
 	title.text = "暂停"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 44)
 	v.add_child(title)
-	for row in [["sensitivity", "视角灵敏度", 0.3, 2.5], ["brightness", "亮度", 0.5, 1.8],
-			["volume", "音效音量", 0.0, 1.0], ["music", "音乐音量", 0.0, 1.0]]:
-		var h := HBoxContainer.new()
-		var l := Label.new()
-		l.text = row[1]
-		l.custom_minimum_size = Vector2(180, 0)
-		h.add_child(l)
-		var sl := HSlider.new()
-		sl.min_value = row[2]
-		sl.max_value = row[3]
-		sl.step = 0.05
-		sl.value = settings[row[0]]
-		sl.custom_minimum_size = Vector2(380, 76)
-		sl.focus_mode = Control.FOCUS_NONE
-		sl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var key: String = row[0]
-		sl.value_changed.connect(func(val):
-			settings[key] = val
-			_save_settings()
-			settings_changed.emit(settings))
-		h.add_child(sl)
-		v.add_child(h)
-
-	# 画质：省电 / 均衡 / 高清
-	var qh := HBoxContainer.new()
-	var ql := Label.new()
-	ql.text = "画质"
-	ql.custom_minimum_size = Vector2(180, 0)
-	qh.add_child(ql)
-	var q := OptionButton.new()
-	for i in GameConfig.QUALITY_PRESETS.size():
-		q.add_item(GameConfig.QUALITY_PRESETS[i].name, i)
-	q.selected = clampi(int(settings.quality), 0, GameConfig.QUALITY_PRESETS.size() - 1)
-	q.custom_minimum_size = Vector2(380, 50)
-	q.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	q.item_selected.connect(_on_quality_selected)
-	qh.add_child(q)
-	v.add_child(qh)
-
-	var perf_toggle := CheckButton.new()
-	perf_toggle.text = "显示性能信息"
-	perf_toggle.button_pressed = settings.show_perf > 0.5
-	perf_toggle.toggled.connect(_on_show_perf_toggled)
-	v.add_child(perf_toggle)
-
-	var btns := HBoxContainer.new()
-	btns.alignment = BoxContainer.ALIGNMENT_CENTER
-	btns.add_theme_constant_override("separation", 30)
 	var resume := Button.new()
 	resume.text = "继续游戏"
-	resume.custom_minimum_size = Vector2(220, 80)
+	resume.custom_minimum_size = Vector2(340, 84)
+	resume.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	resume.add_theme_font_size_override("font_size", 32)
 	resume.pressed.connect(func(): set_paused(false))
-	btns.add_child(resume)
+	v.add_child(resume)
+	_pause_settings_btn = Button.new()
+	_pause_settings_btn.text = "设置"
+	_pause_settings_btn.custom_minimum_size = Vector2(340, 80)
+	_pause_settings_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_pause_settings_btn.add_theme_font_size_override("font_size", 30)
+	_pause_settings_btn.pressed.connect(func(): open_settings(false))
+	v.add_child(_pause_settings_btn)
 	var quit := Button.new()
 	quit.text = "存档并回标题"
-	quit.custom_minimum_size = Vector2(220, 80)
+	quit.custom_minimum_size = Vector2(340, 80)
+	quit.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	quit.add_theme_font_size_override("font_size", 30)
 	quit.pressed.connect(func():
 		set_paused(false)
 		quit_to_title.emit())
-	btns.add_child(quit)
-	v.add_child(btns)
+	v.add_child(quit)
 	var ver := Label.new()
 	ver.text = build_label()
+	ver.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	ver.modulate = Color(1, 1, 1, 0.45)
 	ver.add_theme_font_size_override("font_size", 18)
 	v.add_child(ver)
 	_root.add_child(_pause_panel)
 
 
+func _build_settings_panel() -> void:
+	_settings_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_settings_panel.visible = false
+	_root.add_child(_settings_panel)
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_settings_panel.add_child(center)
+	var v := VBoxContainer.new()
+	v.custom_minimum_size = Vector2(660, 0)
+	v.add_theme_constant_override("separation", 8)
+	center.add_child(v)
+	var title := Label.new()
+	title.text = "设置"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 40)
+	v.add_child(title)
+	_settings_group(v, "操作")
+	_add_setting_row(v, "sensitivity", "视角灵敏度", 0.3, 2.5, 0.05)
+	_settings_group(v, "画面")
+	_add_setting_row(v, "brightness", "亮度", 0.5, 1.8, 0.05)
+	var qh := HBoxContainer.new()
+	var ql := Label.new()
+	ql.text = "画质"
+	ql.custom_minimum_size = Vector2(180, 0)
+	qh.add_child(ql)
+	_quality_option = OptionButton.new()
+	for i in GameConfig.QUALITY_PRESETS.size():
+		_quality_option.add_item(GameConfig.QUALITY_PRESETS[i].name, i)
+	_quality_option.selected = clampi(int(settings.quality), 0, GameConfig.QUALITY_PRESETS.size() - 1)
+	_quality_option.custom_minimum_size = Vector2(360, 52)
+	_quality_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_quality_option.item_selected.connect(_on_quality_selected)
+	qh.add_child(_quality_option)
+	v.add_child(qh)
+	_perf_toggle = CheckButton.new()
+	_perf_toggle.text = "显示性能信息"
+	_perf_toggle.button_pressed = settings.show_perf > 0.5
+	_perf_toggle.toggled.connect(_on_show_perf_toggled)
+	v.add_child(_perf_toggle)
+	_settings_group(v, "声音")
+	_add_setting_row(v, "volume", "音效音量", 0.0, 1.0, 0.05)
+	_add_setting_row(v, "music", "音乐音量", 0.0, 1.0, 0.05)
+	var btns := HBoxContainer.new()
+	btns.alignment = BoxContainer.ALIGNMENT_CENTER
+	btns.add_theme_constant_override("separation", 26)
+	_settings_reset_btn = Button.new()
+	_settings_reset_btn.text = "恢复默认"
+	_settings_reset_btn.custom_minimum_size = Vector2(220, 68)
+	_settings_reset_btn.add_theme_font_size_override("font_size", 28)
+	_settings_reset_btn.pressed.connect(_reset_settings)
+	btns.add_child(_settings_reset_btn)
+	_settings_back_btn = Button.new()
+	_settings_back_btn.text = "返回"
+	_settings_back_btn.custom_minimum_size = Vector2(220, 68)
+	_settings_back_btn.add_theme_font_size_override("font_size", 28)
+	_settings_back_btn.pressed.connect(close_settings)
+	btns.add_child(_settings_back_btn)
+	v.add_child(btns)
+
+
+func _settings_group(parent: VBoxContainer, text: String) -> void:
+	var l := Label.new()
+	l.text = "— " + text + " —"
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.add_theme_font_size_override("font_size", 24)
+	l.add_theme_color_override("font_color", Color(0.85, 0.7, 0.45))
+	parent.add_child(l)
+
+
+func _add_setting_row(parent: VBoxContainer, key: String, text: String, min_v: float, max_v: float, step_v: float) -> void:
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 14)
+	var l := Label.new()
+	l.text = text
+	l.custom_minimum_size = Vector2(180, 0)
+	h.add_child(l)
+	var sl := HSlider.new()
+	sl.min_value = min_v
+	sl.max_value = max_v
+	sl.step = step_v
+	sl.value = settings[key]
+	sl.custom_minimum_size = Vector2(360, 52)
+	sl.focus_mode = Control.FOCUS_NONE
+	sl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	h.add_child(sl)
+	var val := Label.new()
+	val.text = _setting_text(key, sl.value)
+	val.custom_minimum_size = Vector2(84, 0)
+	val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	h.add_child(val)
+	sl.value_changed.connect(func(x):
+		settings[key] = x
+		val.text = _setting_text(key, x)
+		_save_settings()
+		settings_changed.emit(settings))
+	parent.add_child(h)
+	_setting_sliders[key] = sl
+	_setting_values[key] = val
+
+
+func _setting_text(key: String, value: float) -> String:
+	if key == "sensitivity":
+		return "%.1f×" % value
+	return "%d%%" % roundi(value * 100.0)
+
+
+func _reset_settings() -> void:
+	for k in DEFAULT_SETTINGS:
+		settings[k] = DEFAULT_SETTINGS[k]
+	for key in _setting_sliders:
+		var sl: HSlider = _setting_sliders[key]
+		sl.set_value_no_signal(settings[key])
+		_setting_values[key].text = _setting_text(key, settings[key])
+	_quality_option.selected = clampi(int(settings.quality), 0, GameConfig.QUALITY_PRESETS.size() - 1)
+	_perf_toggle.set_pressed_no_signal(settings.show_perf > 0.5)
+	_save_settings()
+	settings_changed.emit(settings)
+
+
+func open_settings(from_start: bool) -> void:
+	_settings_from_start = from_start
+	if not from_start:
+		_pause_panel.visible = false
+	_settings_panel.visible = true
+
+
+func close_settings() -> void:
+	_settings_panel.visible = false
+	if _settings_from_start:
+		_start_panel.visible = true
+	else:
+		_pause_panel.visible = true
 func set_paused(on: bool) -> void:
 	if on:
 		_release_touches()
+	if not on:
+		_settings_panel.visible = false
 	_pause_panel.visible = on
 	get_tree().paused = on
 
@@ -597,6 +726,7 @@ func set_paused(on: bool) -> void:
 func show_start(can_continue: bool) -> void:
 	_release_touches()
 	close_game_panels()
+	_settings_panel.visible = false
 	_continue_btn.visible = can_continue
 	_start_panel.visible = true
 	_end_panel.visible = false
@@ -637,6 +767,7 @@ func set_start_info(text: String) -> void:
 func show_end(text: String) -> void:
 	_release_touches()
 	close_game_panels()
+	_settings_panel.visible = false
 	_end_label.text = text
 	_end_panel.visible = true
 
@@ -979,7 +1110,7 @@ func consume_look() -> Vector2:
 
 func _panel_open() -> bool:
 	return _bag_panel.visible or container_panel.visible or craft_panel.visible or _start_panel.visible \
-		or _end_panel.visible or _pause_panel.visible or _blackout.visible
+		or _end_panel.visible or _pause_panel.visible or _settings_panel.visible or _blackout.visible
 
 
 func _press_attack(pressed: bool) -> void:

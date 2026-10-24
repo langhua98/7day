@@ -170,6 +170,37 @@ func _ready() -> void:
 	check(hud._pause_panel.visible, "游戏中切后台应自动暂停")
 	hud.set_paused(false)
 
+	# 标题页/暂停页共用设置面板
+	hud.show_start(true)
+	check(hud._start_settings_btn.visible, "标题页应有设置按钮")
+	hud._start_settings_btn.pressed.emit()
+	await get_tree().process_frame
+	check(hud._settings_panel.visible, "标题页设置应打开")
+	var settings_box: Control = hud._settings_panel.get_child(0).get_child(0)
+	check(settings_box.size.y <= vp.y, "设置面板不应超出屏幕高度")
+	hud._settings_back_btn.pressed.emit()
+	check(not hud._settings_panel.visible and hud._start_panel.visible, "设置返回标题页")
+	var volume_slider: HSlider = hud._setting_sliders["volume"]
+	volume_slider.value = 0.5
+	check(absf(hud.settings.volume - 0.5) < 0.001, "拖动音量应更新设置")
+	check_eq(hud._setting_values["volume"].text, "50%", "音量应显示百分比")
+	hud._settings_reset_btn.pressed.emit()
+	check(absf(hud.settings.volume - 1.0) < 0.001, "恢复默认音量")
+	check_eq(hud._setting_values["volume"].text, "100%", "恢复默认后显示 100%")
+	hud.set_paused(true)
+	hud._pause_settings_btn.pressed.emit()
+	check(hud._settings_panel.visible and not hud._pause_panel.visible, "暂停页设置应打开")
+	hud._settings_back_btn.pressed.emit()
+	check(hud._pause_panel.visible and get_tree().paused, "设置返回暂停页")
+	hud.set_paused(false)
+
+	# 结算页回标题
+	var backs := [0]
+	hud.back_to_title.connect(func(): backs[0] += 1)
+	hud.show_end("测试")
+	hud._end_back_btn.pressed.emit()
+	check_eq(backs[0], 1, "结算回标题应发信号")
+
 	_finish()
 
 
