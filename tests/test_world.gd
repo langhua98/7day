@@ -3,6 +3,12 @@ extends Node
 
 const MAIN = preload("res://scenes/main.tscn")
 
+class SightWorld extends World:
+	var sight_blocked := false
+	func line_blocked(_a: Vector3, _b: Vector3) -> bool:
+		return sight_blocked
+
+
 var failures: Array[String] = []
 var main: Node3D
 
@@ -17,13 +23,15 @@ func _ready() -> void:
 	var p := world.free_point(Vector3(0, 8, 0), 1.0, 3.0)
 	check_close(p.y, 0.0, 0.001, "free_point 应落在地面，不继承中心高度")
 
-	# 楼内范围（哪怕可走）不能作为随机刷怪点
+	# 楼内范围（哪怕可走）不能作为随机刷怪点；用独立世界，避免真实素材影响
+	var iw := World.new()
 	var it := PoiInterior.new()
 	it.rect = Rect2(Vector2(10, 10), Vector2(4, 4))
-	world.interiors.append(it)
-	check(world.inside_interior(Vector3(11, 0, 11)), "楼内应算被占")
-	world.interiors.pop_back()
-	check(not world.inside_interior(Vector3(11, 0, 11)), "移走楼后同一位置不再占")
+	iw.interiors.append(it)
+	check(iw.inside_interior(Vector3(11, 0, 11)), "楼内应算被占")
+	iw.interiors.pop_back()
+	check(not iw.inside_interior(Vector3(11, 0, 11)), "移走楼后同一位置不再占")
+	iw.free()
 
 	# 自己摆的 y=0 矮方块只挡脚边，不挡 3 米高处的视线
 	var cell := Vector3i(5, 0, 5)
@@ -32,16 +40,14 @@ func _ready() -> void:
 	check(world._point_blocked(Vector3(5.5, 1.0, 5.5)), "脚边视线应被矮方块挡住")
 	check(not world._point_blocked(Vector3(5.5, 3.0, 5.5)), "3 米高处不应被矮方块挡住")
 
-	# 隔墙不能搜容器
-	world.containers.append({"pos": Vector3(20, 0, 20), "r": 0.5, "indoor": false, "name": "测试柜"})
+	# 隔墙不能搜容器：用可控视线的世界，避免真实地图影响
+	var sw := SightWorld.new()
+	sw.containers.append({"pos": Vector3(20, 0, 20), "r": 0.5, "indoor": false, "name": "测试柜"})
 	var near := Vector3(18.5, 0, 20)
-	check(not world.nearest_container(near).is_empty(), "没有墙时能找到容器")
-	world.voxels[Vector3i(19, 0, 20)] = {"id": "frameShapes", "hp": 100.0}
-	world._low[Vector2i(19, 20)] = 1
-	check(world.nearest_container(near).is_empty(), "隔墙不能搜容器")
-	world.voxels.erase(Vector3i(19, 0, 20))
-	world._low.erase(Vector2i(19, 20))
-	world.containers.pop_back()
+	check(not sw.nearest_container(near).is_empty(), "没有墙时能找到容器")
+	sw.sight_blocked = true
+	check(sw.nearest_container(near).is_empty(), "隔墙不能搜容器")
+	sw.free()
 	world.voxels.erase(cell)
 	world._low.erase(Vector2i(5, 5))
 
