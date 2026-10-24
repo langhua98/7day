@@ -176,6 +176,10 @@ func update_action(delta: float) -> void:
 	if not crate.is_empty():
 		hud.set_action("打开\n%s" % crate.name)
 		return
+	var station := world.nearest_station(player_sys.player.position, C.STATION_REACH)
+	if not station.is_empty():
+		hud.set_action("使用\n%s" % station.name)
+		return
 	var c := world.nearest_container(player_sys.player.position)
 	var door := _door_target(c)
 	if not door.is_empty():
@@ -206,6 +210,11 @@ func action() -> void:
 	var crate := nearest_crate()
 	if not crate.is_empty():
 		open_panel(crate)
+		return
+	var station := world.nearest_station(player_sys.player.position, C.STATION_REACH)
+	if not station.is_empty():
+		hud.craft_panel.open(station.area, station.get("cell"))
+		main.crafting.station_open(station.area, station.pos)
 		return
 	var c := world.nearest_container(player_sys.player.position)
 	var door := _door_target(c)

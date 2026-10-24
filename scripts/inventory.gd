@@ -160,6 +160,52 @@ func room_for(id: String, quality := 0) -> int:
 	return n
 
 
+## 整理背包：叠得下的合并，测试模式同品质的唯一物品只留一个，再按类别和名字排序
+func compact() -> void:
+	var kept: Array = []
+	for s in _slots:
+		if s.is_empty():
+			continue
+		var id := str(s.get("id", ""))
+		var stack := stack_of(id)
+		if stack <= 1:
+			if C.TEST_ALL_ITEMS:
+				var dup := false
+				for k in kept:
+					if str(k.id) == id and int(k.quality) == int(s.quality) and is_equal_approx(float(k.durability), float(s.durability)):
+						dup = true
+						break
+				if dup:
+					continue
+			kept.append(s.duplicate(true))
+			continue
+		var left := int(s.count)
+		for k in kept:
+			if left <= 0:
+				break
+			if str(k.id) == id and int(k.quality) == int(s.quality) and int(k.count) < stack:
+				var n := mini(stack - int(k.count), left)
+				k.count += n
+				left -= n
+		while left > 0:
+			var n := mini(stack, left)
+			kept.append({"id": id, "count": n, "quality": int(s.quality), "durability": float(s.durability)})
+			left -= n
+	kept.sort_custom(func(a, b):
+		var ka := int(Assets.items_by_id.get(str(a.id), {}).get("kind", 99))
+		var kb := int(Assets.items_by_id.get(str(b.id), {}).get("kind", 99))
+		if ka != kb:
+			return ka < kb
+		return Assets.display_name(str(a.id)) < Assets.display_name(str(b.id)))
+	var n := maxi(limit(), kept.size())
+	_slots.clear()
+	_slots.resize(n)
+	for i in n:
+		_slots[i] = kept[i] if i < kept.size() else {}
+	_reindex()
+	changed.emit()
+
+
 func remove(id: String, amount := 1) -> int:
 	var take: int = mini(count(id), amount)
 	if take <= 0:
@@ -379,15 +425,16 @@ func give_all_items(top_up := false) -> void:
 		var info: Dictionary = Data.items[id]
 		var row: Dictionary = Assets.ensure_item(id, str(info.get("zh", id)))
 		var kind: int = row.kind
-		var want := 20
+		var stack := stack_of(id)
+		var want := mini(20, stack)
 		if kind in [Assets.Kind.GUN, Assets.Kind.MELEE]:
 			want = 1
 		elif kind in [Assets.Kind.FOOD, Assets.Kind.DRINK, Assets.Kind.MEDICAL]:
-			want = 5
+			want = mini(5, stack)
 		elif kind == Assets.Kind.BLOCK:
-			want = C.TEST_BLOCKS
+			want = mini(C.TEST_BLOCKS, stack)
 		elif Weapons.is_ammo(id):
-			want = C.TEST_AMMO
+			want = mini(C.TEST_AMMO, stack)
 		var have := count(id)
 		if have < want:
 			_put({"id": id, "count": want - have, "quality": 0, "durability": 0.0})

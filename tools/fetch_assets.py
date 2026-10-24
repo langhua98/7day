@@ -47,6 +47,14 @@ import zipfile
 
 API = os.environ.get("XIAOJU_API", "https://langhua1998-xiaoju-cloud.hf.space/api/agent/v1")
 DRIVE_ROOT = "/7day"
+# 工作站模型：crafting.zip 里是分件 OBJ（不是预制体 GLB），先取每个工作站的主网格和贴图
+STATION_MODELS = {
+    "campfire": ("campfireWoodLogs_LOD0.obj", "campfire.png"),
+    "workbench": ("woodWorkBench_LOD0.obj", "woodWorkBench.png"),
+    "forge": ("forgeWorkstation_LOD0.obj", "forgeWorkstation.png"),
+    "chemistryStation": ("ChemSetB.obj", "chemistryStation.png"),
+    "cementMixer": ("cementMixerBody_LOD0.obj", "cementMixer.png"),
+}
 DEFAULT_ZOMBIES = ["soldier", "nurse", "cop", "biker", "lumberjack", "joe", "arlene", "screamer"]
 # 游戏会用到的物品前缀（图标太多，只取这些，--all-icons 可以全取）
 GAME_PREFIXES = ("melee", "gun", "food", "drink", "medical", "resource", "ammo", "armor", "apparel", "thrown", "tool")
@@ -1148,20 +1156,65 @@ SOUND_GROUPS = {
     "search": ("useactions", r"open_(cardboard|garbage|fridge|cupboard|trashcan|dumpster|backpack)\.wav", 7),
     "loot": ("ui", r"ui_loot_success\.wav", 1),
     "door": ("useactions", r"\w*door\w*open\w*\.wav", 2),
+    # 工作站开关和完成音效
+    "campfire_open": ("campfire", r"campfire_open\.wav", 1),
+    "campfire_done": ("campfire", r"campfire_complete_item\.wav", 1),
+    "forge_open": ("forge", r"forge_open\.wav", 1),
+    "forge_done": ("forge", r"forge_item_complete\.wav", 1),
+    "chem_open": ("chem_station", r"chem_station_open\.wav", 1),
+    "chem_done": ("chem_station", r"chem_station_complete_item\.wav", 1),
+    "cement_open": ("crafting", r"cement_mixer_open\.wav", 1),
+    "cement_done": ("crafting", r"cement_mixer_complete\.wav", 1),
     "amb_day": ("ambient_loops", r"a_windlight_lp\.wav", 1),
     "amb_night": ("ambient_loops", r"a_crickets_lp\.wav", 1),
     "amb_flies": ("ambient_loops", r"flies_lp\.wav", 1),
 }
 
 
+def fetch_station_models(dest):
+    """工作站主网格（crafting.zip 的 OBJ 分件）和贴图 → assets/stationmodels/。
+    没有模型时游戏会退回方块。"""
+    out_dir = os.path.join(dest, "stationmodels")
+    if os.path.isdir(out_dir) and len(os.listdir(out_dir)) >= len(STATION_MODELS) * 2:
+        print("工作站模型: 已有，跳过")
+        return
+    zf = open_remote_zip(f"{DRIVE_ROOT}/小橘素材库/automatic_assets_entities/crafting.zip")
+    if zf is None:
+        print("工作站模型: 云盘没有 crafting.zip，先用方块")
+        return
+    names = set(zf.namelist())
+    os.makedirs(out_dir, exist_ok=True)
+    got = 0
+    for station, (obj, tex) in STATION_MODELS.items():
+        op = f"meshes/automatic_assets_entities/crafting/{obj}"
+        tp = f"textures/automatic_assets_entities/crafting/{tex}"
+        if op not in names:
+            print(f"  缺模型 {obj}")
+            continue
+        with open(os.path.join(out_dir, station + ".obj"), "wb") as f:
+            f.write(zf.read(op))
+        if tp in names:
+            with open(os.path.join(out_dir, station + ".png"), "wb") as f:
+                f.write(zf.read(tp))
+        got += 1
+    print(f"工作站模型: {got}/{len(STATION_MODELS)} 个（缺的先用方块）")
+
+
 def fetch_sounds(dest):
     out_dir = os.path.join(dest, "sounds")
     index_out = os.path.join(out_dir, "index.json")
+    # 不整包跳过：后面版本会加组（工作站等），已有组不重复下载
+    zips, total = {}, 0
+    index = {}
     if os.path.exists(index_out):
-        print("音效: 已有，跳过（删掉 assets/sounds/index.json 可重新取）")
-        return
-    zips, index, total = {}, {}, 0
+        try:
+            index = json.load(open(index_out))
+        except Exception:
+            index = {}
     for group, (pack, pattern, limit) in SOUND_GROUPS.items():
+        have = index.get(group, [])
+        if have and all(os.path.exists(os.path.join(dest, p)) for p in have):
+            continue
         if pack not in zips:
             zf = open_remote_zip(f"{DRIVE_ROOT}/小橘素材库/automatic_assets_sounds/{pack}.zip")
             zips[pack] = (zf, zf.infolist() if zf else [])
@@ -1171,17 +1224,20 @@ def fetch_sounds(dest):
         step = max(1, len(hits) // limit)
         chosen = hits[::step][:limit]
         os.makedirs(os.path.join(out_dir, group), exist_ok=True)
+        got = []
         for i in chosen:
             base = os.path.basename(i.filename)
             with zf.open(i) as src, open(os.path.join(out_dir, group, base), "wb") as dst:
                 shutil.copyfileobj(src, dst)
-            index.setdefault(group, []).append(f"sounds/{group}/{base}")
+            got.append(f"sounds/{group}/{base}")
             total += i.file_size
-        if not chosen:
+        if got:
+            index[group] = got
+        elif not have:
             print(f"  音效 {group}: 没找到")
     with open(index_out, "w", encoding="utf-8") as f:
         json.dump(index, f, ensure_ascii=False, indent=1)
-    print(f"音效: {sum(len(v) for v in index.values())} 个，{mb(total)}")
+    print(f"音效: {sum(len(v) for v in index.values())} 个，新取 {mb(total)}")
 
 SKY_CUBES = ["WhispyClouds", "FluffyClouds", "ThickOvercastClouds", "MilkyWay_V_Cross_1024"]
 FONTS = ["NotoSansCJKjp-Medium.otf", "AGENCYB.ttf", "opinionproextracondensed-bold.otf"]
@@ -1259,7 +1315,7 @@ def main():
     ap.add_argument("--zombies", default=",".join(DEFAULT_ZOMBIES), help="逗号分隔的僵尸名，或 all")
     ap.add_argument("--music", type=int, default=6, help="每类音乐取几段")
     ap.add_argument("--all-icons", action="store_true", help="取全部图标（默认只取游戏会用到的）")
-    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,respawn,poi,full,props,blocks,terrain,effects,music,sounds,sky,data")
+    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,respawn,poi,full,props,stations,blocks,terrain,effects,music,sounds,sky,data")
     args = ap.parse_args()
     skip = set(filter(None, args.skip.split(",")))
     dest = os.path.abspath(args.dest)
@@ -1293,6 +1349,8 @@ def main():
         fetch_effects(dest)
     if "music" not in skip:
         fetch_music(dest, args.music)
+    if "stations" not in skip:
+        fetch_station_models(dest)
     if "sounds" not in skip:
         fetch_sounds(dest)
     if "sky" not in skip:

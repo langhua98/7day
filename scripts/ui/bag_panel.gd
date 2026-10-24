@@ -4,6 +4,7 @@ extends PanelContainer
 
 signal use_pressed(id: String)
 signal drop_pressed(index: int)
+signal compact_pressed
 
 ## 品质 1–6：灰 棕 黄 绿 蓝 紫
 const QUALITY_COLORS := [Color(0.62, 0.62, 0.62), Color(0.6, 0.4, 0.22), Color(0.92, 0.8, 0.2),
@@ -36,6 +37,11 @@ func _init() -> void:
 	var head := HBoxContainer.new()
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(_title)
+	var tidy := Button.new()
+	tidy.text = "整理"
+	tidy.custom_minimum_size = Vector2(100, 64)
+	tidy.pressed.connect(func(): compact_pressed.emit())
+	head.add_child(tidy)
 	var close := Button.new()
 	close.text = "关闭"
 	close.custom_minimum_size = Vector2(110, 64)

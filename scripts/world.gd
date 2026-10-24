@@ -731,6 +731,8 @@ func _update_iwall(it: PoiInterior, gx: int, gz: int) -> void:
 
 ## 格子 -> {id, hp, node}
 var voxels := {}
+var stations := {}     # area -> [格子]，靠近工作站的判定用
+var station_cells := {}  # 格子 -> area，合成系统查工作站用
 var _low := {}      # Vector2i(x, z) -> 这一列 y=0、1 两格里有几块（挡僵尸用）
 var _voxel_root: Node3D
 const VOXEL_TOP := 40
@@ -769,6 +771,12 @@ func add_voxel(c: Vector3i, id: String, hp := -1.0) -> void:
 	if voxels.has(c):
 		return
 	voxels[c] = {"id": id, "hp": hp if hp > 0.0 else float(Blocks.info(id).get("hp", 100.0))}
+	var area := Blocks.station_area(id)
+	if area != "":
+		if not stations.has(area):
+			stations[area] = []
+		stations[area].append(c)
+		station_cells[c] = area
 	_vox_mark(c, id, true)
 	if c.y <= 1:
 		var k := Vector2i(c.x, c.z)
@@ -816,7 +824,7 @@ func _flush_voxels() -> void:
 			continue
 		if ch.mmi == null:
 			var mmi := MultiMeshInstance3D.new()
-			mmi.material_override = Blocks.material()
+			mmi.material_override = Blocks.material_for(ch.id)
 			_voxel_root.add_child(mmi)
 			ch.mmi = mmi
 			var mm := MultiMesh.new()
@@ -827,7 +835,7 @@ func _flush_voxels() -> void:
 		m.instance_count = ch.cells.size()
 		var k := 0
 		for c in ch.cells:
-			m.set_instance_transform(k, Transform3D(Basis.IDENTITY, Vector3(c)))
+			m.set_instance_transform(k, Transform3D(Basis.IDENTITY, Vector3(c) + Blocks.mesh_offset(ch.id)))
 			k += 1
 	_vox_dirty.clear()
 
@@ -841,6 +849,10 @@ func remove_voxel(c: Vector3i) -> String:
 	if v.is_empty():
 		return ""
 	voxels.erase(c)
+	var area := Blocks.station_area(str(v.id))
+	if area != "" and stations.has(area):
+		stations[area].erase(c)
+		station_cells.erase(c)
 	_vox_mark(c, v.id, false)
 	if c.y <= 1:
 		var k := Vector2i(c.x, c.z)
@@ -874,6 +886,8 @@ func clear_voxels() -> void:
 		remove_voxel(c)
 	voxels.clear()
 	_low.clear()
+	stations.clear()
+	station_cells.clear()
 
 
 ## 存档用：[[x, y, z, 方块名, 耐久], …]
@@ -889,6 +903,41 @@ func voxel_load(list: Array) -> void:
 	for e in list:
 		if e is Array and e.size() >= 4 and Blocks.is_block(str(e[3])):
 			add_voxel(Vector3i(int(e[0]), int(e[1]), int(e[2])), str(e[3]), float(e[4]) if e.size() > 4 else -1.0)
+
+
+## 这一格是什么工作站；不是返回空串
+func station_area_at(cell: Vector3i) -> String:
+	return station_cells.get(cell, "")
+
+
+## p 附近 reach 米内有没有这种工作站
+func near_station(p: Vector3, area: String, reach := 3.0) -> bool:
+	for c in stations.get(area, []):
+		if _near_station_cell(p, c, reach):
+			return true
+	return false
+
+
+## 最近的工作站：{area, name, pos, dist}；没有返回 {}
+func nearest_station(p: Vector3, reach := 3.0) -> Dictionary:
+	var best := {}
+	var best_d := reach + 0.001
+	for area in stations:
+		for c in stations[area]:
+			if not _near_station_cell(p, c, reach):
+				continue
+			var at := Vector3(c) + Vector3(0.5, 0.5, 0.5)
+			var d := p.distance_to(at)
+			if d < best_d:
+				best_d = d
+				best = {"area": area, "name": Blocks.info(area).get("zh", area), "pos": at, "dist": d, "cell": c}
+	return best
+
+
+func _near_station_cell(p: Vector3, c: Vector3i, reach: float) -> bool:
+	if absf(p.y - float(c.y)) > 2.0:
+		return false
+	return Vector2(p.x - (float(c.x) + 0.5), p.z - (float(c.z) + 0.5)).length() <= reach
 
 
 ## 站在 p 时脚下最高的方块顶（没有就是地面 0）。只算比脚底高不了多少的方块，免得被吸到头顶上

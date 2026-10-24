@@ -39,8 +39,12 @@ func _run() -> void:
 	check_eq(_slots_of(inv, "testAmmo"), 2, "450 发占 2 格（叠 300）")
 	inv.add({"id": "testKnife", "count": 1, "quality": 3})
 	inv.add({"id": "testKnife", "count": 1, "quality": 5})
-	check_eq(_slots_of(inv, "testKnife"), 2, "刀不叠加")
+	inv.add({"id": "testKnife", "count": 1, "quality": 5})
+	check_eq(_slots_of(inv, "testKnife"), 3, "刀不叠加")
 	check_eq(int(inv.qualities.get("testKnife", 0)), 5, "汇总品质取最高")
+	inv.compact()
+	check_eq(_slots_of(inv, "testKnife"), 2, "整理后同品质只留一把")
+
 	check_eq(inv.remove("testAmmo", 200), 200, "扣 200 发")
 	check_eq(inv.count("testAmmo"), 250, "剩 250 发")
 	check(inv.has("testAmmo", 250) and not inv.has("testAmmo", 251), "has() 判断")

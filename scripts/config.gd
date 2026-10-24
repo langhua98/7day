@@ -41,6 +41,9 @@ const JUMP_SPEED := 5.2
 const LADDER_SPEED := 2.4
 ## 开关门：够得着的距离（米）
 const DOOR_REACH := 1.8
+const STATION_REACH := 3.0   # 离工作站多近才能用它的配方
+const CAMPFIRE_FUEL := "resourceWood"
+const COOK_TOOLS := ["toolCookingPot", "toolCookingGrill"]
 const PLAYER_EYE_HEIGHT := 1.65
 const LOOK_SENSITIVITY := 0.0045
 ## 第一人称手感：基础视野、冲刺拉宽、开镜 FOV、后坐力回弹、落地压头
@@ -216,7 +219,7 @@ const RECIPE_COST_MULT := 0.5
 const CRAFT_QUEUE_MAX := 4
 ## 需要学习（tags 带 learnable）的配方先全开；第 7 步改成 false，靠读书解锁
 const RECIPES_ALL_UNLOCKED := true
-## 测试模式：还没有工作站（4c）时，当作所有工作站都在旁边
+## 单独跑测试、没有当前场景时，当作所有工作站都在旁边
 const TEST_STATIONS_NEAR := true
 
 ## 地上零散物品的数量（主要的东西要翻容器找）
