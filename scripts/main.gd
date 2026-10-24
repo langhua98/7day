@@ -112,6 +112,15 @@ func _ready() -> void:
 		music.stop_all()
 		Sfx.stop_loops()
 		hud.show_start(true))
+	hud.back_to_title.connect(func():
+		running = false
+		GameState.running = false
+		combat.running = false
+		looting.running = false
+		crafting.running = false
+		music.stop_all()
+		Sfx.stop_loops()
+		hud.show_start(save_game.read_save().has("hours")))
 	hud.settings_changed.connect(_apply_settings)
 	_apply_settings(hud.settings)
 	hud.show_start(save.has("hours"))
