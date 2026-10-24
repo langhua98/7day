@@ -56,6 +56,8 @@ STATION_MODELS = {
     "cementMixer": ("cementMixerBody_LOD0.obj", "cementMixer.png"),
 }
 DEFAULT_ZOMBIES = ["soldier", "nurse", "cop", "biker", "lumberjack", "joe", "arlene", "screamer"]
+## 玩家方块形状：按形状名/ 下的官方 glb，运行时由 build_block_shapes.py 转成 JSON
+BLOCK_SHAPE_FILES = ("cube.glb", "cubeHalf.glb", "ramp.glb", "stairs.glb", "pole.glb", "plate.glb")
 # 游戏会用到的物品前缀（图标太多，只取这些，--all-icons 可以全取）
 GAME_PREFIXES = ("melee", "gun", "food", "drink", "medical", "resource", "ammo", "armor", "apparel", "thrown", "tool")
 
@@ -789,6 +791,13 @@ def fetch_full_buildings(dest):
         for i in picked:
             with zf.open(i) as src, open(os.path.join(sdir, os.path.basename(_zip_name(i))), "wb") as dst:
                 shutil.copyfileobj(src, dst)
+        # 玩家方块形状只要六个，顺手从“按形状名”目录取，build_block_shapes.py 用
+        for i in glbs:
+            name = _zip_name(i)
+            base = os.path.basename(name)
+            if base in BLOCK_SHAPE_FILES and "按形状名/" in name:
+                with zf.open(i) as src, open(os.path.join(sdir, base), "wb") as dst:
+                    shutil.copyfileobj(src, dst)
         print(f"形状模型: 压缩包里 {len(glbs)} 个 glb，按模型文件名的 {len(by_model)} 个，取了 {len(picked)} 个")
         if not picked:
             print("  shapes_by_name.zip 里没有 glb，楼只用远景网格。前几个文件：" +
@@ -803,6 +812,26 @@ def fetch_full_buildings(dest):
 # 云盘 entities_by_prefab.zip：每个预制体一个 glb（保留子节点层级，底色贴图嵌在里面），文件名就是预制体名。
 # 这里只取楼里用到的，tools/build_props.gd 再在 Godot 里把每个 glb 合成一个网格（assets/poiprops/*.res）
 PROPS_ZIP = "小橘素材库/entities_by_prefab.zip"
+
+
+def fetch_block_shapes(dest):
+    """六个官方方块形状 → assets/data/block_shapes.json。缺哪个就在 PR 里说明。"""
+    sdir = os.path.join(dest, "shapes")
+    os.makedirs(sdir, exist_ok=True)
+    missing = [f for f in BLOCK_SHAPE_FILES if not os.path.exists(os.path.join(sdir, f))]
+    if missing:
+        zf = open_remote_zip(f"{DRIVE_ROOT}/{SHAPES_ZIP}")
+        if zf is not None:
+            for i in zf.infolist():
+                name = _zip_name(i)
+                base = os.path.basename(name)
+                if base in missing and "按形状名/" in name:
+                    with zf.open(i) as src, open(os.path.join(sdir, base), "wb") as dst:
+                        shutil.copyfileobj(src, dst)
+        else:
+            print("云盘里没有 shapes_by_name.zip，形状先用程序几何")
+    tool = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build_block_shapes.py")
+    subprocess.run([sys.executable, tool, "--shapes", sdir, "--dest", dest], check=True)
 
 
 def _godot_rotations():
@@ -1315,7 +1344,7 @@ def main():
     ap.add_argument("--zombies", default=",".join(DEFAULT_ZOMBIES), help="逗号分隔的僵尸名，或 all")
     ap.add_argument("--music", type=int, default=6, help="每类音乐取几段")
     ap.add_argument("--all-icons", action="store_true", help="取全部图标（默认只取游戏会用到的）")
-    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,respawn,poi,full,props,stations,blocks,terrain,effects,music,sounds,sky,data")
+    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,respawn,poi,full,blockshapes,props,stations,blocks,terrain,effects,music,sounds,sky,data")
     args = ap.parse_args()
     skip = set(filter(None, args.skip.split(",")))
     dest = os.path.abspath(args.dest)
@@ -1339,6 +1368,8 @@ def main():
         fetch_poi(dest)
     if "full" not in skip:
         fetch_full_buildings(dest)
+    if "blockshapes" not in skip:
+        fetch_block_shapes(dest)
     if "props" not in skip:
         fetch_poi_props(dest)
     if "blocks" not in skip:

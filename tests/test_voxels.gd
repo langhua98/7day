@@ -67,6 +67,9 @@ func _test_save() -> void:
 
 
 func _test_chunks() -> void:
+	if FileAccess.file_exists("res://assets/data/block_shapes.json"):
+		for s in ["cube", "half", "ramp", "stairs", "pole", "plate"]:
+			check(Blocks.shape_triangles(s) > 0, "官方形状 %s 应加载" % s)
 	var w := World.new()
 	for x in 8:
 		for z in 8:
@@ -75,6 +78,18 @@ func _test_chunks() -> void:
 	w._flush_voxels()
 	check(w.voxel_draw_groups() <= 2, "8×8×2 方块应合成很少的区块（%d）" % w.voxel_draw_groups())
 	w.free()
+
+	var cube := World.new()
+	for x in 2:
+		for z in 2:
+			for y in 2:
+				cube.add_voxel(Vector3i(x, y, z), "woodShapes")
+	cube._flush_voxels()
+	var ch: Dictionary = cube._vox_chunks.values()[0]
+	var arr: Array = (ch.mi as MeshInstance3D).mesh.surface_get_arrays(0)
+	var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+	check_eq(verts.size(), 144, "2×2×2 整块应剔除内部面")
+	cube.free()
 
 	var big := World.new()
 	for x in 20:

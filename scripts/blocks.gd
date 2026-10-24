@@ -48,6 +48,28 @@ static var _layers_loaded := false
 static var _meshes := {}
 static var _station_materials := {}
 static var _icons := {}
+static var _shape_tris := {}
+static var _shape_loaded := false
+
+
+static func _load_shape_tris() -> void:
+	if _shape_loaded:
+		return
+	_shape_loaded = true
+	var path := "res://assets/data/block_shapes.json"
+	if not FileAccess.file_exists(path):
+		return
+	var json := JSON.new()
+	if json.parse(FileAccess.get_file_as_string(path)) != OK or not (json.data is Dictionary):
+		return
+	for k in json.data:
+		if json.data[k] is Array:
+			_shape_tris[str(k)] = json.data[k]
+
+
+static func shape_triangles(shape: String) -> int:
+	_load_shape_tris()
+	return (_shape_tris.get(shape, []) as Array).size()
 
 
 static func is_block(id: String) -> bool:
@@ -244,6 +266,31 @@ static func append_block(st: SurfaceTool, id: String, shape: String, rot: int, c
 	var at := _layer(id)
 	var uv2 := Vector2(float(at[0]), float(at[1])) if at.size() >= 2 else Vector2(-1, 1)
 	var col: Color = info(id).get("color", Color.GRAY)
+	_load_shape_tris()
+	var tris: Array = _shape_tris.get(shape, [])
+	if not tris.is_empty():
+		for tri in tris:
+			if not (tri is Array) or tri.size() < 3:
+				continue
+			var a := Vector3(float(tri[0][0]), float(tri[0][1]), float(tri[0][2]))
+			var b := Vector3(float(tri[1][0]), float(tri[1][1]), float(tri[1][2]))
+			var c := Vector3(float(tri[2][0]), float(tri[2][1]), float(tri[2][2]))
+			# load_glb 转换坐标后绕序反了，法线取反才是朝外
+			var n := (c - a).cross(b - a)
+			if n.length_squared() < 1e-12:
+				continue
+			n = n.normalized()
+			var rn := _rot_normal(n, rot)
+			if shape == "cube" and is_full.call(cell + Vector3i(roundi(rn.x), roundi(rn.y), roundi(rn.z))):
+				continue
+			var shade := 1.0 if rn.y > 0.5 else (0.7 if rn.y < -0.5 else 0.85)
+			for p in [a, b, c]:
+				st.set_normal(rn)
+				st.set_color(Color(col.r * shade, col.g * shade, col.b * shade))
+				st.set_uv(Vector2(p.x + p.z, p.y))
+				st.set_uv2(uv2)
+				st.add_vertex(_rot_point(p, rot) + Vector3(cell))
+		return
 	for f in _faces(shape):
 		var n: Vector3 = _rot_normal(f["n"], rot)
 		if shape == "cube" and is_full.call(cell + Vector3i(roundi(n.x), roundi(n.y), roundi(n.z))):
