@@ -662,8 +662,8 @@ func set_crouch(on: bool) -> void:
 	_crouch_btn.self_modulate = Color(1.0, 0.85, 0.4) if on else Color.WHITE
 
 
-func set_block_controls(shape_name: String, rot: int, on: bool) -> void:
-	_shape_btn.visible = on
+func set_block_controls(shape_name: String, rot: int, on: bool, can_cycle := true) -> void:
+	_shape_btn.visible = on and can_cycle
 	_rotate_btn.visible = on
 	if on:
 		_shape_btn.text = "形状\n" + shape_name

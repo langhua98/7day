@@ -41,6 +41,9 @@ const SHAPES := ["cube", "half", "ramp", "stairs", "pole", "plate"]
 const SHAPE_NAMES := {
 	"cube": "整块", "half": "半块", "ramp": "斜坡", "stairs": "楼梯", "pole": "柱子", "plate": "板",
 }
+## 只有这些建筑材料有六种形状；工作站/睡袋/箱子没有
+const BUILD_BASES := ["frameShapes", "woodShapes", "cobblestoneShapes", "flagstoneShapes",
+	"concreteShapes", "steelShapes"]
 
 static var _mat: ShaderMaterial
 static var _layers := {}     # 方块名 -> [图集层号, 占几格]
@@ -74,6 +77,57 @@ static func shape_triangles(shape: String) -> int:
 
 static func is_block(id: String) -> bool:
 	return not info(id).is_empty()
+
+
+static func _is_base(id: String) -> bool:
+	for t in TYPES:
+		if t[0] == id:
+			return true
+	return false
+
+
+static func variant_id(base: String, shape: String) -> String:
+	return base if shape == "cube" else base + "_" + shape
+
+
+static func base_of(id: String) -> String:
+	for s in SHAPES:
+		if s == "cube":
+			continue
+		var suffix: String = "_" + str(s)
+		if id.ends_with(suffix):
+			var base: String = id.substr(0, id.length() - suffix.length())
+			if BUILD_BASES.has(base):
+				return base
+	return id
+
+
+static func shape_of(id: String) -> String:
+	for s in SHAPES:
+		var suffix: String = "_" + str(s)
+		if s != "cube" and id.ends_with(suffix) and BUILD_BASES.has(base_of(id)):
+			return str(s)
+	return "cube"
+
+
+static func is_variant(id: String) -> bool:
+	return shape_of(id) != "cube"
+
+
+static func variant_ids() -> Array[String]:
+	var out: Array[String] = []
+	for base in BUILD_BASES:
+		for s in SHAPES:
+			if s != "cube":
+				out.append(variant_id(str(base), str(s)))
+	return out
+
+
+static func _base_info(base_id: String) -> Dictionary:
+	for t in TYPES:
+		if t[0] == base_id:
+			return {"id": t[0], "zh": t[1], "en": t[2], "hp": t[3], "color": t[4]}
+	return {}
 
 
 static func shape_name(shape: String) -> String:
@@ -113,15 +167,24 @@ static func top_height(shape: String, rot: int, local: Vector3) -> float:
 
 
 static func info(id: String) -> Dictionary:
-	for t in TYPES:
-		if t[0] == id:
-			return {"id": t[0], "zh": t[1], "en": t[2], "hp": t[3], "color": t[4]}
-	return {}
+	var base := base_of(id)
+	var row := _base_info(base)
+	if row.is_empty():
+		return {}
+	var shape := shape_of(id)
+	if shape == "cube":
+		return row
+	var out := row.duplicate()
+	out["id"] = id
+	out["base"] = base
+	out["shape"] = shape
+	out["zh"] = str(row.zh) + " · " + shape_name(shape)
+	return out
 
 
 ## 这个方块是不是工作站；是就返回配方用的 area，不是返回空串
 static func station_area(id: String) -> String:
-	return STATION_AREAS.get(id, "")
+	return STATION_AREAS.get(base_of(id), "")
 
 
 ## 楼和方块共用一个材质（同一份图集，手机上省显存）
@@ -312,7 +375,7 @@ static func mesh(id: String, shape := "cube", rot := 0) -> Mesh:
 	var key := "%s|%s|%d" % [id, shape, rot]
 	if _meshes.has(key):
 		return _meshes[key]
-	if STATION_MODELS.has(id):
+	if STATION_MODELS.has(base_of(id)):
 		var sm := _station_mesh(id)
 		if sm != null:
 			_meshes[key] = sm
@@ -338,7 +401,7 @@ static func icon(id: String) -> Texture2D:
 	if _icons.has(id):
 		return _icons[id]
 	var tex: Texture2D = null
-	var path := "%s/block_%s.png" % [DIR, id]
+	var path := "%s/block_%s.png" % [DIR, base_of(id)]
 	if ResourceLoader.exists(path):
 		tex = load(path)
 	if tex == null:

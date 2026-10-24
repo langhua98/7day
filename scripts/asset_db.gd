@@ -180,6 +180,20 @@ func _add_blocks() -> void:
 		row.model = ""
 		row.kind = Kind.BLOCK
 		row.power = 0.0
+	# 六种形状也各占一个背包物品，方便直接拿在手上摆
+	for vid in Blocks.variant_ids():
+		var info := Blocks.info(vid)
+		var row: Dictionary = items_by_id.get(vid, {})
+		if row.is_empty():
+			row = {"id": vid, "zh": info.zh, "en": "", "model": "",
+				"icon": _icon_files.get(Blocks.base_of(vid).to_lower(), "")}
+			items.append(row)
+			items_by_id[vid] = row
+		else:
+			row.zh = info.zh
+		row.model = ""
+		row.kind = Kind.BLOCK
+		row.power = 0.0
 
 
 ## 把各种可能的写法统一成 {id, zh, en, model}。主要格式是 [物品名, 中文名, 英文名, 模型名]。

@@ -67,6 +67,8 @@ func on_equip() -> void:
 
 
 func cycle_block_shape() -> void:
+	if not _can_change_shape():
+		return
 	block_shape = Blocks.next_shape(block_shape)
 	_refresh_block_hud()
 	_update_ghost()
@@ -78,10 +80,27 @@ func rotate_block() -> void:
 	_update_ghost()
 
 
+func _placement_base() -> String:
+	return Blocks.base_of(inventory.equipped)
+
+
+func _placement_shape() -> String:
+	var base := _placement_base()
+	if not Blocks.BUILD_BASES.has(base):
+		return "cube"
+	var shape := Blocks.shape_of(inventory.equipped)
+	return block_shape if shape == "cube" else shape
+
+
+func _can_change_shape() -> bool:
+	return Blocks.BUILD_BASES.has(_placement_base()) and not Blocks.is_variant(inventory.equipped)
+
+
 func _refresh_block_hud() -> void:
 	var row: Dictionary = Assets.items_by_id.get(inventory.equipped, {})
-	var on: bool = row.get("kind", -1) == Assets.Kind.BLOCK and Blocks.is_block(inventory.equipped)
-	hud.set_block_controls(Blocks.shape_name(block_shape), block_rot, on)
+	var base := _placement_base()
+	var on: bool = row.get("kind", -1) == Assets.Kind.BLOCK and Blocks.BUILD_BASES.has(base)
+	hud.set_block_controls(Blocks.shape_name(_placement_shape()), block_rot, on, _can_change_shape())
 
 
 func update(delta: float) -> void:
@@ -189,7 +208,7 @@ func _update_ghost() -> void:
 			_ghost.mesh = _ghost_box
 			_ghost.position = Vector3(c) + Vector3.ONE * 0.5
 		else:
-			_ghost.mesh = Blocks.mesh(id, block_shape, block_rot)
+			_ghost.mesh = Blocks.mesh(id, _placement_shape(), block_rot)
 			_ghost.position = Vector3(c)
 
 
@@ -208,7 +227,7 @@ func _place_block() -> void:
 			inventory.remove(inventory.equipped)
 			inventory.refresh()
 		return
-	if not world.add_voxel(c, inventory.equipped, -1.0, block_shape, block_rot):
+	if not world.add_voxel(c, _placement_base(), -1.0, _placement_shape(), block_rot):
 		hud.toast("方块到上限了（%d 块）" % GameConfig.BLOCK_LIMIT)
 		return
 	GameState.block_changed.emit(c)
