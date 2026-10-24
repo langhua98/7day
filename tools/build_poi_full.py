@@ -254,9 +254,7 @@ class Shapes:
                     slot, cullable, middle = parse_group(name)
                     if slot is not None and tris:
                         groups.append((slot, cullable, tris))
-                full = {sl for sl, c, _ in groups if c and sl < 6}
-                g = {"groups": groups, "full": len(full) == 6 and all(
-                    nm.split(".")[0].endswith("_F") for nm, _ in []) or self._is_cube(groups)}
+                g = {"groups": groups, "full": self._is_cube(groups)}
             self.geo[key] = g
         return self.geo[key]
 
@@ -973,6 +971,9 @@ def run(assets, only=()):
     need = ["blocks.xml", "shapes.xml", "painting.xml", "ta_opaque.xml"]
     if not all(os.path.exists(os.path.join(bdir, f)) for f in need) or not os.path.isdir(os.path.join(assets, "shapes")):
         print("完整的楼: 缺 assets/blocks/" + "、".join(need) + " 或 assets/shapes/，跳过")
+        return set()
+    if not os.path.isdir(poi_dir):
+        print("完整的楼: 没有 assets/poi/，跳过")
         return set()
     names = sorted(f[:-4] for f in os.listdir(poi_dir) if f.endswith(".tts"))
     if only:

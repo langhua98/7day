@@ -302,6 +302,8 @@ func set_door(i: int, open: bool) -> void:
 ## 开着时绕门轴那头转 90 度贴着门框立着。门模型也按这个摆（先缩放成单位立方体）
 func door_transform(i: int) -> Transform3D:
 	var d: Dictionary = doors[i]
+	if d.get("hatch", false):
+		return _hatch_transform(d)
 	var h: float = d.y1 - d.y0 + 1 - 0.04
 	var y: float = d.y0 + 0.02 + h * 0.5
 	var c: Vector3
@@ -324,6 +326,19 @@ func door_transform(i: int) -> Transform3D:
 			c = Vector3(xc, y, d.z0 + w * 0.5)
 			yaw = PI / 2
 	return Transform3D(Basis(Vector3.UP, yaw) * Basis.from_scale(Vector3(w, h, DOOR_T)), to_local(c))
+
+
+func _hatch_transform(d: Dictionary) -> Transform3D:
+	var w: float = d.x1 - d.x0 + 1
+	var depth: float = d.z1 - d.z0 + 1
+	var y: float = d.y0 + 0.02 + DOOR_T * 0.5
+	if not d.open:
+		var c := Vector3(d.x0 + w * 0.5, y, d.z0 + depth * 0.5)
+		return Transform3D(Basis.from_scale(Vector3(w, DOOR_T, depth)), to_local(c))
+	var hinge := Vector3(d.x0 + w * 0.5, y, d.z0)
+	var turn := Basis(Vector3.RIGHT, -PI * 0.45)
+	var rot := turn * Basis.from_scale(Vector3(w, DOOR_T, depth))
+	return Transform3D(rot, to_local(hinge + turn * Vector3(0, 0, depth * 0.5)))
 
 
 ## 门所在的世界格子（开关门后重算街面占地图用）

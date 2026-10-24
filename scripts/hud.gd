@@ -597,6 +597,7 @@ func set_paused(on: bool) -> void:
 
 func show_start(can_continue: bool) -> void:
 	_release_touches()
+	close_game_panels()
 	_continue_btn.visible = can_continue
 	_start_panel.visible = true
 	_end_panel.visible = false
@@ -636,8 +637,15 @@ func set_start_info(text: String) -> void:
 
 func show_end(text: String) -> void:
 	_release_touches()
+	close_game_panels()
 	_end_label.text = text
 	_end_panel.visible = true
+
+
+func close_game_panels() -> void:
+	_bag_panel.visible = false
+	craft_panel.visible = false
+	container_panel.close_panel()
 
 
 ## 蹲着时按钮高亮
@@ -966,7 +974,8 @@ func consume_look() -> Vector2:
 
 
 func _panel_open() -> bool:
-	return _bag_panel.visible or container_panel.visible or craft_panel.visible or _start_panel.visible or _end_panel.visible or _pause_panel.visible
+	return _bag_panel.visible or container_panel.visible or craft_panel.visible or _start_panel.visible \
+		or _end_panel.visible or _pause_panel.visible or _blackout.visible
 
 
 func _press_attack(pressed: bool) -> void:
@@ -1007,6 +1016,10 @@ func _notification(what: int) -> void:
 func _in_game() -> bool:
 	return is_inside_tree() and not _start_panel.visible and not _end_panel.visible \
 		and not _pause_panel.visible and not get_tree().paused
+
+
+func release_touches() -> void:
+	_release_touches()
 
 
 func _release_touches() -> void:
@@ -1113,6 +1126,8 @@ func _input(event: InputEvent) -> void:
 		else:
 			_touch_up(event.index)
 	elif event is InputEventScreenDrag:
+		if _panel_open():
+			return
 		if event.index == _joy_id:
 			var d: Vector2 = event.position - _joy_origin
 			if d.length() > JOY_RADIUS:

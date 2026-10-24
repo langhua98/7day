@@ -97,20 +97,20 @@ func sees(body: Node3D, target: Node3D, world: World) -> bool:
 	var to := target.global_position - body.global_position
 	to.y = 0.0
 	var dist := to.length()
-	if dist <= C.ZOMBIE_SENSE_TOUCH and not GameState.player_crouching:
-		return true
-	var range_m := C.ZOMBIE_SIGHT_NIGHT if GameState.is_night() else C.ZOMBIE_SIGHT_DAY
-	if GameState.player_crouching:
-		range_m *= C.ZOMBIE_SIGHT_CROUCH_MULT
-	if dist > range_m:
-		return false
-	# 身体的正面是 +Z（body.rotation.y = atan2(dir.x, dir.z)）
-	var fwd := body.global_basis.z
-	fwd.y = 0.0
-	if dist > 0.01 and fwd.length() > 0.01:
-		var cos_half := cos(deg_to_rad(C.ZOMBIE_SIGHT_FOV * 0.5))
-		if fwd.normalized().dot(to / dist) < cos_half:
+	var touch := dist <= C.ZOMBIE_SENSE_TOUCH and not GameState.player_crouching
+	if not touch:
+		var range_m := C.ZOMBIE_SIGHT_NIGHT if GameState.is_night() else C.ZOMBIE_SIGHT_DAY
+		if GameState.player_crouching:
+			range_m *= C.ZOMBIE_SIGHT_CROUCH_MULT
+		if dist > range_m:
 			return false
+		# 身体的正面是 +Z（body.rotation.y = atan2(dir.x, dir.z)）
+		var fwd := body.global_basis.z
+		fwd.y = 0.0
+		if dist > 0.01 and fwd.length() > 0.01:
+			var cos_half := cos(deg_to_rad(C.ZOMBIE_SIGHT_FOV * 0.5))
+			if fwd.normalized().dot(to / dist) < cos_half:
+				return false
 	if world:
 		var eye_h := 1.0 if GameState.player_crouching else 1.6
 		if world.line_blocked(body.global_position + Vector3.UP * 1.6, target.global_position + Vector3.UP * eye_h):

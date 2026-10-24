@@ -70,8 +70,8 @@ func update(delta: float, day: int, night: bool, horde: bool) -> void:
 		# 离太远的僵尸回收掉，在身边重新刷
 		if z.distance_to_target() > C.ZOMBIE_DESPAWN:
 			z.queue_free()
-		elif night or horde:
-			z.speed = max(z.speed, (C.ZOMBIE_HORDE_SPEED if horde else C.ZOMBIE_NIGHT_SPEED) * 0.9)
+		else:
+			z.speed = speed_for(z.base_speed, night, horde)
 	_sense_round()
 	# 血月僵尸由 Horde 负责；普通刷新按游戏阶段
 	var target := 0
@@ -98,14 +98,23 @@ func spawn_zombie(day: int, night: bool, horde: bool, near := Vector3.INF) -> Zo
 	return spawn_zombie_at(model, day, night, horde, at)
 
 
+static func speed_for(base: float, night: bool, horde: bool) -> float:
+	var mult := 1.0
+	if horde:
+		mult = C.ZOMBIE_HORDE_SPEED / C.ZOMBIE_WALK_SPEED
+	elif night:
+		mult = C.ZOMBIE_NIGHT_SPEED / C.ZOMBIE_WALK_SPEED
+	return base * mult
+
+
 func pick_model(group: String) -> String:
 	var entries = Data.get_table("entitygroups").get(group, [])
 	var models: Array[String] = []
 	var weights: Array[float] = []
 	for e in entries:
-		var id: String = e.get("id", "")
-		if id != "" and Assets.zombie_models.has(id):
-			models.append(id)
+		var key := Assets.zombie_key(str(e.get("id", "")))
+		if key != "":
+			models.append(key)
 			weights.append(maxf(0.01, float(e.get("p", 1.0))))
 	if models.is_empty():
 		return Assets.zombie_models[rng.randi_range(0, Assets.zombie_models.size() - 1)]
@@ -122,10 +131,10 @@ func pick_model(group: String) -> String:
 
 func spawn_zombie_at(model: String, day: int, night: bool, horde: bool, at: Vector3) -> Zombie:
 	var z := Zombie.new()
-	var spd := C.ZOMBIE_HORDE_SPEED if horde else (C.ZOMBIE_NIGHT_SPEED if night else C.ZOMBIE_WALK_SPEED)
-	if not z.setup(model, C.ZOMBIE_BASE_HP + C.ZOMBIE_HP_PER_DAY * (day - 1), spd, player_sys.player):
+	if not z.setup(model, C.ZOMBIE_BASE_HP + C.ZOMBIE_HP_PER_DAY * (day - 1), C.ZOMBIE_WALK_SPEED, player_sys.player):
 		z.free()
 		return null
+	z.speed = speed_for(z.base_speed, night, horde)
 	z.world = world
 	z.position = at
 	z.died.connect(_on_zombie_died)

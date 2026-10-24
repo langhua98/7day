@@ -511,9 +511,12 @@ def _request_json(path: str, query=None) -> dict:
 
 
 def download_data_zip(cache: Path) -> Path:
-    if cache.exists() and cache.stat().st_size > 0:
+    if cache.exists() and zipfile.is_zipfile(cache):
         print(f"配置文件: 用缓存 {cache}")
         return cache
+    if cache.exists():
+        print(f"配置文件: 缓存损坏，重新下载 {cache}")
+        cache.unlink()
     data = _request_json("/items", {"path": DRIVE_FOLDER})
     children = data.get("children", data.get("items", []))
     item = next((i for i in children if i.get("name") == ZIP_NAME), None)
@@ -526,12 +529,20 @@ def download_data_zip(cache: Path) -> Path:
         headers={"Authorization": "Bearer " + token},
     )
     print(f"配置文件: 下载 {ZIP_NAME}（{item.get('size', 0) / 1e6:.1f}MB）")
-    with urllib.request.urlopen(req, timeout=300) as r, open(cache, "wb") as f:
-        while True:
-            chunk = r.read(1 << 20)
-            if not chunk:
-                break
-            f.write(chunk)
+    tmp = cache.with_name(cache.name + ".part")
+    try:
+        with urllib.request.urlopen(req, timeout=300) as r, open(tmp, "wb") as f:
+            while True:
+                chunk = r.read(1 << 20)
+                if not chunk:
+                    break
+                f.write(chunk)
+        if not zipfile.is_zipfile(tmp):
+            raise RuntimeError(f"{ZIP_NAME} 下载不完整")
+        os.replace(tmp, cache)
+    finally:
+        if tmp.exists():
+            tmp.unlink()
     return cache
 
 

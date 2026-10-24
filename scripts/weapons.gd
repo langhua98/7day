@@ -101,14 +101,14 @@ static func ammo_mods(ammo_id: String) -> Dictionary:
 		return {"label": "独头", "entity": 1.5, "block": 0.8}
 	if "BulletHP" in ammo_id or ammo_id.ends_with("HP"):
 		return {"label": "HP", "entity": 1.25, "block": 0.8}
+	if "SteelAP" in ammo_id:
+		return {"label": "钢AP", "entity": 1.0, "block": 2.0}
 	if "BulletAP" in ammo_id or ammo_id.ends_with("AP"):
 		return {"label": "AP", "entity": 0.9, "block": 2.0}
 	if "Flaming" in ammo_id:
 		return {"label": "燃烧", "entity": 1.1, "block": 1.0}
 	if "Exploding" in ammo_id:
 		return {"label": "爆炸", "entity": 1.0, "block": 1.5}
-	if "SteelAP" in ammo_id:
-		return {"label": "钢AP", "entity": 1.0, "block": 2.0}
 	if "Iron" in ammo_id:
 		return {"label": "铁", "entity": 1.2, "block": 1.0}
 	return {"label": "普通", "entity": 1.0, "block": 1.0}

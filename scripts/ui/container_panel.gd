@@ -84,6 +84,7 @@ func take(i: int) -> void:
 		items[i] = {}
 	Sfx.play("loot", Vector3.INF, -10.0)
 	inventory.refresh()
+	_rebuild()
 
 
 ## 背包第 i 格 → 容器
@@ -101,6 +102,7 @@ func put(i: int) -> void:
 		return
 	items[free] = s
 	inventory.refresh()
+	_rebuild()
 
 
 func take_all() -> void:

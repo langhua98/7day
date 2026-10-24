@@ -136,9 +136,9 @@ func _build_pool(stage: Dictionary) -> Array:
 	for s in stage.get("spawns", []):
 		var entries = groups.get(s.get("group", ""), [])
 		for e in entries:
-			var id: String = e.get("id", "")
-			if id != "" and Assets.zombie_models.has(id):
-				pool.append({"id": id, "p": maxf(0.01, float(e.get("p", 1.0)))})
+			var key := Assets.zombie_key(str(e.get("id", "")))
+			if key != "":
+				pool.append({"id": key, "p": maxf(0.01, float(e.get("p", 1.0)))})
 	return pool
 
 

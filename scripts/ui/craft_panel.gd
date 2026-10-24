@@ -236,7 +236,7 @@ func _refresh() -> void:
 		var r := crafting.recipe(key)
 		var b := BagPanel.make_slot({"id": r.id, "count": int(r.get("count", 1)), "quality": 0}, SLOT, key == _sel)
 		b.tooltip_text = str(r.zh)
-		b.modulate = Color.WHITE if crafting.can_craft(key) else Color(0.45, 0.45, 0.45)
+		b.modulate = Color.WHITE if crafting.can_craft(key, 1, _station) else Color(0.45, 0.45, 0.45)
 		b.set_meta("recipe", key)
 		if b.icon == null:
 			# 没图标的物品显示名字

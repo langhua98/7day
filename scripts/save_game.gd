@@ -3,6 +3,7 @@ extends RefCounted
 ## 集中存档：每 30 秒、切后台、回标题、开局时保存；读档时恢复各系统。
 
 const SAVE_PATH := "user://save.json"
+const BACKUP_PATH := "user://save.bak"
 
 var main: Node3D
 var world: World
@@ -35,11 +36,25 @@ func setup(parent: Node3D, world_ref: World, player_ref: PlayerSystem, inv_ref: 
 	time_sys = time_ref
 
 
-static func read_save() -> Dictionary:
-	if not FileAccess.file_exists(SAVE_PATH):
+static func read_file(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
 		return {}
-	var d = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
+	var json := JSON.new()
+	if json.parse(FileAccess.get_file_as_string(path)) != OK:
+		return {}
+	var d = json.data
 	return d if d is Dictionary else {}
+
+
+static func read_save_from(path: String, backup_path: String) -> Dictionary:
+	var d := read_file(path)
+	if not d.is_empty():
+		return d
+	return read_file(backup_path)
+
+
+static func read_save() -> Dictionary:
+	return read_save_from(SAVE_PATH, BACKUP_PATH)
 
 
 func reset_timer() -> void:
@@ -75,7 +90,7 @@ func save(background := false) -> void:
 	d.merge(main.looting.save_data())
 	d.merge(main.respawn.save_data())
 	d.merge(main.crafting.save_data())
-	d["kills"] = spawner.kills
+	d.merge(spawner.save_data())
 	wait_pending()
 	if background:
 		# 深拷贝一份：后台转文字时游戏还在改背包等数据
@@ -91,17 +106,58 @@ func wait_pending() -> void:
 		_write_task = -1
 
 
+static func write_to(path: String, backup_path: String, d: Dictionary) -> bool:
+	var tmp := path + ".tmp"
+	var f := FileAccess.open(tmp, FileAccess.WRITE)
+	if f == null:
+		return false
+	f.store_string(JSON.stringify(d))
+	f.flush()
+	var write_err := f.get_error()
+	f.close()
+	if write_err != OK:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(tmp))
+		return false
+	if FileAccess.file_exists(path) and backup_path != "":
+		_copy_file(path, backup_path)
+	var dir := DirAccess.open(path.get_base_dir())
+	if dir == null:
+		return false
+	if FileAccess.file_exists(path):
+		dir.remove(path.get_file())
+	var err := dir.rename(tmp.get_file(), path.get_file())
+	if err != OK:
+		if FileAccess.file_exists(tmp):
+			dir.remove(tmp.get_file())
+		if backup_path != "" and FileAccess.file_exists(backup_path):
+			_copy_file(backup_path, path)
+		return false
+	return true
+
+
+static func _copy_file(from: String, to: String) -> bool:
+	if not FileAccess.file_exists(from):
+		return false
+	var data := FileAccess.get_file_as_bytes(from)
+	var f := FileAccess.open(to, FileAccess.WRITE)
+	if f == null:
+		return false
+	f.store_buffer(data)
+	f.flush()
+	var err := f.get_error()
+	f.close()
+	return err == OK
+
+
 static func _write(d: Dictionary) -> void:
-	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if f:
-		f.store_string(JSON.stringify(d))
-		f.close()
+	write_to(SAVE_PATH, BACKUP_PATH, d)
 
 
 func delete_save() -> void:
 	wait_pending()
-	if FileAccess.file_exists(SAVE_PATH):
-		DirAccess.remove_absolute(SAVE_PATH)
+	for p in [SAVE_PATH, BACKUP_PATH, SAVE_PATH + ".tmp"]:
+		if FileAccess.file_exists(p):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(p))
 
 
 func continue_game() -> void:

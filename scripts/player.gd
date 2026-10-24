@@ -64,6 +64,8 @@ func reset() -> void:
 	crouching = false
 	_crouch_h = 0.0
 	GameState.player_crouching = false
+	if hud:
+		hud.set_crouch(false)
 	player.rotation.y = 0.0
 	camera.rotation.x = 0.0
 	camera.position.y = C.PLAYER_EYE_HEIGHT

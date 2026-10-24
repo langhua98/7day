@@ -10,6 +10,7 @@ signal screamed(zombie: Zombie)
 var hp := 60.0
 var max_hp := 60.0
 var speed := 1.0
+var base_speed := 1.0
 var damage := GameConfig.ZOMBIE_DAMAGE
 var type := ""
 var type_name := "僵尸"
@@ -84,6 +85,7 @@ func setup(model_name: String, hp_value: float, speed_value: float, player: Node
 	hp = hp_value * t.get("hp", 1.0)
 	max_hp = hp
 	speed = speed_value * t.get("speed", 1.0) * _rng.randf_range(0.85, 1.15)
+	base_speed = speed
 	damage = GameConfig.ZOMBIE_DAMAGE * t.get("damage", 1.0)
 	_fall_dir = -1.0 if _rng.randf() < 0.6 else 1.0
 	target = player

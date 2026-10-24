@@ -7,12 +7,17 @@ const C = preload("res://scripts/config.gd")
 var failures: Array[String] = []
 var _save_existed := false
 var _save_data := PackedByteArray()
+var _bak_existed := false
+var _bak_data := PackedByteArray()
 
 
 func _ready() -> void:
 	if FileAccess.file_exists("user://save.json"):
 		_save_existed = true
 		_save_data = FileAccess.get_file_as_bytes("user://save.json")
+	if FileAccess.file_exists("user://save.bak"):
+		_bak_existed = true
+		_bak_data = FileAccess.get_file_as_bytes("user://save.bak")
 	_run.call_deferred()
 	get_tree().create_timer(90.0).timeout.connect(func():
 		push_error("test_workstations 超时")
@@ -83,15 +88,36 @@ func _run() -> void:
 	check_eq(cr.station_state(fire).fuel, 0, "煮完消耗燃料")
 
 	# 使用面板只显示篝火，并显示燃料/工具
+	inv.add("tWater", 1)
+	check(cr.add_fuel(fire, 1), "面板打开前补燃料")
 	main.hud.craft_panel.open("campfire", fire)
 	check(main.hud.craft_panel.visible, "打开篝火面板")
 	check_eq(main.hud.craft_panel._station, fire, "面板记住篝火位置")
 	check(main.hud.craft_panel._title.text.contains("篝火"), "标题是篝火")
 	check(main.hud.craft_panel._fuel_btn.visible, "显示燃料按钮")
-	check(main.hud.craft_panel._tool_btn.text.contains("锅"), "显示锅具按钮")
+	check(main.hud.craft_panel._tool_btn.text.contains("tPot"), "显示锅具按钮")
+	var boiled_btn: Button = null
+	for b in main.hud.craft_panel._grid.get_children():
+		if b.get_meta("recipe", "") == "tBoiled":
+			boiled_btn = b
+	check(boiled_btn != null and boiled_btn.modulate == Color.WHITE, "工作站配方图标不应变灰")
 	main.hud.craft_panel.visible = false
 
+	# 拆掉工作站：队列材料、燃料、锅都要退回
+	inv.add("tWater", 1)
+	inv.add("resourceWood", 2)
+	check(cr.add_fuel(fire, 1), "拆站前补燃料")
+	check(cr.craft("tBoiled", 1, fire), "拆站前排队")
+	var water_before := inv.count("tWater")
+	var wood_before := inv.count("resourceWood")
+	var pot_before := inv.count("tPot")
+	var fuel_left := int(cr.station_state(fire).get("fuel", 0))
 	main.world.remove_voxel(fire)
+	cr._process(0.01)
+	check_eq(inv.count("tWater"), water_before + 1, "拆站退还材料")
+	check_eq(inv.count("resourceWood"), wood_before + fuel_left, "拆站退还燃料")
+	check_eq(inv.count("tPot"), pot_before + 1, "拆站退还锅具")
+
 	main.world.remove_voxel(bench)
 	await get_tree().process_frame
 	main.running = false
@@ -118,6 +144,12 @@ func _finish() -> void:
 		f.close()
 	elif FileAccess.file_exists("user://save.json"):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://save.json"))
+	if _bak_existed:
+		var b := FileAccess.open("user://save.bak", FileAccess.WRITE)
+		b.store_buffer(_bak_data)
+		b.close()
+	elif FileAccess.file_exists("user://save.bak"):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://save.bak"))
 	if failures.is_empty():
 		print("PASS test_workstations")
 		get_tree().quit(0)

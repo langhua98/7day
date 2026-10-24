@@ -94,11 +94,11 @@ func _ready() -> void:
 
 
 func _build() -> void:
+	add_child(_weapon_mount)
+	_weapon_mount.position = RIGHT_HAND
 	var path := "res://assets/models/fp_arms.glb"
 	if not ResourceLoader.exists(path):
 		push_warning("没找到 assets/models/fp_arms.glb，只显示武器")
-		add_child(_weapon_mount)
-		_weapon_mount.position = RIGHT_HAND
 		return
 	var scene: PackedScene = load(path)
 	var inst := scene.instantiate()
@@ -133,7 +133,6 @@ func _build() -> void:
 		var f := _rest_pos(side + "ForeArm")
 		var h := _rest_pos(side + "Hand")
 		_rest_len[side] = [a.distance_to(f), f.distance_to(h)]
-	add_child(_weapon_mount)
 	for m in inst.find_children("*", "MeshInstance3D", true, false):
 		(m as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_update_pose(0.0)
@@ -242,6 +241,8 @@ func _wrap_thumb(side: String, amount: float) -> void:
 	for n in names:
 		if not _bones.has(n):
 			return
+	if not _bones.has(side + "HandMiddle2"):
+		return
 	var hb: int = _bones[side + "Hand"]
 	var hand_rest := _skel.get_bone_global_rest(hb)
 	var o := hand_rest.origin

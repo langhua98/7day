@@ -8,12 +8,17 @@ var failures: Array[String] = []
 var crafted := []
 var _save_existed := false
 var _save_data := PackedByteArray()
+var _bak_existed := false
+var _bak_data := PackedByteArray()
 
 
 func _ready() -> void:
 	if FileAccess.file_exists("user://save.json"):
 		_save_existed = true
 		_save_data = FileAccess.get_file_as_bytes("user://save.json")
+	if FileAccess.file_exists("user://save.bak"):
+		_bak_existed = true
+		_bak_data = FileAccess.get_file_as_bytes("user://save.bak")
 	_run.call_deferred()
 	get_tree().create_timer(90.0).timeout.connect(func():
 		push_error("test_craft 超时")
@@ -189,6 +194,12 @@ func _finish() -> void:
 		f.close()
 	elif FileAccess.file_exists("user://save.json"):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://save.json"))
+	if _bak_existed:
+		var b := FileAccess.open("user://save.bak", FileAccess.WRITE)
+		b.store_buffer(_bak_data)
+		b.close()
+	elif FileAccess.file_exists("user://save.bak"):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://save.bak"))
 	if failures.is_empty():
 		print("PASS test_craft")
 		get_tree().quit(0)

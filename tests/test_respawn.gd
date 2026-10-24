@@ -8,12 +8,17 @@ const C = preload("res://scripts/config.gd")
 var failures: Array[String] = []
 var _save_existed := false
 var _save_data := PackedByteArray()
+var _bak_existed := false
+var _bak_data := PackedByteArray()
 
 
 func _ready() -> void:
 	if FileAccess.file_exists("user://save.json"):
 		_save_existed = true
 		_save_data = FileAccess.get_file_as_bytes("user://save.json")
+	if FileAccess.file_exists("user://save.bak"):
+		_bak_existed = true
+		_bak_data = FileAccess.get_file_as_bytes("user://save.bak")
 	_run.call_deferred()
 	get_tree().create_timer(90.0).timeout.connect(func():
 		push_error("test_respawn 超时")
@@ -62,17 +67,30 @@ func _run() -> void:
 	# 第一次死：在 (3, 0, 4)
 	p.player.position = Vector3(3, 0, 4)
 	p.hp = 0.0
+	main.spawner.heat.add(Vector3(3, 0, 4), 3.0)
+	main.hud.open_bag()
+	main.hud.craft_panel.visible = true
+	main.hud.container_panel.visible = true
 	main._die()
 	check(rs.dying, "死后在黑屏中")
 	check(not main.running, "黑屏时游戏停住")
+	check(not main.crafting.running, "死亡后合成停止")
+	check(not main.hud._bag_panel.visible and not main.hud.craft_panel.visible \
+		and not main.hud.container_panel.visible, "死亡后游戏面板应关闭")
 	check_eq(inv.used_slots(), 0, "死后背包清空")
 	check_eq(inv.equipped, "", "手上的也放进尸体背包")
 	check_eq(lt.corpse_bags.size(), 1, "一个尸体背包")
 	check_eq(GameState.days_alive(), alive_before - C.DAYS_ALIVE_LOST_ON_DEATH, "存活天数 −2")
 	check(GameState.gamestage() < stage_before, "游戏阶段跟着降")
+	var died_save := SaveGame.read_save()
+	check(died_save.has("hours"), "死亡后应立即存档")
+	check(float(died_save.get("hp", 0.0)) > 0.0, "死亡存档不能停在 hp<=0")
+	check_eq(died_save.get("corpse_bags", []).size(), 1, "死亡存档包含尸体背包")
+	check(not died_save.get("heat", {}).is_empty(), "死亡存档包含热量")
 	await get_tree().create_timer(C.DEATH_BLACKOUT + 0.3).timeout
 	check(not rs.dying, "2 秒后醒来")
 	check(main.running, "醒来后游戏继续")
+	check(main.crafting.running, "复活后合成恢复")
 	check(Vector2(p.player.position.x, p.player.position.z).distance_to(Vector2(20.5, -6.5)) < 1.0, "在睡袋醒来")
 	check_close(p.hp, C.MAX_HP * 0.5, 0.01, "血 50%")
 	check_close(p.food, C.MAX_FOOD * 0.5, 0.5, "饱食 50%")
@@ -80,6 +98,7 @@ func _run() -> void:
 	check(Status.has("near_death_trauma"), "濒死创伤")
 	check_close(Status.remaining("near_death_trauma"), 24.0, 0.01, "濒死创伤 1 游戏天")
 	check_close(p.stamina_max(), 80.0, 0.01, "体力上限 −20")
+	check_close(p.stamina, 80.0, 0.01, "重生体力按新上限回满")
 
 	# 第二次死：在 (-5, 0, 2)，身上带一点东西
 	inv.add("testAmmo", 7)
@@ -143,6 +162,12 @@ func _finish() -> void:
 		f.close()
 	elif FileAccess.file_exists("user://save.json"):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://save.json"))
+	if _bak_existed:
+		var b := FileAccess.open("user://save.bak", FileAccess.WRITE)
+		b.store_buffer(_bak_data)
+		b.close()
+	elif FileAccess.file_exists("user://save.bak"):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://save.bak"))
 	if failures.is_empty():
 		print("PASS test_respawn")
 		get_tree().quit(0)

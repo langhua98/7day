@@ -169,7 +169,7 @@ func _ready() -> void:
 	var vp := hud.get_viewport().get_visible_rect().size
 	check(hud._attack_btn.get_global_rect().end.x <= vp.x - 90, "攻击键应避开右边刘海")
 	check(is_equal_approx(hud._attack_btn.get_global_rect().position.x, attack_before.position.x - 90), "攻击键应左移 90")
-	check(hud._attack_btn.get_global_rect().end.y <= vp.y - 40, "攻击键应避开底部横条")
+	check(absf(hud._attack_btn.get_global_rect().end.y - (attack_before.end.y - 40)) <= 1.0, "攻击键应避开底部横条")
 	check(hud._status.get_global_rect().position.x >= stats_before.x + 89, "左上状态应避开左边刘海")
 	check(hud._joy_base.get_global_rect().position.x >= 90, "摇杆应避开左边刘海")
 	hud._touch_down(14, hud._attack_btn.get_global_rect().get_center())

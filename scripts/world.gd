@@ -172,6 +172,9 @@ func apply_quality(level: int, preset: Dictionary) -> void:
 			continue
 		var mi: MeshInstance3D = e.node
 		mi.visibility_range_end = preset.poi_range
+	for e in _full_pois:
+		if e.has("far") and is_instance_valid(e.far):
+			e.far.visibility_range_end = preset.poi_range
 	for e in _decal_lod:
 		var mi: GeometryInstance3D = e.node
 		mi.visibility_range_end = preset.decal_range + e.get("pad", 0.0)
@@ -480,7 +483,10 @@ func _point_blocked(p: Vector3) -> bool:
 	for it in interiors:
 		if it.contains(p):
 			return it.solid_point(p) or (not _low.is_empty() and _low.has(Vector2i(floori(p.x), floori(p.z))) and p.y < 2.0)
-	return _wall(floori(p.x), floori(p.z))
+	var gx := floori(p.x)
+	var gz := floori(p.z)
+	return _cell(gx, gz) or _iwall_at(gx, gz) or \
+		(not _low.is_empty() and _low.has(Vector2i(gx, gz)) and p.y < 2.0)
 
 
 ## 子弹飞到这一点打中墙、楼板没有（地面、楼、自己摆的方块）
@@ -501,10 +507,17 @@ func nearest_container(p: Vector3, reach := 1.4) -> Dictionary:
 		if c.get("indoor", false) and absf(p.y - c.pos.y) > 2.0:
 			continue
 		var d: float = Vector2(p.x - c.pos.x, p.z - c.pos.z).length() - c.r
-		if d < reach and d < best_d:
+		if d < reach and d < best_d and not line_blocked(p + Vector3.UP * 1.2, c.pos + Vector3.UP * 0.8):
 			best_d = d
 			best = c
 	return best
+
+
+func inside_interior(p: Vector3, radius := 0.0) -> bool:
+	for it in interiors:
+		if it.contains(p, radius):
+			return true
+	return false
 
 
 ## 随机找一个空地（不在楼里、车里）
@@ -513,9 +526,12 @@ func free_point(center: Vector3, min_r: float, max_r: float) -> Vector3:
 		var ang := rng.randf() * TAU
 		var r := sqrt(rng.randf_range(min_r * min_r, max_r * max_r))
 		var p := center + Vector3(cos(ang) * r, 0, sin(ang) * r)
-		if not blocked(p, 0.6):
+		p.y = 0.0
+		if not blocked(p, 0.6) and not inside_interior(p, 0.6):
 			return p
-	return push_out(center + Vector3(min_r, 0, 0), 0.6)
+	var fallback := push_out(center + Vector3(min_r, 0, 0), 0.6)
+	fallback.y = 0.0
+	return fallback
 
 
 ## 换上方块贴图图集（tools/build_poi.gd 打包的 assets/poi/atlas_*.res），没有就用纯色
