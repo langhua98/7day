@@ -128,6 +128,8 @@ jobs:
           "$GODOT" --headless --path . res://tests/test_respawn.tscn
           "$GODOT" --headless --path . -s tests/test_poi_containers.gd
           "$GODOT" --headless --path . -s tests/test_poi_interior.gd
+          "$GODOT" --headless --path . res://tests/test_craft.tscn
+          "$GODOT" --headless --path . res://tests/test_workstations.tscn
 
       - name: 导出 Xcode 工程
         env:

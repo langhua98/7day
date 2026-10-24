@@ -94,6 +94,7 @@ func _ready() -> void:
 	hud.restart_pressed.connect(start)
 	hud.item_used.connect(inventory.use_item)
 	hud.item_dropped.connect(looting.drop_slot)
+	hud.bag_compact_pressed.connect(inventory.compact)
 	hud.action_pressed.connect(looting.action)
 	hud.reload_pressed.connect(combat.reload)
 	hud.jump_pressed.connect(player_sys.jump)

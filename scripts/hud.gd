@@ -14,6 +14,7 @@ signal continue_pressed
 signal settings_changed(settings: Dictionary)
 signal quit_to_title
 signal item_dropped(index: int)
+signal bag_compact_pressed
 
 var move := Vector2.ZERO          # 摇杆输出，x 右 y 前
 var look_delta := Vector2.ZERO    # 本帧视角拖动量（像素）
@@ -300,6 +301,7 @@ func _ready() -> void:
 	# 背包（scripts/ui/bag_panel.gd）和容器面板（scripts/ui/container_panel.gd）
 	_bag_panel.use_pressed.connect(func(id): item_used.emit(id))
 	_bag_panel.drop_pressed.connect(func(i): item_dropped.emit(i))
+	_bag_panel.compact_pressed.connect(func(): bag_compact_pressed.emit())
 	_safe.add_child(_bag_panel)
 	_safe.add_child(container_panel)
 

@@ -21,8 +21,13 @@ var _queue_bar := ProgressBar.new()
 var _cat := "tool"
 var _sel := ""
 var _n := 1
-## null = 全部配方（背包里打开）；字符串 = 只看这个工作站（4c 用）
+## null = 全部配方（背包里打开）；字符串 = 只看这个工作站
 var _area = null
+## 工作站所在方块格子；null = 背包
+var _station = null
+var _station_row := HBoxContainer.new()
+var _fuel_btn := Button.new()
+var _tool_btn := Button.new()
 
 
 func _init() -> void:
@@ -64,6 +69,23 @@ func _init() -> void:
 		_tabs.add_child(b)
 	tab_scroll.add_child(_tabs)
 	v.add_child(tab_scroll)
+
+	# 篝火的燃料和锅具
+	_station_row.add_theme_constant_override("separation", 8)
+	_station_row.visible = false
+	_fuel_btn.custom_minimum_size = Vector2(210, BTN_H)
+	_tool_btn.custom_minimum_size = Vector2(210, BTN_H)
+	_fuel_btn.pressed.connect(func():
+		if _station != null:
+			crafting.add_fuel(_station, 1)
+			_refresh())
+	_tool_btn.pressed.connect(func():
+		if _station != null:
+			crafting.toggle_tool(_station)
+			_refresh())
+	_station_row.add_child(_fuel_btn)
+	_station_row.add_child(_tool_btn)
+	v.add_child(_station_row)
 
 	var body := HBoxContainer.new()
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -150,9 +172,11 @@ func bind(c: Crafting) -> void:
 			_refresh.call_deferred())
 
 
-## 打开面板。area = null 看全部；传工作站名只看那个工作站的配方（4c 用）
-func open(area = null) -> void:
+## 打开面板。area = null 看全部；传工作站名只看那个工作站的配方。
+## station = 工作站所在方块格子，队列和篝火燃料/工具都按它取。
+func open(area = null, station = null) -> void:
 	_area = area
+	_station = station
 	visible = true
 
 
@@ -163,7 +187,7 @@ func _notification(what: int) -> void:
 
 func _process(_delta: float) -> void:
 	if visible and crafting:
-		_queue_bar.value = crafting.progress()
+		_queue_bar.value = crafting.progress(_station)
 
 
 func _set_cat(cat: String) -> void:
@@ -189,6 +213,7 @@ func _refresh() -> void:
 		return
 	var where: String = "背包" if _area == null else Crafting.AREA_NAMES.get(_area, str(_area))
 	_title.text = "合成 · %s" % where
+	_refresh_station()
 	for b in _tabs.get_children():
 		b.button_pressed = b.get_meta("cat") == _cat
 		b.visible = not crafting.list(b.get_meta("cat"), _area).is_empty()
@@ -225,6 +250,17 @@ func _refresh() -> void:
 		_grid.add_child(b)
 	_refresh_detail()
 	_refresh_queue()
+
+
+func _refresh_station() -> void:
+	var show: bool = _station != null and _area == "campfire" and crafting != null
+	_station_row.visible = show
+	if not show:
+		return
+	var st: Dictionary = crafting.station_state(_station)
+	_fuel_btn.text = "燃料：木头 ×%d" % int(st.get("fuel", 0))
+	var tool := str(st.get("tool", ""))
+	_tool_btn.text = "锅具：%s" % (Assets.display_name(tool) if tool != "" else "无")
 
 
 func _refresh_detail() -> void:
@@ -267,7 +303,7 @@ func _refresh_detail() -> void:
 		cnt.add_theme_color_override("font_color", Color(0.6, 0.95, 0.5) if ing.have >= ing.need else Color(1, 0.4, 0.32))
 		row.add_child(cnt)
 		_ings.add_child(row)
-	var why := crafting.why_not(_sel, n)
+	var why := crafting.why_not(_sel, n, _station)
 	_reason.text = why
 	_craft_btn.disabled = why != ""
 
@@ -276,26 +312,27 @@ func _refresh_queue() -> void:
 	for c in _queue_box.get_children():
 		_queue_box.remove_child(c)
 		c.queue_free()
+	var qlist: Array = crafting.queue_for(_station)
 	for i in GameConfig.CRAFT_QUEUE_MAX:
 		var s := {}
-		if i < crafting.queue.size():
-			var q: Dictionary = crafting.queue[i]
+		if i < qlist.size():
+			var q: Dictionary = qlist[i]
 			var r := crafting.recipe(q.key)
 			s = {"id": r.get("id", ""), "count": (int(q.n) - int(q.done)) * int(r.get("count", 1)), "quality": 0}
 		var b := BagPanel.make_slot(s, 72.0, i == 0 and not s.is_empty())
 		var idx := i
 		if not s.is_empty():
 			b.tooltip_text = "点一下取消，退还材料"
-			b.pressed.connect(func(): crafting.cancel(idx))
+			b.pressed.connect(func(): crafting.cancel(idx, _station))
 		_queue_box.add_child(b)
-	_queue_bar.value = crafting.progress()
+	_queue_bar.value = crafting.progress(_station)
 
 
 func _on_craft() -> void:
 	if _sel == "":
 		return
 	var n := batch_count()
-	if crafting.craft(_sel, n):
+	if crafting.craft(_sel, n, _station):
 		var r := crafting.recipe(_sel)
 		if crafting.hud:
 			crafting.hud.toast("开始合成：%s ×%d" % [Assets.display_name(r.id), n * int(r.get("count", 1))])
