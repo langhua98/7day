@@ -37,6 +37,11 @@ const STATION_MODELS := {
 	"chemistryStation": "chemistryStation", "cementMixer": "cementMixer",
 }
 
+const SHAPES := ["cube", "half", "ramp", "stairs", "pole", "plate"]
+const SHAPE_NAMES := {
+	"cube": "整块", "half": "半块", "ramp": "斜坡", "stairs": "楼梯", "pole": "柱子", "plate": "板",
+}
+
 static var _mat: ShaderMaterial
 static var _layers := {}     # 方块名 -> [图集层号, 占几格]
 static var _layers_loaded := false
@@ -47,6 +52,42 @@ static var _icons := {}
 
 static func is_block(id: String) -> bool:
 	return not info(id).is_empty()
+
+
+static func shape_name(shape: String) -> String:
+	return SHAPE_NAMES.get(shape, SHAPE_NAMES["cube"])
+
+
+static func next_shape(shape: String) -> String:
+	var i := SHAPES.find(shape)
+	return SHAPES[(i + 1) % SHAPES.size()]
+
+
+static func is_valid_shape(shape: String) -> bool:
+	return SHAPES.has(shape)
+
+
+## 世界坐标 → 方块本地 0..1 坐标（反向旋转，斜坡/楼梯用）
+static func local_point(p: Vector3, cell: Vector3i, rot: int) -> Vector3:
+	var q := Vector3(p.x - cell.x - 0.5, 0.0, p.z - cell.z - 0.5)
+	q = q.rotated(Vector3.UP, -float(rot) * PI * 0.5)
+	return Vector3(q.x + 0.5, 0.0, q.z + 0.5)
+
+
+## 这种形状在本地 x 处的顶面高度（0..1）
+static func top_height(shape: String, rot: int, local: Vector3) -> float:
+	var lx := clampf(local.x, 0.0, 1.0)
+	match shape:
+		"half":
+			return 0.5
+		"plate":
+			return 0.1
+		"ramp":
+			return lx
+		"stairs":
+			return clampf(ceilf(lx * 4.0) / 4.0, 0.25, 1.0)
+		_:
+			return 1.0
 
 
 static func info(id: String) -> Dictionary:
@@ -127,49 +168,120 @@ static func material_for(id: String) -> Material:
 	return material()
 
 
-## 1 米的方块，原点在一个角上（0..1），每个顶点带图集层号（UV2）和底色（COLOR）
-static func mesh(id: String) -> Mesh:
-	if _meshes.has(id):
-		return _meshes[id]
-	if STATION_MODELS.has(id):
-		var sm := _station_mesh(id)
-		if sm != null:
-			_meshes[id] = sm
-			return sm
+static func _quad(n: Vector3, a: Vector3, b: Vector3, c: Vector3, d: Vector3) -> Dictionary:
+	return {"n": n, "p": [a, b, c, d]}
+
+
+static func _tri(n: Vector3, a: Vector3, b: Vector3, c: Vector3) -> Dictionary:
+	return {"n": n, "p": [a, b, c]}
+
+
+static func _box_faces(lo: Vector3, hi: Vector3, skip_bottom := false) -> Array:
+	var x0 := lo.x
+	var y0 := lo.y
+	var z0 := lo.z
+	var x1 := hi.x
+	var y1 := hi.y
+	var z1 := hi.z
+	var out := [
+		_quad(Vector3.UP, Vector3(x0, y1, z0), Vector3(x0, y1, z1), Vector3(x1, y1, z1), Vector3(x1, y1, z0)),
+		_quad(Vector3.RIGHT, Vector3(x1, y0, z0), Vector3(x1, y1, z0), Vector3(x1, y1, z1), Vector3(x1, y0, z1)),
+		_quad(Vector3.LEFT, Vector3(x0, y0, z0), Vector3(x0, y0, z1), Vector3(x0, y1, z1), Vector3(x0, y1, z0)),
+		_quad(Vector3.BACK, Vector3(x0, y0, z1), Vector3(x1, y0, z1), Vector3(x1, y1, z1), Vector3(x0, y1, z1)),
+		_quad(Vector3.FORWARD, Vector3(x0, y0, z0), Vector3(x0, y1, z0), Vector3(x1, y1, z0), Vector3(x1, y0, z0)),
+	]
+	if not skip_bottom:
+		out.append(_quad(Vector3.DOWN, Vector3(x0, y0, z0), Vector3(x1, y0, z0), Vector3(x1, y0, z1), Vector3(x0, y0, z1)))
+	return out
+
+
+static func _faces(shape: String) -> Array:
+	match shape:
+		"half":
+			return _box_faces(Vector3.ZERO, Vector3(1, 0.5, 1))
+		"plate":
+			return _box_faces(Vector3.ZERO, Vector3(1, 0.1, 1))
+		"pole":
+			return _box_faces(Vector3(0.4, 0, 0.4), Vector3(0.6, 1, 0.6))
+		"ramp":
+			return [
+				_quad(Vector3.UP + Vector3.LEFT, Vector3(0, 0, 0), Vector3(0, 0, 1), Vector3(1, 1, 1), Vector3(1, 1, 0)),
+				_quad(Vector3.RIGHT, Vector3(1, 0, 0), Vector3(1, 1, 0), Vector3(1, 1, 1), Vector3(1, 0, 1)),
+				_tri(Vector3.FORWARD, Vector3(0, 0, 0), Vector3(1, 1, 0), Vector3(1, 0, 0)),
+				_tri(Vector3.BACK, Vector3(0, 0, 1), Vector3(1, 0, 1), Vector3(1, 1, 1)),
+				_quad(Vector3.DOWN, Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(1, 0, 1), Vector3(0, 0, 1)),
+			]
+		"stairs":
+			var out := []
+			for i in 4:
+				var x0 := float(i) * 0.25
+				var x1 := float(i + 1) * 0.25
+				var y1 := x1
+				out.append(_quad(Vector3.UP, Vector3(x0, y1, 0), Vector3(x0, y1, 1), Vector3(x1, y1, 1), Vector3(x1, y1, 0)))
+				out.append(_quad(Vector3.FORWARD, Vector3(x0, 0, 0), Vector3(x0, y1, 0), Vector3(x1, y1, 0), Vector3(x1, 0, 0)))
+				out.append(_quad(Vector3.BACK, Vector3(x0, 0, 1), Vector3(x1, 0, 1), Vector3(x1, y1, 1), Vector3(x0, y1, 1)))
+				if i < 3:
+					var prev := float(i) * 0.25
+					out.append(_quad(Vector3.RIGHT, Vector3(x1, prev, 0), Vector3(x1, y1, 0), Vector3(x1, y1, 1), Vector3(x1, prev, 1)))
+			out.append(_quad(Vector3.RIGHT, Vector3(1, 0, 0), Vector3(1, 1, 0), Vector3(1, 1, 1), Vector3(1, 0, 1)))
+			out.append(_quad(Vector3.LEFT, Vector3(0, 0, 0), Vector3(0, 0, 1), Vector3(0, 0.25, 1), Vector3(0, 0.25, 0)))
+			return out
+		_:
+			return _box_faces(Vector3.ZERO, Vector3.ONE)
+
+
+static func _rot_point(p: Vector3, rot: int) -> Vector3:
+	var c := Vector3(0.5, 0, 0.5)
+	return c + Basis(Vector3.UP, float(rot) * PI * 0.5) * (p - c)
+
+
+static func _rot_normal(n: Vector3, rot: int) -> Vector3:
+	return (Basis(Vector3.UP, float(rot) * PI * 0.5) * n).normalized()
+
+
+static func append_block(st: SurfaceTool, id: String, shape: String, rot: int, cell: Vector3i,
+		is_full: Callable) -> void:
 	var at := _layer(id)
 	var uv2 := Vector2(float(at[0]), float(at[1])) if at.size() >= 2 else Vector2(-1, 1)
 	var col: Color = info(id).get("color", Color.GRAY)
+	for f in _faces(shape):
+		var n: Vector3 = _rot_normal(f["n"], rot)
+		if shape == "cube" and is_full.call(cell + Vector3i(roundi(n.x), roundi(n.y), roundi(n.z))):
+			continue
+		var pts: Array = f["p"]
+		var shade := 1.0 if n.y > 0.5 else (0.7 if n.y < -0.5 else 0.85)
+		var order := [0, 2, 1, 0, 3, 2] if pts.size() == 4 else [0, 2, 1]
+		for k in order:
+			var p: Vector3 = _rot_point(pts[k], rot) + Vector3(cell)
+			st.set_normal(n)
+			st.set_color(Color(col.r * shade, col.g * shade, col.b * shade))
+			st.set_uv(Vector2(p.x + p.z, p.y))
+			st.set_uv2(uv2)
+			st.add_vertex(p)
+
+
+## 1 米的方块，原点在一个角上（0..1），每个顶点带图集层号（UV2）和底色（COLOR）
+static func mesh(id: String, shape := "cube", rot := 0) -> Mesh:
+	var key := "%s|%s|%d" % [id, shape, rot]
+	if _meshes.has(key):
+		return _meshes[key]
+	if STATION_MODELS.has(id):
+		var sm := _station_mesh(id)
+		if sm != null:
+			_meshes[key] = sm
+			return sm
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	# 每个面：法线 + 四个角（从外面看逆时针）
-	var faces := [
-		[Vector3.UP, [Vector3(0, 1, 0), Vector3(0, 1, 1), Vector3(1, 1, 1), Vector3(1, 1, 0)]],
-		[Vector3.DOWN, [Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(1, 0, 1), Vector3(0, 0, 1)]],
-		[Vector3.RIGHT, [Vector3(1, 0, 0), Vector3(1, 1, 0), Vector3(1, 1, 1), Vector3(1, 0, 1)]],
-		[Vector3.LEFT, [Vector3(0, 0, 0), Vector3(0, 0, 1), Vector3(0, 1, 1), Vector3(0, 1, 0)]],
-		[Vector3.BACK, [Vector3(0, 0, 1), Vector3(1, 0, 1), Vector3(1, 1, 1), Vector3(0, 1, 1)]],
-		[Vector3.FORWARD, [Vector3(0, 0, 0), Vector3(0, 1, 0), Vector3(1, 1, 0), Vector3(1, 0, 0)]],
-	]
-	var shade := {Vector3.UP: 1.0, Vector3.DOWN: 0.7}
-	for f in faces:
-		var n: Vector3 = f[0]
-		var c: Array = f[1]
-		var s: float = shade.get(n, 0.85)
-		for k in [0, 2, 1, 0, 3, 2]:
-			st.set_normal(n)
-			st.set_color(Color(col.r * s, col.g * s, col.b * s))
-			st.set_uv(Vector2(c[k].x + c[k].z, c[k].y))
-			st.set_uv2(uv2)
-			st.add_vertex(c[k])
+	append_block(st, id, shape, rot, Vector3i.ZERO, func(_c: Vector3i) -> bool: return false)
 	var m := st.commit()
-	_meshes[id] = m
+	_meshes[key] = m
 	return m
 
 
 ## 一块方块的节点（原点在角上，摆在格子坐标上正好占满这一格）
-static func make_node(id: String) -> MeshInstance3D:
+static func make_node(id: String, shape := "cube", rot := 0) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
-	mi.mesh = mesh(id)
+	mi.mesh = mesh(id, shape, rot)
 	mi.material_override = material_for(id)
 	return mi
 

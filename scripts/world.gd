@@ -89,10 +89,11 @@ const BATCH_CELL := 38.0
 var _batching := false
 var _batch := {}        # "模型|格x|格z" -> {name, cell, xfs: [Transform3D]}
 ## 自己摆的方块按 32 米一块、每种方块一个 MultiMesh
-const VOXEL_CHUNK := 32
-var _vox_chunks := {}   # "x|z|方块名" -> {mmi, cells: {格子: true}}
+const VOXEL_CHUNK := 16
+var _vox_chunks := {}   # Vector3i -> {mi, cells: {格子: true}}
 var _vox_dirty := {}
 var _vox_flush_queued := false
+var _station_nodes := {}  # 工作站格子 -> MeshInstance3D（用模型，不进区块网格）
 
 ## 画质档位（0 省电 / 1 均衡 / 2 高清）
 var quality := 1
@@ -422,7 +423,7 @@ func push_out(p: Vector3, radius: float) -> Vector3:
 	if not voxels.is_empty():
 		for gz in range(floori(q.y - radius), floori(q.y + radius) + 1):
 			for gx in range(floori(q.x - radius), floori(q.x + radius) + 1):
-				if not _solid_column(gx, gz, p.y):
+				if not _solid_column(gx, gz, p):
 					continue
 				var c := Vector2(gx + 0.5, gz + 0.5)
 				var d := q - c
@@ -709,6 +710,8 @@ func flow_dir(p: Vector3) -> Vector3:
 
 
 func _cell(gx: int, gz: int) -> bool:
+	if _cells.is_empty():
+		return false
 	var x := gx + MAP
 	var z := gz + MAP
 	if x < 0 or z < 0 or x >= MAP * 2 or z >= MAP * 2:
@@ -722,6 +725,8 @@ func _wall(gx: int, gz: int) -> bool:
 
 
 func _iwall_at(gx: int, gz: int) -> bool:
+	if _iwall.is_empty():
+		return false
 	var x := gx + MAP
 	var z := gz + MAP
 	if x < 0 or z < 0 or x >= MAP * 2 or z >= MAP * 2:
@@ -762,10 +767,16 @@ func has_voxel(c: Vector3i) -> bool:
 	return voxels.has(c)
 
 
-## 这一列在 [脚底, 头顶] 这段高度里有没有方块
-func _solid_column(gx: int, gz: int, feet: float) -> bool:
-	for y in range(maxi(0, floori(feet + 0.05)), floori(feet + 1.7) + 1):
-		if voxels.has(Vector3i(gx, y, gz)):
+## 这一列在 [脚底, 头顶] 这段高度里有没有迈不上去的方块
+func _solid_column(gx: int, gz: int, p: Vector3) -> bool:
+	for y in range(maxi(0, floori(p.y + 0.05)), floori(p.y + 1.7) + 1):
+		var cell := Vector3i(gx, y, gz)
+		var v: Dictionary = voxels.get(cell, {})
+		if v.is_empty():
+			continue
+		var local := Blocks.local_point(p, cell, int(v.get("rot", 0)))
+		var th := float(y) + Blocks.top_height(str(v.get("shape", "cube")), int(v.get("rot", 0)), local)
+		if th > p.y + 0.55:
 			return true
 	return false
 
@@ -773,6 +784,8 @@ func _solid_column(gx: int, gz: int, feet: float) -> bool:
 ## 这格能不能摆：空的、不在楼里、在地图里、不太高
 func can_place(c: Vector3i) -> bool:
 	if voxels.has(c) or c.y < 0 or c.y >= VOXEL_TOP:
+		return false
+	if voxels.size() >= GameConfig.BLOCK_LIMIT:
 		return false
 	if absi(c.x) >= int(EDGE) or absi(c.z) >= int(EDGE):
 		return false
@@ -783,99 +796,132 @@ func can_place(c: Vector3i) -> bool:
 	return not _cell(c.x, c.z)
 
 
-func add_voxel(c: Vector3i, id: String, hp := -1.0) -> void:
-	if voxels.has(c):
-		return
-	voxels[c] = {"id": id, "hp": hp if hp > 0.0 else float(Blocks.info(id).get("hp", 100.0))}
+func add_voxel(c: Vector3i, id: String, hp := -1.0, shape := "cube", rot := 0) -> bool:
+	if voxels.has(c) or voxels.size() >= GameConfig.BLOCK_LIMIT:
+		return false
+	if not Blocks.is_valid_shape(shape):
+		shape = "cube"
+	rot = posmod(rot, 4)
+	voxels[c] = {"id": id, "hp": hp if hp > 0.0 else float(Blocks.info(id).get("hp", 100.0)),
+		"shape": shape, "rot": rot}
 	var area := Blocks.station_area(id)
 	if area != "":
 		if not stations.has(area):
 			stations[area] = []
 		stations[area].append(c)
 		station_cells[c] = area
-	_vox_mark(c, id, true)
+		_ensure_voxel_root()
+		var node := Blocks.make_node(id)
+		node.position = Vector3(c) + Blocks.mesh_offset(id)
+		_voxel_root.add_child(node)
+		_station_nodes[c] = node
+	else:
+		_vox_mark(c, true)
 	if c.y <= 1:
 		var k := Vector2i(c.x, c.z)
 		_low[k] = _low.get(k, 0) + 1
+	return true
 
 
+func _ensure_voxel_root() -> void:
+	if _voxel_root == null:
+		_voxel_root = Node3D.new()
+		_voxel_root.name = "Voxels"
+		add_child(_voxel_root)
 
-## 方块不再一块一个节点：同一块区域同一种方块合成一个 MultiMesh，下一帧统一重建
-func _vox_key(c: Vector3i, id: String) -> String:
-	return "%d|%d|%s" % [floori(float(c.x) / VOXEL_CHUNK), floori(float(c.z) / VOXEL_CHUNK), id]
+
+## 方块按 16×16×16 分区块，每个区块合成一个网格，下一帧统一重建
+func _vox_key(c: Vector3i) -> Vector3i:
+	return Vector3i(floori(float(c.x) / VOXEL_CHUNK), floori(float(c.y) / VOXEL_CHUNK),
+		floori(float(c.z) / VOXEL_CHUNK))
 
 
-func _vox_mark(c: Vector3i, id: String, on: bool) -> void:
-	var key := _vox_key(c, id)
+func _vox_mark(c: Vector3i, on: bool) -> void:
+	var key := _vox_key(c)
 	if not _vox_chunks.has(key):
 		if not on:
 			return
-		_vox_chunks[key] = {"mmi": null, "cells": {}, "id": id}
+		_vox_chunks[key] = {"mi": null, "cells": {}}
 	var ch: Dictionary = _vox_chunks[key]
 	if on:
 		ch.cells[c] = true
 	else:
 		ch.cells.erase(c)
 	_vox_dirty[key] = true
+	# 相邻区块的共享面也要重算
+	for d in [Vector3i.LEFT, Vector3i.RIGHT, Vector3i.DOWN, Vector3i.UP, Vector3i.FORWARD, Vector3i.BACK]:
+		var nk := _vox_key(c + d)
+		if nk != key:
+			_vox_dirty[nk] = true
 	if not _vox_flush_queued:
 		_vox_flush_queued = true
 		_flush_voxels.call_deferred()
 
 
-## 立刻把改过的方块区域重建一遍（摆/拆方块后的那一帧末尾自动调用）
+func _is_full_voxel(c: Vector3i) -> bool:
+	var v: Dictionary = voxels.get(c, {})
+	return not v.is_empty() and str(v.get("shape", "cube")) == "cube" \
+		and Blocks.station_area(str(v.get("id", ""))) == ""
+
+
+## 立刻把改过的方块区块重建一遍（摆/拆方块后的那一帧末尾自动调用）
 func _flush_voxels() -> void:
 	_vox_flush_queued = false
-	if _voxel_root == null:
-		_voxel_root = Node3D.new()
-		_voxel_root.name = "Voxels"
-		add_child(_voxel_root)
-	for key in _vox_dirty:
+	_ensure_voxel_root()
+	for key in _vox_dirty.keys():
 		var ch: Dictionary = _vox_chunks.get(key, {})
 		if ch.is_empty():
 			continue
 		if ch.cells.is_empty():
-			if ch.mmi:
-				(ch.mmi as Node).queue_free()
+			if ch.mi:
+				(ch.mi as Node).queue_free()
 			_vox_chunks.erase(key)
 			continue
-		if ch.mmi == null:
-			var mmi := MultiMeshInstance3D.new()
-			mmi.material_override = Blocks.material_for(ch.id)
-			_voxel_root.add_child(mmi)
-			ch.mmi = mmi
-			var mm := MultiMesh.new()
-			mm.transform_format = MultiMesh.TRANSFORM_3D
-			mm.mesh = Blocks.mesh(ch.id)
-			mmi.multimesh = mm
-		var m: MultiMesh = (ch.mmi as MultiMeshInstance3D).multimesh
-		m.instance_count = ch.cells.size()
-		var k := 0
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
 		for c in ch.cells:
-			m.set_instance_transform(k, Transform3D(Basis.IDENTITY, Vector3(c) + Blocks.mesh_offset(ch.id)))
-			k += 1
+			var v: Dictionary = voxels.get(c, {})
+			if v.is_empty() or Blocks.station_area(str(v.get("id", ""))) != "":
+				continue
+			Blocks.append_block(st, str(v.id), str(v.get("shape", "cube")), int(v.get("rot", 0)), c,
+				Callable(self, "_is_full_voxel"))
+		var mesh := st.commit()
+		if ch.mi == null:
+			var mi := MeshInstance3D.new()
+			mi.material_override = Blocks.material()
+			_voxel_root.add_child(mi)
+			ch.mi = mi
+		(ch.mi as MeshInstance3D).mesh = mesh
 	_vox_dirty.clear()
 
 
 ## 测试和 bench 用：现在有几个方块绘制组
 func voxel_draw_groups() -> int:
-	return _vox_chunks.size()
+	return _vox_chunks.size() + _station_nodes.size()
 
 func remove_voxel(c: Vector3i) -> String:
 	var v: Dictionary = voxels.get(c, {})
 	if v.is_empty():
 		return ""
+	var id := str(v.id)
 	voxels.erase(c)
-	var area := Blocks.station_area(str(v.id))
+	var area := Blocks.station_area(id)
 	if area != "" and stations.has(area):
 		stations[area].erase(c)
 		station_cells.erase(c)
-	_vox_mark(c, v.id, false)
+	if _station_nodes.has(c):
+		var node: Node = _station_nodes[c]
+		_station_nodes.erase(c)
+		if is_instance_valid(node):
+			node.queue_free()
+	else:
+		_vox_mark(c, false)
 	if c.y <= 1:
 		var k := Vector2i(c.x, c.z)
 		_low[k] = _low.get(k, 1) - 1
 		if _low[k] <= 0:
 			_low.erase(k)
-	return v.id
+	return id
 
 
 ## 打方块，耐久打完就拆掉，返回拆下来的方块名（没拆掉返回空）
@@ -904,13 +950,23 @@ func clear_voxels() -> void:
 	_low.clear()
 	stations.clear()
 	station_cells.clear()
+	for node in _station_nodes.values():
+		if is_instance_valid(node):
+			node.queue_free()
+	_station_nodes.clear()
+	for ch in _vox_chunks.values():
+		if ch.get("mi") and is_instance_valid(ch.mi):
+			(ch.mi as Node).queue_free()
+	_vox_chunks.clear()
+	_vox_dirty.clear()
 
 
-## 存档用：[[x, y, z, 方块名, 耐久], …]
+## 存档用：[[x, y, z, 方块名, 耐久, 形状, 朝向], …]
 func voxel_save() -> Array:
 	var out := []
 	for c in voxels:
-		out.append([c.x, c.y, c.z, voxels[c].id, voxels[c].hp])
+		var v: Dictionary = voxels[c]
+		out.append([c.x, c.y, c.z, v.id, v.hp, v.get("shape", "cube"), int(v.get("rot", 0))])
 	return out
 
 
@@ -918,7 +974,10 @@ func voxel_load(list: Array) -> void:
 	clear_voxels()
 	for e in list:
 		if e is Array and e.size() >= 4 and Blocks.is_block(str(e[3])):
-			add_voxel(Vector3i(int(e[0]), int(e[1]), int(e[2])), str(e[3]), float(e[4]) if e.size() > 4 else -1.0)
+			add_voxel(Vector3i(int(e[0]), int(e[1]), int(e[2])), str(e[3]),
+				float(e[4]) if e.size() > 4 else -1.0,
+				str(e[5]) if e.size() > 5 else "cube",
+				int(e[6]) if e.size() > 6 else 0)
 
 
 ## 这一格是什么工作站；不是返回空串
@@ -964,15 +1023,17 @@ func floor_under(p: Vector3, radius: float) -> float:
 			best = maxf(best, it.floor_at(p, radius))
 	if voxels.is_empty():
 		return best
-	var top := floori(p.y + 0.3)
+	var top := mini(floori(p.y + 0.3), VOXEL_TOP)
 	for gz in range(floori(p.z - radius), floori(p.z + radius) + 1):
 		for gx in range(floori(p.x - radius), floori(p.x + radius) + 1):
-			for y in range(mini(top - 1, VOXEL_TOP), -1, -1):
-				if float(y + 1) <= best:
-					break
-				if voxels.has(Vector3i(gx, y, gz)):
-					best = float(y + 1)
-					break
+			for y in range(top, -1, -1):
+				var v: Dictionary = voxels.get(Vector3i(gx, y, gz), {})
+				if v.is_empty():
+					continue
+				var local := Blocks.local_point(p, Vector3i(gx, y, gz), int(v.get("rot", 0)))
+				var th := float(y) + Blocks.top_height(str(v.get("shape", "cube")), int(v.get("rot", 0)), local)
+				if th <= p.y + 0.55 + 0.001:
+					best = maxf(best, th)
 	return best
 
 

@@ -19,6 +19,9 @@ var attack_cd := 0.0
 var _reload_left := 0.0
 ## 拿着方块时准星指的那一格，显示一个半透明的框
 var _ghost: MeshInstance3D
+var _ghost_box: BoxMesh
+var block_shape := "cube"
+var block_rot := 0
 
 
 func setup(parent: Node3D, tree_ref: SceneTree, player_ref: PlayerSystem, inv_ref: InventorySystem,
@@ -37,9 +40,9 @@ func setup(parent: Node3D, tree_ref: SceneTree, player_ref: PlayerSystem, inv_re
 
 func build() -> void:
 	_ghost = MeshInstance3D.new()
-	var box := BoxMesh.new()
-	box.size = Vector3.ONE * 1.02
-	_ghost.mesh = box
+	_ghost_box = BoxMesh.new()
+	_ghost_box.size = Vector3.ONE * 1.02
+	_ghost.mesh = _ghost_box
 	var gm := StandardMaterial3D.new()
 	gm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	gm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -53,11 +56,32 @@ func build() -> void:
 func reset() -> void:
 	attack_cd = 0.0
 	_reload_left = 0.0
+	block_shape = "cube"
+	block_rot = 0
 	_ghost.visible = false
 
 
 func on_equip() -> void:
 	_reload_left = 0.0
+	_refresh_block_hud()
+
+
+func cycle_block_shape() -> void:
+	block_shape = Blocks.next_shape(block_shape)
+	_refresh_block_hud()
+	_update_ghost()
+
+
+func rotate_block() -> void:
+	block_rot = (block_rot + 1) % 4
+	_refresh_block_hud()
+	_update_ghost()
+
+
+func _refresh_block_hud() -> void:
+	var row: Dictionary = Assets.items_by_id.get(inventory.equipped, {})
+	var on: bool = row.get("kind", -1) == Assets.Kind.BLOCK and Blocks.is_block(inventory.equipped)
+	hud.set_block_controls(Blocks.shape_name(block_shape), block_rot, on)
 
 
 func update(delta: float) -> void:
@@ -160,7 +184,13 @@ func _update_ghost() -> void:
 	var c = _place_target() if row.get("kind", -1) == Assets.Kind.BLOCK else null
 	_ghost.visible = c != null
 	if c != null:
-		_ghost.position = Vector3(c) + Vector3.ONE * 0.5
+		var id := inventory.equipped
+		if Blocks.station_area(id) != "":
+			_ghost.mesh = _ghost_box
+			_ghost.position = Vector3(c) + Vector3.ONE * 0.5
+		else:
+			_ghost.mesh = Blocks.mesh(id, block_shape, block_rot)
+			_ghost.position = Vector3(c)
 
 
 func _place_block() -> void:
@@ -178,7 +208,9 @@ func _place_block() -> void:
 			inventory.remove(inventory.equipped)
 			inventory.refresh()
 		return
-	world.add_voxel(c, inventory.equipped)
+	if not world.add_voxel(c, inventory.equipped, -1.0, block_shape, block_rot):
+		hud.toast("方块到上限了（%d 块）" % GameConfig.BLOCK_LIMIT)
+		return
 	GameState.block_changed.emit(c)
 	arms.swing(6.0)
 	Sfx.play("land", Vector3(c) + Vector3.ONE * 0.5, -4.0)

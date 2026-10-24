@@ -66,6 +66,7 @@ const STARTER_AMMO := 120
 ## 建造：离多远能摆 / 拆方块（米），两次摆方块的间隔（秒）
 const BUILD_REACH := 5.0
 const BUILD_COOLDOWN := 0.22
+const BLOCK_LIMIT := 4000
 ## 测试模式：僵尸照常出现、追人，但不会抬手打主角。正式玩时改成 false
 const TEST_ZOMBIES_NO_ATTACK := true
 
