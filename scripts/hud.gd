@@ -10,7 +10,6 @@ signal reload_pressed
 signal jump_pressed
 ## 6a：蹲伏切换
 signal crouch_pressed
-signal shape_pressed
 signal rotate_pressed
 signal continue_pressed
 signal settings_changed(settings: Dictionary)
@@ -31,10 +30,8 @@ var _food_bar := ProgressBar.new()
 var _stamina_bar := ProgressBar.new()
 var _water_bar := ProgressBar.new()
 var _effects := Label.new()
-var _reload_btn := Button.new()
 var _jump_btn := Button.new()
 var _crouch_btn := Button.new()
-var _shape_btn := Button.new()
 var _rotate_btn := Button.new()
 var _ammo := Label.new()
 var _kills := Label.new()
@@ -82,9 +79,8 @@ var settings := {"sensitivity": 1.0, "brightness": 1.0, "volume": 1.0, "music": 
 const SETTINGS_PATH := "user://settings.cfg"
 
 var _joy_id := -1
-## 按着开火键的手指（右边大开火键和左边小开火键都算）
+## 按着开火键的手指
 var _attack_ids := {}
-var _fire_left := Button.new()
 var _joy_origin := Vector2.ZERO
 var _look_id := -1
 ## 能拖动转视角的手指上一帧位置：空白处的右半屏、攻击键、瞄准键都算（边开火边转）
@@ -247,13 +243,8 @@ func _ready() -> void:
 	# 6a：蹲（吃鸡布局里在跳下面、开火键右下）
 	_round(_crouch_btn, "蹲", Control.PRESET_BOTTOM_RIGHT, Vector2(-130, -250), 110, 28)
 	_round(_aim_btn, "开镜", Control.PRESET_BOTTOM_RIGHT, Vector2(-440, -440), 110, 26)
-	_round(_reload_btn, "换弹", Control.PRESET_BOTTOM_RIGHT, Vector2(-440, -270), 100, 24)
-	_round(_shape_btn, "形状\n整块", Control.PRESET_BOTTOM_RIGHT, Vector2(-550, -400), 100, 20)
-	_round(_rotate_btn, "旋转\n0°", Control.PRESET_BOTTOM_RIGHT, Vector2(-550, -300), 100, 20)
-	_round(_fire_left, "开火", Control.PRESET_BOTTOM_LEFT, Vector2(50, -440), 110, 24)
+	_round(_rotate_btn, "旋转\n0°", Control.PRESET_BOTTOM_RIGHT, Vector2(-440, -270), 100, 20)
 	_aim_btn.visible = false
-	_reload_btn.visible = false
-	_shape_btn.visible = false
 	_rotate_btn.visible = false
 
 	# 搜索 / 拾取：走近容器或地上的东西才出现
@@ -268,7 +259,7 @@ func _ready() -> void:
 
 	# 子弹数：弹匣里 / 背包里
 	_ammo.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_ammo.position = Vector2(-300, -166)
+	_ammo.position = Vector2(-300, -240)
 	_ammo.size = Vector2(600, 44)
 	_ammo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_ammo.add_theme_font_size_override("font_size", 34)
@@ -363,8 +354,8 @@ func _round(b: Button, text: String, preset: int, pos: Vector2, diameter: float,
 	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for state in ["normal", "hover", "pressed", "focus"]:
 		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color(0, 0, 0, 0.32)
-		sb.border_color = Color(1, 1, 1, 0.55)
+		sb.bg_color = Color(0, 0, 0, 0.22)
+		sb.border_color = Color(1, 1, 1, 0.42)
 		sb.set_border_width_all(3)
 		sb.set_corner_radius_all(int(diameter * 0.5))
 		sb.anti_aliasing = true
@@ -662,11 +653,9 @@ func set_crouch(on: bool) -> void:
 	_crouch_btn.self_modulate = Color(1.0, 0.85, 0.4) if on else Color.WHITE
 
 
-func set_block_controls(shape_name: String, rot: int, on: bool, can_cycle := true) -> void:
-	_shape_btn.visible = on and can_cycle
+func set_block_controls(rot: int, on: bool) -> void:
 	_rotate_btn.visible = on
 	if on:
-		_shape_btn.text = "形状\n" + shape_name
 		_rotate_btn.text = "旋转\n%d°" % (rot * 90)
 
 
@@ -677,7 +666,6 @@ func set_ammo(text: String) -> void:
 	_ammo_text = text
 	_ammo.visible = text != ""
 	_ammo.text = text
-	_reload_btn.visible = text != ""
 	_aim_btn.visible = text != ""
 	if text == "":
 		aim_held = false
@@ -996,8 +984,7 @@ func _panel_open() -> bool:
 
 func _press_attack(pressed: bool) -> void:
 	attack_held = pressed
-	for fire in [_attack_btn, _fire_left]:
-		fire.modulate = Color(1.6, 0.7, 0.6) if pressed else Color.WHITE
+	_attack_btn.modulate = Color(1.6, 0.7, 0.6) if pressed else Color.WHITE
 
 
 func _flash(control: Control) -> void:
@@ -1058,19 +1045,14 @@ func _touch_down(index: int, pos: Vector2) -> void:
 		aim_held = true
 		_aim_btn.modulate = Color(1.6, 0.7, 0.6)
 		return
-	for fire in [_attack_btn, _fire_left]:
-		if (fire as Control).get_global_rect().grow(16).has_point(pos):
-			_attack_ids[index] = true
-			_drag_last[index] = pos  # 按住开火再拖动可以边打边转视角
-			_press_attack(true)
-			return
-	if _reload_btn.visible and _reload_btn.get_global_rect().grow(10).has_point(pos):
-		_press_button(_reload_btn)
-		reload_pressed.emit()
+	if _attack_btn.get_global_rect().grow(16).has_point(pos):
+		_attack_ids[index] = true
+		_drag_last[index] = pos  # 按住开火再拖动可以边打边转视角
+		_press_attack(true)
 		return
-	if _shape_btn.visible and _shape_btn.get_global_rect().grow(10).has_point(pos):
-		_press_button(_shape_btn)
-		shape_pressed.emit()
+	if _ammo.visible and _ammo.get_global_rect().grow(8).has_point(pos):
+		_press_button(_ammo)
+		reload_pressed.emit()
 		return
 	if _rotate_btn.visible and _rotate_btn.get_global_rect().grow(10).has_point(pos):
 		_press_button(_rotate_btn)

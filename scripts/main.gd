@@ -97,7 +97,6 @@ func _ready() -> void:
 	hud.bag_compact_pressed.connect(inventory.compact)
 	hud.action_pressed.connect(looting.action)
 	hud.reload_pressed.connect(combat.reload)
-	hud.shape_pressed.connect(combat.cycle_block_shape)
 	hud.rotate_pressed.connect(combat.rotate_block)
 	hud.jump_pressed.connect(player_sys.jump)
 	hud.crouch_pressed.connect(player_sys.toggle_crouch)

@@ -20,7 +20,6 @@ var _reload_left := 0.0
 ## 拿着方块时准星指的那一格，显示一个半透明的框
 var _ghost: MeshInstance3D
 var _ghost_box: BoxMesh
-var block_shape := "cube"
 var block_rot := 0
 
 
@@ -56,7 +55,6 @@ func build() -> void:
 func reset() -> void:
 	attack_cd = 0.0
 	_reload_left = 0.0
-	block_shape = "cube"
 	block_rot = 0
 	_ghost.visible = false
 
@@ -64,14 +62,6 @@ func reset() -> void:
 func on_equip() -> void:
 	_reload_left = 0.0
 	_refresh_block_hud()
-
-
-func cycle_block_shape() -> void:
-	if not _can_change_shape():
-		return
-	block_shape = Blocks.next_shape(block_shape)
-	_refresh_block_hud()
-	_update_ghost()
 
 
 func rotate_block() -> void:
@@ -88,19 +78,14 @@ func _placement_shape() -> String:
 	var base := _placement_base()
 	if not Blocks.BUILD_BASES.has(base):
 		return "cube"
-	var shape := Blocks.shape_of(inventory.equipped)
-	return block_shape if shape == "cube" else shape
-
-
-func _can_change_shape() -> bool:
-	return Blocks.BUILD_BASES.has(_placement_base()) and not Blocks.is_variant(inventory.equipped)
+	return Blocks.shape_of(inventory.equipped)
 
 
 func _refresh_block_hud() -> void:
 	var row: Dictionary = Assets.items_by_id.get(inventory.equipped, {})
 	var base := _placement_base()
 	var on: bool = row.get("kind", -1) == Assets.Kind.BLOCK and Blocks.BUILD_BASES.has(base)
-	hud.set_block_controls(Blocks.shape_name(_placement_shape()), block_rot, on, _can_change_shape())
+	hud.set_block_controls(block_rot, on)
 
 
 func update(delta: float) -> void:

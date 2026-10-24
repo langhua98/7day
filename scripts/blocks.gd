@@ -134,11 +134,6 @@ static func shape_name(shape: String) -> String:
 	return SHAPE_NAMES.get(shape, SHAPE_NAMES["cube"])
 
 
-static func next_shape(shape: String) -> String:
-	var i := SHAPES.find(shape)
-	return SHAPES[(i + 1) % SHAPES.size()]
-
-
 static func is_valid_shape(shape: String) -> bool:
 	return SHAPES.has(shape)
 

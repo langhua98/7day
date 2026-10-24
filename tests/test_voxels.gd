@@ -119,23 +119,20 @@ func _test_hud() -> void:
 	main.inventory.add("frameShapes", 10)
 	main.inventory.equip("frameShapes")
 	await get_tree().process_frame
-	check(main.hud._shape_btn.visible, "拿方块时显示形状按钮")
 	check(main.hud._rotate_btn.visible, "拿方块时显示旋转按钮")
-	main.hud.shape_pressed.emit()
-	check(main.combat.block_shape != "cube", "点形状按钮应切换形状")
+	check_eq(main.combat._placement_shape(), "cube", "基础方块按整块摆")
 	main.hud.rotate_pressed.emit()
 	check_eq(main.combat.block_rot, 1, "点旋转按钮应转 90°")
-	check(main.hud._shape_btn.text.contains(Blocks.shape_name(main.combat.block_shape)), "按钮显示形状名")
 
-	# 六种形状作为独立背包物品：选半块后形状按钮固定，旋转仍可用
+	# 六种形状作为独立背包物品：选半块后固定按半块摆，仍可旋转
 	check_eq(Blocks.base_of("woodShapes_half"), "woodShapes", "半块物品映射到木块")
 	check_eq(Blocks.shape_of("woodShapes_half"), "half", "半块物品形状")
 	check(Blocks.variant_ids().has("woodShapes_ramp"), "生成斜坡物品")
 	main.inventory.add("woodShapes_half", 5)
 	main.inventory.equip("woodShapes_half")
 	await get_tree().process_frame
-	check(not main.hud._shape_btn.visible, "独立形状物品不再显示形状按钮")
 	check(main.hud._rotate_btn.visible, "独立形状物品仍可旋转")
+	check_eq(main.combat._placement_shape(), "half", "半块物品按半块摆")
 	check(Blocks.info("woodShapes_half").zh.contains("半块"), "物品名带形状")
 	main.free()
 
