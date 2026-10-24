@@ -19,7 +19,7 @@ func _ready() -> void:
 	var action: Rect2 = hud._action_btn.get_global_rect()
 	var bag: Rect2 = hud._bag_btn.get_global_rect()
 	var pause: Rect2 = hud._pause_btn.get_global_rect()
-	var ammo: Rect2 = hud._ammo.get_global_rect()
+	var ammo: Rect2 = hud._ammo_panel.get_global_rect()
 	check(not attack.intersects(aim), "攻击和瞄准不能重叠")
 	check(not aim.intersects(action), "瞄准和搜索不能重叠")
 	check(not bag.intersects(pause), "背包和暂停不能重叠")
@@ -63,6 +63,18 @@ func _ready() -> void:
 	hud._touch_down(3, ammo.get_center())
 	check_eq(reloads[0], 1, "点弹药数字应换弹")
 	hud._touch_up(3)
+	hud.set_ammo_data(2, "10", "9mm 普通", false, 15)
+	check_eq(hud._ammo_mag.text, "2", "显示弹匣数")
+	check_eq(hud._ammo_reserve.text, "/ 10", "显示备弹")
+	check_eq(hud._ammo_type.text, "9mm 普通", "显示弹种")
+	check(hud.crosshair_color().g < 0.8, "低弹量准星变色")
+	hud.set_ammo_data(0, "10", "9mm 普通", false, 15)
+	check(hud._ammo_type.text.contains("点这里换弹"), "空弹提示换弹")
+	check(hud.crosshair_color().g < 0.4, "空弹准星变红")
+	hud.set_ammo_data(2, "10", "9mm 普通", true, 15)
+	check(hud._ammo_type.text.contains("换弹中"), "换弹中提示")
+	hud.set_ammo("")
+	check(not hud._ammo_panel.visible, "切到空手应隐藏弹药面板")
 	hud._touch_down(4, jump.get_center())
 	check_eq(jumps[0], 1, "点跳应发信号")
 	hud._touch_up(4)
@@ -193,6 +205,14 @@ func _ready() -> void:
 	hud._settings_back_btn.pressed.emit()
 	check(hud._pause_panel.visible and get_tree().paused, "设置返回暂停页")
 	hud.set_paused(false)
+
+	# 快捷栏：格子缩小、显示装备名
+	Assets.ensure_item("testUiItem", "测试物品")
+	hud.set_inventory([{"id": "testUiItem", "count": 3, "equipped": true, "quality": 0}], ["testUiItem"])
+	await get_tree().process_frame
+	var slot: Control = hud._hotbar.get_child(0)
+	check_eq(slot.custom_minimum_size, Vector2(76, 76), "快捷栏格子 76")
+	check_eq(hud._hotbar_name.text, "测试物品", "切换时显示装备名")
 
 	# 结算页回标题
 	var backs := [0]
