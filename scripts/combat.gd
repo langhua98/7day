@@ -409,11 +409,9 @@ func _update_ammo_hud() -> void:
 	if row.get("kind", -1) != Assets.Kind.GUN:
 		hud.set_ammo("")
 		return
-	var text := "%d / %s" % [inventory.mags.get(inventory.equipped, 0),
-		"∞" if C.TEST_INFINITE else str(Weapons.ammo_count(inventory.inventory, inventory.equipped))]
-	var label := Weapons.ammo_label(inventory.mags_type.get(inventory.equipped, ""))
-	if label != "":
-		text += "  " + label
-	if _reload_left > 0.0:
-		text = "换弹中…"
-	hud.set_ammo(text)
+	var id := inventory.equipped
+	var st := Weapons.stats(id)
+	var mag := int(inventory.mags.get(id, 0))
+	var reserve := "∞" if C.TEST_INFINITE else str(Weapons.ammo_count(inventory.inventory, id))
+	var label := Weapons.ammo_label(inventory.mags_type.get(id, ""))
+	hud.set_ammo_data(mag, reserve, label, _reload_left > 0.0, st.mag)

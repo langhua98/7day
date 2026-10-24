@@ -34,14 +34,19 @@ var _effects := Label.new()
 var _jump_btn := Button.new()
 var _crouch_btn := Button.new()
 var _rotate_btn := Button.new()
-var _ammo := Label.new()
+var _ammo_panel := PanelContainer.new()
+var _ammo_mag := Label.new()
+var _ammo_reserve := Label.new()
+var _ammo_type := Label.new()
 var _kills := Label.new()
 var _toast := Label.new()
 var _banner := Label.new()
+var _hotbar_panel := PanelContainer.new()
 var _hotbar := HBoxContainer.new()
+var _hotbar_name := Label.new()
 var _attack_btn := Button.new()
 var _aim_btn := Button.new()
-var _cross := Label.new()
+var _cross := Crosshair.new()
 var _hitmarker := Label.new()
 var _action_btn := Button.new()
 var _progress := ProgressBar.new()
@@ -101,7 +106,6 @@ var _drag_last := {}
 var _toast_t := 0.0
 var _blood_day := false
 var _aim_id := -1
-var _cross_tween: Tween
 var _hit_tween: Tween
 ## 安全区：刘海、灵动岛、底部横条让出来的边距（画布像素）。按钮都放在 _safe 里
 var _safe := Control.new()
@@ -115,6 +119,7 @@ const QUALITY_COLORS := [Color(0.7, 0.7, 0.7), Color(0.65, 0.45, 0.25), Color(0.
 var _status_text := ""
 var _kills_text := ""
 var _ammo_text := ""
+var _hotbar_name_tween: Tween
 var _effects_text := ""
 var _banner_text := ""
 var _action_text := ""
@@ -200,16 +205,9 @@ func _ready() -> void:
 	_root.add_child(_toast)
 
 	# 准星
-	_cross.text = "+"
 	_cross.set_anchors_preset(Control.PRESET_CENTER)
-	_cross.position = Vector2(-16, -28)
-	_cross.size = Vector2(32, 56)
-	_cross.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_cross.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_cross.add_theme_font_size_override("font_size", 32)
-	_cross.modulate = Color(1, 1, 1, 0.6)
-	_cross.pivot_offset = _cross.size * 0.5
-	_cross.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_cross.position = Vector2(-32, -32)
+	_cross.size = Vector2(64, 64)
 	_root.add_child(_cross)
 
 	# 命中标记：打中僵尸在准星旁闪一下
@@ -235,17 +233,35 @@ func _ready() -> void:
 	_perf.visible = false
 	_root.add_child(_perf)
 
-	# 底部快捷栏
-	# 往两边长，格子多少都居中
-	_hotbar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	# 底部快捷栏：外面包一层半透明圆角底板
+	_hotbar_panel.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_hotbar_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_hotbar_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_hotbar_panel.offset_left = 0
+	_hotbar_panel.offset_right = 0
+	_hotbar_panel.offset_top = -118
+	_hotbar_panel.offset_bottom = -34
+	var hb_sb := StyleBoxFlat.new()
+	hb_sb.bg_color = Color(0.02, 0.02, 0.02, 0.42)
+	hb_sb.border_color = Color(1, 1, 1, 0.12)
+	hb_sb.set_border_width_all(1)
+	hb_sb.set_corner_radius_all(14)
+	hb_sb.set_content_margin_all(4)
+	_hotbar_panel.add_theme_stylebox_override("panel", hb_sb)
 	_hotbar.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_hotbar.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_hotbar.offset_left = 0
-	_hotbar.offset_right = 0
-	_hotbar.offset_top = -118
-	_hotbar.offset_bottom = -34
 	_hotbar.add_theme_constant_override("separation", 6)
-	_safe.add_child(_hotbar)
+	_hotbar_panel.add_child(_hotbar)
+	_safe.add_child(_hotbar_panel)
+	_hotbar_name.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_hotbar_name.position = Vector2(-300, -158)
+	_hotbar_name.size = Vector2(600, 40)
+	_hotbar_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_hotbar_name.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_hotbar_name.add_theme_font_size_override("font_size", 22)
+	_hotbar_name.add_theme_color_override("font_color", Color(1, 0.95, 0.8))
+	_hotbar_name.modulate.a = 0.0
+	_hotbar_name.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_safe.add_child(_hotbar_name)
 
 	# 按键布局照吃鸡手游（和平精英 / PUBG Mobile）的默认布局：
 	# 右边大开火键，开火键右上是跳，左上是开镜，左边是换弹；左手边摇杆上方一个小开火键；
@@ -270,15 +286,37 @@ func _ready() -> void:
 	_action_btn.visible = false
 	_safe.add_child(_action_btn)
 
-	# 子弹数：弹匣里 / 背包里
-	_ammo.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_ammo.position = Vector2(-300, -240)
-	_ammo.size = Vector2(600, 44)
-	_ammo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_ammo.add_theme_font_size_override("font_size", 34)
-	_ammo.add_theme_font_override("font", Hud.number_font())
-	_ammo.visible = false
-	_safe.add_child(_ammo)
+	# 子弹数：弹匣里 / 背包里 / 弹种
+	_ammo_panel.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_ammo_panel.position = Vector2(-260, -240)
+	_ammo_panel.size = Vector2(520, 78)
+	var am_sb := StyleBoxFlat.new()
+	am_sb.bg_color = Color(0.02, 0.02, 0.02, 0.42)
+	am_sb.border_color = Color(1, 1, 1, 0.14)
+	am_sb.set_border_width_all(1)
+	am_sb.set_corner_radius_all(14)
+	am_sb.set_content_margin_all(6)
+	_ammo_panel.add_theme_stylebox_override("panel", am_sb)
+	var am_row := HBoxContainer.new()
+	am_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	am_row.add_theme_constant_override("separation", 10)
+	_ammo_mag.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_ammo_mag.custom_minimum_size = Vector2(100, 0)
+	_ammo_mag.add_theme_font_size_override("font_size", 38)
+	_ammo_mag.add_theme_font_override("font", Hud.number_font())
+	am_row.add_child(_ammo_mag)
+	_ammo_reserve.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_ammo_reserve.add_theme_font_size_override("font_size", 24)
+	_ammo_reserve.add_theme_color_override("font_color", Color(1, 1, 1, 0.65))
+	_ammo_reserve.add_theme_font_override("font", Hud.number_font())
+	am_row.add_child(_ammo_reserve)
+	_ammo_type.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_ammo_type.add_theme_font_size_override("font_size", 20)
+	_ammo_type.add_theme_color_override("font_color", Color(0.9, 0.82, 0.65, 0.9))
+	am_row.add_child(_ammo_type)
+	_ammo_panel.add_child(am_row)
+	_ammo_panel.visible = false
+	_safe.add_child(_ammo_panel)
 
 	# 翻找进度条（屏幕中间偏下）
 	_progress.set_anchors_preset(Control.PRESET_CENTER)
@@ -792,14 +830,37 @@ func set_block_controls(rot: int, on: bool) -> void:
 
 ## 拿着枪时显示「弹匣 / 背包」子弹数和换弹键；text 为空就隐藏
 func set_ammo(text: String) -> void:
-	if text == _ammo_text:
+	if text == _ammo_text and text != "":
 		return
 	_ammo_text = text
-	_ammo.visible = text != ""
-	_ammo.text = text
-	_aim_btn.visible = text != ""
 	if text == "":
+		_ammo_panel.visible = false
+		_aim_btn.visible = false
 		aim_held = false
+		_cross.set_state(false, false)
+		return
+	var reloading := text.begins_with("换弹中")
+	var parts := text.split("  ")
+	var nums := parts[0].split(" / ")
+	var mag := int(nums[0]) if nums.size() > 0 and nums[0].is_valid_int() else 0
+	var reserve := nums[1] if nums.size() > 1 else ""
+	var label := parts[1] if parts.size() > 1 else ""
+	set_ammo_data(mag, reserve, label, reloading, maxi(mag, 1))
+
+
+func set_ammo_data(mag: int, reserve: String, label: String, reloading: bool, capacity: int) -> void:
+	_ammo_panel.visible = true
+	_aim_btn.visible = true
+	var low := capacity > 3 and mag > 0 and mag <= maxi(1, int(ceil(float(capacity) * 0.25)))
+	var empty := not reloading and mag <= 0
+	_ammo_mag.text = "…" if reloading else str(mag)
+	_ammo_reserve.text = "" if reloading else "/ " + str(reserve)
+	_ammo_type.text = "换弹中…" if reloading else ("空 · 点这里换弹" if empty else str(label))
+	_ammo_mag.add_theme_color_override("font_color",
+		Color(1, 0.3, 0.22, 0.95) if empty else (Color(1, 0.7, 0.25, 0.95) if low else Color(1, 1, 1, 0.95)))
+	_ammo_type.add_theme_color_override("font_color",
+		Color(1, 0.35, 0.25, 0.95) if empty else (Color(1, 0.75, 0.3, 0.95) if low else Color(0.9, 0.82, 0.65, 0.9)))
+	_cross.set_state(low, empty)
 
 
 func set_survival(water: float, effects: String) -> void:
@@ -970,6 +1031,20 @@ func set_inventory(list: Array, hotbar_ids: Array) -> void:
 		c.queue_free()
 	for id in hotbar_ids:
 		_hotbar.add_child(_slot(id, list))
+	var eq_name := ""
+	for e in list:
+		if e.get("equipped", false):
+			eq_name = Assets.display_name(str(e.id))
+			break
+	if eq_name != _hotbar_name.text:
+		_hotbar_name.text = eq_name
+		if _hotbar_name_tween and _hotbar_name_tween.is_valid():
+			_hotbar_name_tween.kill()
+		_hotbar_name.modulate.a = 1.0 if eq_name != "" else 0.0
+		if eq_name != "":
+			_hotbar_name_tween = create_tween()
+			_hotbar_name_tween.tween_interval(1.2)
+			_hotbar_name_tween.tween_property(_hotbar_name, "modulate:a", 0.0, 0.5)
 
 
 ## 刘海 / 灵动岛 / 底部横条：读系统给的安全区，换算成画布像素
@@ -1015,7 +1090,7 @@ func _slot(id: String, list: Array, with_name := false) -> Control:
 		if e.id == id:
 			entry = e
 	var b := Button.new()
-	b.custom_minimum_size = Vector2(84, 84) if not with_name else Vector2(110, 140)
+	b.custom_minimum_size = Vector2(76, 76) if not with_name else Vector2(110, 140)
 	b.icon = Assets.icon(id)
 	b.expand_icon = true
 	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1029,11 +1104,14 @@ func _slot(id: String, list: Array, with_name := false) -> Control:
 	b.clip_text = true
 	if entry.get("equipped", false):
 		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color(0.3, 0.22, 0.08, 0.85)
+		sb.bg_color = Color(0.3, 0.22, 0.08, 0.9)
 		sb.border_color = Color(1, 0.8, 0.3)
 		sb.set_border_width_all(3)
 		sb.set_corner_radius_all(12)
 		b.add_theme_stylebox_override("normal", sb)
+		if not with_name:
+			b.pivot_offset = Vector2(38, 38)
+			b.scale = Vector2(1.06, 1.06)
 	b.set_meta("item", id)
 	var quality: int = int(entry.get("quality", 0))
 	if quality > 1:
@@ -1095,11 +1173,11 @@ func hitmarker(headshot := false) -> void:
 
 ## 开枪/攻击时准星轻轻放大再回弹
 func crosshair_kick() -> void:
-	if _cross_tween and _cross_tween.is_valid():
-		_cross_tween.kill()
-	_cross.scale = Vector2(1.25, 1.25)
-	_cross_tween = create_tween()
-	_cross_tween.tween_property(_cross, "scale", Vector2.ONE, 0.14)
+	_cross.kick()
+
+
+func crosshair_color() -> Color:
+	return _cross.color
 
 
 func consume_look() -> Vector2:
@@ -1181,8 +1259,8 @@ func _touch_down(index: int, pos: Vector2) -> void:
 		_drag_last[index] = pos  # 按住开火再拖动可以边打边转视角
 		_press_attack(true)
 		return
-	if _ammo.visible and _ammo.get_global_rect().grow(8).has_point(pos):
-		_press_button(_ammo)
+	if _ammo_panel.visible and _ammo_panel.get_global_rect().grow(8).has_point(pos):
+		_press_button(_ammo_panel)
 		reload_pressed.emit()
 		return
 	if _rotate_btn.visible and _rotate_btn.get_global_rect().grow(10).has_point(pos):
