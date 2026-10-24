@@ -56,6 +56,8 @@ func reset() -> void:
 ## 一格最多叠几个：官方 Stacknumber，没有就 1
 static func stack_of(id: String) -> int:
 	var info: Dictionary = Data.items.get(id, {})
+	if info.is_empty() and Blocks.is_block(id):
+		info = Data.items.get(Blocks.base_of(id), {})
 	return maxi(1, int(info.get("stack", 1)))
 
 
@@ -444,6 +446,12 @@ func give_all_items(top_up := false) -> void:
 				mags[id] = Weapons.stats(id).mag
 			if not mags_type.has(id):
 				mags_type[id] = Weapons.default_ammo(id)
+	for id in Blocks.variant_ids():
+		Assets.ensure_item(id, Blocks.info(id).zh).kind = Assets.Kind.BLOCK
+		var want := mini(C.TEST_BLOCKS, stack_of(id))
+		var have := count(id)
+		if have < want:
+			_put({"id": id, "count": want - have, "quality": 0, "durability": 0.0})
 	_reindex()
 	changed.emit()
 	if top_up:

@@ -10,6 +10,8 @@ signal reload_pressed
 signal jump_pressed
 ## 6a：蹲伏切换
 signal crouch_pressed
+signal shape_pressed
+signal rotate_pressed
 signal continue_pressed
 signal settings_changed(settings: Dictionary)
 signal quit_to_title
@@ -32,6 +34,8 @@ var _effects := Label.new()
 var _reload_btn := Button.new()
 var _jump_btn := Button.new()
 var _crouch_btn := Button.new()
+var _shape_btn := Button.new()
+var _rotate_btn := Button.new()
 var _ammo := Label.new()
 var _kills := Label.new()
 var _toast := Label.new()
@@ -244,9 +248,13 @@ func _ready() -> void:
 	_round(_crouch_btn, "蹲", Control.PRESET_BOTTOM_RIGHT, Vector2(-130, -250), 110, 28)
 	_round(_aim_btn, "开镜", Control.PRESET_BOTTOM_RIGHT, Vector2(-440, -440), 110, 26)
 	_round(_reload_btn, "换弹", Control.PRESET_BOTTOM_RIGHT, Vector2(-440, -270), 100, 24)
+	_round(_shape_btn, "形状\n整块", Control.PRESET_BOTTOM_RIGHT, Vector2(-550, -400), 100, 20)
+	_round(_rotate_btn, "旋转\n0°", Control.PRESET_BOTTOM_RIGHT, Vector2(-550, -300), 100, 20)
 	_round(_fire_left, "开火", Control.PRESET_BOTTOM_LEFT, Vector2(50, -440), 110, 24)
 	_aim_btn.visible = false
 	_reload_btn.visible = false
+	_shape_btn.visible = false
+	_rotate_btn.visible = false
 
 	# 搜索 / 拾取：走近容器或地上的东西才出现
 	_action_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
@@ -654,6 +662,14 @@ func set_crouch(on: bool) -> void:
 	_crouch_btn.self_modulate = Color(1.0, 0.85, 0.4) if on else Color.WHITE
 
 
+func set_block_controls(shape_name: String, rot: int, on: bool, can_cycle := true) -> void:
+	_shape_btn.visible = on and can_cycle
+	_rotate_btn.visible = on
+	if on:
+		_shape_btn.text = "形状\n" + shape_name
+		_rotate_btn.text = "旋转\n%d°" % (rot * 90)
+
+
 ## 拿着枪时显示「弹匣 / 背包」子弹数和换弹键；text 为空就隐藏
 func set_ammo(text: String) -> void:
 	if text == _ammo_text:
@@ -1051,6 +1067,14 @@ func _touch_down(index: int, pos: Vector2) -> void:
 	if _reload_btn.visible and _reload_btn.get_global_rect().grow(10).has_point(pos):
 		_press_button(_reload_btn)
 		reload_pressed.emit()
+		return
+	if _shape_btn.visible and _shape_btn.get_global_rect().grow(10).has_point(pos):
+		_press_button(_shape_btn)
+		shape_pressed.emit()
+		return
+	if _rotate_btn.visible and _rotate_btn.get_global_rect().grow(10).has_point(pos):
+		_press_button(_rotate_btn)
+		rotate_pressed.emit()
 		return
 	if _jump_btn.get_global_rect().grow(10).has_point(pos):
 		_press_button(_jump_btn)
