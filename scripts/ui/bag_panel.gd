@@ -27,7 +27,8 @@ var _cap := 45
 var _used := 0
 var _filter := "all"
 const FILTERS := [["all", "全部"], ["weapon", "武器"], ["food", "食物"],
-	["medical", "药品"], ["material", "材料"], ["block", "方块"], ["attachment", "附件"]]
+	["medical", "药品"], ["material", "材料"], ["block", "方块"], ["attachment", "附件"],
+	["vehicle", "载具"]]
 
 
 func _init() -> void:
@@ -180,6 +181,8 @@ static func _matches(id: String, filter: String) -> bool:
 			return kind == Assets.Kind.BLOCK
 		"attachment":
 			return kind == Assets.Kind.ATTACHMENT
+		"vehicle":
+			return kind == Assets.Kind.VEHICLE
 		_:
 			return true
 
@@ -210,7 +213,7 @@ func _open_menu(i: int) -> void:
 	var kind: int = row.get("kind", -1)
 	_menu_label.text = Assets.display_name(s.id) + (" ×%d" % s.count if s.count > 1 else "") + \
 		("  Q%d" % s.quality if int(s.quality) > 0 else "")
-	if kind in [Assets.Kind.GUN, Assets.Kind.MELEE, Assets.Kind.BLOCK]:
+	if kind in [Assets.Kind.GUN, Assets.Kind.MELEE, Assets.Kind.BLOCK, Assets.Kind.VEHICLE]:
 		_use_btn.text = "卸下" if s.id == _equipped else "装备"
 	elif kind in [Assets.Kind.FOOD, Assets.Kind.DRINK, Assets.Kind.MEDICAL]:
 		_use_btn.text = "使用"

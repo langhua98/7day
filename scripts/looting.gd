@@ -177,6 +177,11 @@ func update_action(delta: float) -> void:
 	if loot:
 		hud.set_action("拾取\n%s" % Assets.display_name(loot.get_meta("item")))
 		return
+	if main.vehicles and not main.vehicles.driving:
+		var veh = main.vehicles.nearest(player_sys.player.position)
+		if veh != null:
+			hud.set_action("驾驶\n%s" % Assets.display_name(veh.id))
+			return
 	var crate := nearest_crate()
 	if not crate.is_empty():
 		hud.set_action("打开\n%s" % crate.name)
@@ -203,6 +208,8 @@ func update_action(delta: float) -> void:
 func action() -> void:
 	if not running or not _search.is_empty():
 		return
+	if main.vehicles and main.vehicles.driving:
+		return
 	var loot := nearest_loot()
 	if loot:
 		var amount := int(loot.get_meta("amount", 0))
@@ -211,6 +218,8 @@ func action() -> void:
 			loot.queue_free()
 		else:
 			loot.set_meta("amount", left)
+		return
+	if main.vehicles and main.vehicles.try_mount():
 		return
 	var crate := nearest_crate()
 	if not crate.is_empty():

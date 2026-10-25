@@ -13,6 +13,7 @@ var combat: CombatSystem
 var spawner: SpawnerSystem
 var horde: Horde
 var looting: LootingSystem
+var vehicles: Vehicles
 var respawn: RespawnSystem
 var crafting: Crafting
 var save_game: SaveGame
@@ -59,6 +60,10 @@ func _ready() -> void:
 	looting.setup(self, world, player_sys, inventory, hud, rng)
 	looting.build()
 
+	vehicles = Vehicles.new()
+	vehicles.setup(self, world, player_sys, inventory, hud, rng)
+	vehicles.build()
+
 	respawn = RespawnSystem.new()
 	respawn.setup(self, world, player_sys, inventory, looting, hud)
 	respawn.build()
@@ -96,6 +101,7 @@ func _ready() -> void:
 	hud.item_dropped.connect(looting.drop_slot)
 	hud.bag_compact_pressed.connect(inventory.compact)
 	hud.action_pressed.connect(looting.action)
+	hud.exit_vehicle_pressed.connect(func(): vehicles.exit_vehicle())
 	hud.reload_pressed.connect(combat.reload)
 	hud.rotate_pressed.connect(combat.rotate_block)
 	hud.scope_pressed.connect(inventory.cycle_scope)
@@ -165,6 +171,7 @@ func start(fresh := true) -> void:
 	spawner.reset()
 	horde.reset()
 	looting.reset()
+	vehicles.reset()
 	respawn.reset()
 	time_sys.reset()
 	player_sys.reset()
@@ -224,6 +231,8 @@ func _compass_marker(pos: Vector3, color: Color) -> Dictionary:
 
 ## 死了：PERMADEATH 下结算删档；否则停住游戏，黑屏后在睡袋醒来（respawn.gd）
 func _die() -> void:
+	if vehicles.driving:
+		vehicles.exit_vehicle()
 	if C.PERMADEATH:
 		_end()
 		return
@@ -275,14 +284,18 @@ func _process(delta: float) -> void:
 	var night := time_sys.night
 	var blood_moon := time_sys.blood_moon
 
-	player_sys.aiming = hud.aim_held \
+	player_sys.aiming = hud.aim_held and not vehicles.driving \
 		and Assets.items_by_id.get(inventory.equipped, {}).get("kind", -1) == Assets.Kind.GUN
-	player_sys.update(delta)
-	combat.update(delta)
+	if vehicles.driving:
+		vehicles.update(delta)
+		looting.update_loot(delta)
+	else:
+		player_sys.update(delta)
+		combat.update(delta)
+		looting.update_loot(delta)
+		looting.update_action(delta)
 	spawner.update(delta, day, night, blood_moon)
 	horde.update(delta, blood_moon, day)
-	looting.update_loot(delta)
-	looting.update_action(delta)
 	respawn.update(delta)
 	player_sys.update_survival(delta, time_sys.hours - hours_before)
 	if graphics.sky_due(delta):

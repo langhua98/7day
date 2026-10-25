@@ -5,7 +5,7 @@ extends Node
 const ROOT := "res://assets"
 const INDEX_PATH := "res://assets/index/icon_to_model.json"
 
-enum Kind { MELEE, GUN, FOOD, DRINK, MEDICAL, RESOURCE, OTHER, BLOCK, ATTACHMENT }
+enum Kind { MELEE, GUN, FOOD, DRINK, MEDICAL, RESOURCE, OTHER, BLOCK, ATTACHMENT, VEHICLE }
 
 ## 每项: {id, zh, en, model, icon, kind, power}
 var items: Array[Dictionary] = []
@@ -83,6 +83,7 @@ func scan() -> void:
 	_load_index()
 	_add_blocks()
 	_add_attachments()
+	_add_vehicles()
 
 	if zombie_models.is_empty():
 		errors.append("assets/models/ 里没有文件名含 zombie 的模型")
@@ -194,6 +195,23 @@ func _add_blocks() -> void:
 			row.zh = info.zh
 		row.model = ""
 		row.kind = Kind.BLOCK
+		row.power = 0.0
+
+
+## 可驾驶载具也当物品放进背包（id 用官方的 vehicle*Placeable）
+func _add_vehicles() -> void:
+	for id in GameConfig.VEHICLES:
+		var def: Dictionary = GameConfig.VEHICLES[id]
+		var row: Dictionary = items_by_id.get(id, {})
+		if row.is_empty():
+			row = {"id": id, "zh": str(def.get("zh", id)), "en": "", "model": "",
+				"icon": _icon_files.get(id.to_lower(), "")}
+			items.append(row)
+			items_by_id[id] = row
+		if row.zh == "":
+			row.zh = str(def.get("zh", id))
+		row.model = ""
+		row.kind = Kind.VEHICLE
 		row.power = 0.0
 
 

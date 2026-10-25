@@ -16,6 +16,7 @@
     assets/index/item_models.json      （物品模型名 → 网格、贴图）
     assets/world/*.obj/.png            （市中心场景：车辆、可翻找的容器、杂物、地面和楼的贴图）
     assets/index/world_models.json     （场景模型的类别、中文名、战利品类型）
+    assets/vehicles/*.glb/.obj/.png    （可驾驶载具：自行车、小摩托、4x4、旋翼机）
     assets/world/bedroll.obj/.png      （睡袋，从 respawnpoints.zip 取）
     assets/poi/*.poimesh/.xml          （市中心建筑，再用 tools/build_poi.gd 转成 .res）
     assets/poi/*.tts/.nim → *.full     （完整方块数据，tools/build_poi_full.py 生成路口几栋楼的完整网格）
@@ -59,7 +60,7 @@ DEFAULT_ZOMBIES = ["soldier", "nurse", "cop", "biker", "lumberjack", "joe", "arl
 ## 玩家方块形状：按形状名/ 下的官方 glb，运行时由 build_block_shapes.py 转成 JSON
 BLOCK_SHAPE_FILES = ("cube.glb", "cubeHalf.glb", "ramp.glb", "stairs.glb", "pole.glb", "plate.glb")
 # 游戏会用到的物品前缀（图标太多，只取这些，--all-icons 可以全取）
-GAME_PREFIXES = ("melee", "gun", "food", "drink", "medical", "resource", "ammo", "armor", "apparel", "thrown", "tool")
+GAME_PREFIXES = ("melee", "gun", "food", "drink", "medical", "resource", "ammo", "armor", "apparel", "thrown", "tool", "vehicle")
 
 
 def token():
@@ -584,6 +585,67 @@ def fetch_world(dest):
     with open(index_out, "w", encoding="utf-8") as f:
         json.dump(index, f, ensure_ascii=False, indent=1)
     print(f"市中心场景: 模型 {len(index['models'])} 个，贴花 {len(index['decals'])} 张，贴图 {len(index['textures'])} 张")
+
+
+# —— 可驾驶载具 ——
+# 自行车和旋翼机用云盘样例里的 glb（glb 里只有 2×2 占位贴图，游戏里用纯色）；小摩托和 4x4 从 vehicles.zip 取分件和贴图
+VEHICLE_SAMPLES = [("bike_LOD0.glb", "bike.glb"), ("gyrocopter_LOD0.glb", "gyrocopter.glb")]
+VEHICLE_ZIP_FILES = {
+    "minibike_LOD0.obj": "minibike.obj",
+    "minibike.png": "minibike.png",
+    "4X4body_LOD0.obj": "4x4_body.obj",
+    "4X4undercarriage_LOD0.obj": "4x4_under.obj",
+    "4X4hood_LOD0.obj": "4x4_hood.obj",
+    "4X4doorL_LOD0.obj": "4x4_door_l.obj",
+    "4X4doorR_LOD0.obj": "4x4_door_r.obj",
+    "4X4tailGate_LOD0.obj": "4x4_tailgate.obj",
+    "4X4headLight_LOD0.obj": "4x4_headlight.obj",
+    "4X4steeringWheel_LOD0.obj": "4x4_wheel_steer.obj",
+    "4X4truckWheels_LOD0.obj": "4x4_wheel.obj",
+    "4X4truck.png": "4x4.png",
+}
+
+
+def fetch_vehicles(dest):
+    out_dir = os.path.join(dest, "vehicles")
+    os.makedirs(out_dir, exist_ok=True)
+    folder = f"{DRIVE_ROOT}/样例/models/vehicles"
+    samples = {os.path.splitext(i["name"])[0]: i for i in list_dir(folder)}
+    for src, dst_name in VEHICLE_SAMPLES:
+        it = samples.get(os.path.splitext(src)[0])
+        out = os.path.join(out_dir, dst_name)
+        if it is None:
+            print(f"  云盘样例里没有 {src}，跳过")
+        elif os.path.exists(out) and os.path.getsize(out) == it.get("size"):
+            print(f"载具 {dst_name}: 已有，跳过")
+        else:
+            print(f"载具 {dst_name}: 下载 …")
+            download(it, out)
+    zf = open_remote_zip(f"{DRIVE_ROOT}/{WORLD_ENT}/vehicles.zip")
+    if zf is None:
+        print("云盘里没有 vehicles.zip，跳过小摩托和 4x4")
+        return
+    members = {}
+    for info in zf.infolist():
+        members[os.path.basename(info.filename)] = info
+    for src, dst_name in VEHICLE_ZIP_FILES.items():
+        info = members.get(src)
+        out = os.path.join(out_dir, dst_name)
+        if info is None:
+            print(f"  vehicles.zip 里没有 {src}，跳过")
+            continue
+        if dst_name.endswith(".png"):
+            # 官方载具贴图是 4K，装了 Pillow 就缩到 1024，省手机内存
+            if os.path.exists(out) and os.path.getsize(out) < 4_000_000:
+                continue
+            _save_png(zf.read(info), out, 1024)
+            continue
+        if os.path.exists(out) and os.path.getsize(out) == info.file_size:
+            continue
+        with zf.open(info) as fsrc, open(out, "wb") as fdst:
+            shutil.copyfileobj(fsrc, fdst)
+    zf.close()
+    print(f"载具模型: → {os.path.relpath(out_dir)}")
 
 
 # 睡袋（3c）：automatic_assets_entities/respawnpoints.zip 里按名字找网格和贴图
@@ -1366,7 +1428,7 @@ def main():
     ap.add_argument("--zombies", default=",".join(DEFAULT_ZOMBIES), help="逗号分隔的僵尸名，或 all")
     ap.add_argument("--music", type=int, default=6, help="每类音乐取几段")
     ap.add_argument("--all-icons", action="store_true", help="取全部图标（默认只取游戏会用到的）")
-    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,respawn,poi,full,blockshapes,props,stations,blocks,terrain,effects,music,sounds,sky,ui,data")
+    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,vehicles,respawn,poi,full,blockshapes,props,stations,blocks,terrain,effects,music,sounds,sky,ui,data")
     args = ap.parse_args()
     skip = set(filter(None, args.skip.split(",")))
     dest = os.path.abspath(args.dest)
@@ -1384,6 +1446,8 @@ def main():
         fetch_fp_arms(dest)
     if "world" not in skip:
         fetch_world(dest)
+    if "vehicles" not in skip:
+        fetch_vehicles(dest)
     if "respawn" not in skip:
         fetch_respawn(dest)
     if "poi" not in skip:

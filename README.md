@@ -5,6 +5,7 @@
 ## 玩法
 
 - 第一人称。左半屏拖动移动，右半屏拖动转视角，按住「攻击」挥武器。
+- 载具：测试模式背包里有自行车、小摩托、4x4 卡车、旋翼机。点背包拿在手上，对准 4 米外的空地按「攻击」摆下，走近点「驾驶」。驾驶时第三人称跟车：左摇杆转向，右摇杆上推油门、下拉刹车/倒车，点「下车」离开。
 - 背包 45 格，每格按官方叠加上限堆叠；超过 45 格每多 1 格慢 10%（最多 50%），超重不能冲刺。点「背包」里的格子可以使用/装备或丢弃；右上「整理」会合并同类、去掉测试模式的重复物品并排序。
 - 翻完容器会打开容器面板：点一下在容器和背包之间转移，「全部拿走」一键收，离开 2 米自动关，没拿完的东西会留在容器里。背包里的「可写木箱（储物箱）」可以像方块一样摆下，32 格，存档会保存。
 - 走近地上的物品自动捡起。捡到更好的武器会自动换上；食物、饮料、药品在底部快捷栏或「背包」里点一下使用。
@@ -29,7 +30,11 @@
 | `assets/models/<模型名>.glb` 或 `.obj` + 同名 `.png` | 物品模型、第一人称手臂 `FP_ARM_M` |
 | `assets/props/*.glb` | 场景里摆的车辆、家具 |
 | `assets/textures/*.png` | 地面贴图、手臂贴图 |
-| `assets/music/*.wav` | 文件名含 Exp / Cbt / Sus / Bld |
+| `assets/vehicles/*.glb/.obj` + 同名 `.png`
+
+可驾驶载具模型（自行车、小摩托、4x4 分件、旋翼机）
+
+`assets/music/*.wav` | 文件名含 Exp / Cbt / Sus / Bld |
 
 物品表里的模型名是 prefab 名（如 `chainsawPrefab`），导出的文件名是网格名（如 `Chainsaw_LOD0.glb`），游戏会去掉 `Prefab`、`_LOD0`、`Mesh` 后再比对。
 
@@ -84,6 +89,8 @@ scripts/crafting.gd    合成：配方（assets/data/recipes.json）、材料、
 scripts/ui/craft_panel.gd 合成面板（HUD「合成」按钮）
 scripts/atmosphere.gd  天空、太阳、环境光、音乐、血月横幅
 scripts/save_game.gd   存档和读档
+scripts/vehicle.gd     载具（外观和简单驾驶物理）
+scripts/vehicles.gd    载具管理（摆放、上下车、存档）
 scripts/zombie.gd      僵尸（代码驱动骨骼走路）
 scripts/fp_arms.gd     第一人称手臂和手持武器
 scripts/blocks.gd      建造方块（种类、耐久、贴图）

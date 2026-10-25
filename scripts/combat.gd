@@ -20,6 +20,8 @@ var _reload_left := 0.0
 ## 拿着方块时准星指的那一格，显示一个半透明的框
 var _ghost: MeshInstance3D
 var _ghost_box: BoxMesh
+## 载具预览框单独一个 BoxMesh，免得改大小影响工作站预览
+var _veh_ghost_box: BoxMesh
 var block_rot := 0
 
 
@@ -41,6 +43,7 @@ func build() -> void:
 	_ghost = MeshInstance3D.new()
 	_ghost_box = BoxMesh.new()
 	_ghost_box.size = Vector3.ONE * 1.02
+	_veh_ghost_box = BoxMesh.new()
 	_ghost.mesh = _ghost_box
 	var gm := StandardMaterial3D.new()
 	gm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -105,6 +108,11 @@ func attack() -> void:
 	hud.crosshair_kick()
 	var row: Dictionary = Assets.items_by_id.get(inventory.equipped, {})
 	var kind: int = row.get("kind", -1)
+	if kind == Assets.Kind.VEHICLE:
+		attack_cd = C.BUILD_COOLDOWN
+		if main.vehicles:
+			main.vehicles.place_from_item()
+		return
 	if kind == Assets.Kind.GUN:
 		_fire(row)
 		return
@@ -185,6 +193,19 @@ func _place_target() -> Variant:
 
 func _update_ghost() -> void:
 	var row: Dictionary = Assets.items_by_id.get(inventory.equipped, {})
+	if row.get("kind", -1) == Assets.Kind.VEHICLE:
+		var pv: Dictionary = {}
+		if main.vehicles:
+			pv = main.vehicles.preview(inventory.equipped)
+		_ghost.visible = not pv.is_empty()
+		_ghost.rotation.y = float(pv.get("rot", 0.0))
+		if not pv.is_empty():
+			var r := float(pv.get("radius", 1.2))
+			_veh_ghost_box.size = Vector3(r * 1.8, 1.2, r * 2.8)
+			_ghost.mesh = _veh_ghost_box
+			_ghost.position = Vector3(pv.pos) + Vector3(0.0, 0.6, 0.0)
+		return
+	_ghost.rotation.y = 0.0
 	var c = _place_target() if row.get("kind", -1) == Assets.Kind.BLOCK else null
 	_ghost.visible = c != null
 	if c != null:

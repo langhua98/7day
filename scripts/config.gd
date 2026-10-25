@@ -325,3 +325,33 @@ const CROUCH_SPEED_MULT := 0.5
 ## AI 预算：每帧最多更新几只的感知；多远停骨骼（近处按距离降帧见 zombie_body.gd）
 const AI_SENSE_PER_FRAME := 6
 const ZOMBIE_ANIM_OFF_DIST := 50.0
+
+# —— 载具（基础驾驶）——
+## 物品 id → 载具定义。model 是 assets/vehicles/ 下的文件名；"4x4" 表示用分件拼。
+## yaw 用来把车头转到 -Z（Godot 的前方）；speed 米/秒，accel 米/秒²，radius 碰撞半径
+const VEHICLES := {
+	"vehicleBicyclePlaceable": {"zh": "自行车", "model": "bike.glb", "yaw": PI,
+		"speed": 6.0, "accel": 4.0, "radius": 0.7, "tint": Color(0.55, 0.25, 0.2)},
+	"vehicleMinibikePlaceable": {"zh": "小型机车", "model": "minibike.obj", "yaw": PI,
+		"speed": 12.0, "accel": 6.0, "radius": 0.85},
+	"vehicleTruck4x4Placeable": {"zh": "4x4 卡车", "model": "4x4", "yaw": PI,
+		"speed": 13.0, "accel": 6.5, "radius": 1.5},
+	"vehicleGyrocopterPlaceable": {"zh": "旋翼机", "model": "gyrocopter.glb", "yaw": PI,
+		"speed": 10.0, "accel": 5.0, "radius": 1.2, "tint": Color(0.45, 0.5, 0.4)},
+}
+## 倒车最高速度 = 前进最高速度 × 这个
+const VEHICLE_REVERSE_MULT := 0.4
+## 刹车减速度、松油门后的摩擦减速（米/秒²）
+const VEHICLE_BRAKE := 12.0
+const VEHICLE_FRICTION := 2.5
+## 转向角速度（弧度/秒），速度越快转得越顺
+const VEHICLE_TURN_RATE := 1.6
+const VEHICLE_TURN_SPEED_REF := 4.0
+## 离载具多近能上车、最多同时摆几辆、摆车时车头离人至少多远
+const VEHICLE_MOUNT_DIST := 3.0
+const VEHICLE_LIMIT := 4
+const VEHICLE_PLACE_DIST := 4.0
+## 驾驶时第三人称相机：高度、车后距离、俯角（弧度）
+const VEHICLE_CAM_HEIGHT := 3.6
+const VEHICLE_CAM_BACK := 7.0
+const VEHICLE_CAM_PITCH := 0.18

@@ -37,6 +37,8 @@ var _infect_acc := 0.0
 ## 6a：蹲伏（HUD「蹲」按钮切换）
 var crouching := false
 var _crouch_h := 0.0
+## 驾驶载具：位置和朝向由 vehicles.gd 同步，不走路
+var driving := false
 
 
 func setup(parent: Node3D, world_ref: World, hud_ref: Hud, rng_ref: RandomNumberGenerator) -> void:
@@ -60,6 +62,8 @@ func build() -> void:
 
 
 func reset() -> void:
+	driving = false
+	arms.visible = true
 	player.position = Vector3.ZERO
 	crouching = false
 	_crouch_h = 0.0
@@ -92,7 +96,43 @@ func reset() -> void:
 	_infect_acc = 0.0
 
 
+## 上车：收起手臂，相机拉到车后
+func begin_driving() -> void:
+	driving = true
+	aiming = false
+	crouching = false
+	GameState.player_crouching = false
+	_vy = 0.0
+	_air_top = player.position.y
+	_sprinting = false
+	arms.visible = false
+	camera.position = Vector3(0.0, C.VEHICLE_CAM_HEIGHT, C.VEHICLE_CAM_BACK)
+	camera.rotation.x = -C.VEHICLE_CAM_PITCH
+	camera.fov = C.BASE_FOV
+
+
+## 下车：恢复第一人称（站的位置由 vehicles.gd 放好）
+func end_driving() -> void:
+	driving = false
+	arms.visible = true
+	camera.position.y = C.PLAYER_EYE_HEIGHT
+	camera.rotation.x = clampf(pitch, -1.4, 1.4)
+	camera.fov = C.BASE_FOV
+	_air_top = player.position.y
+	_grounded = true
+
+
+## 驾驶中每帧：位置和朝向由 vehicles.gd 同步，这里只跟相机
+func update_driving(delta: float) -> void:
+	camera.position = Vector3(0.0, C.VEHICLE_CAM_HEIGHT, C.VEHICLE_CAM_BACK)
+	camera.rotation.x = lerp_angle(camera.rotation.x, -C.VEHICLE_CAM_PITCH, 1.0 - exp(-delta * 10.0))
+	camera.fov = lerp(camera.fov, C.BASE_FOV + 4.0, 1.0 - exp(-delta * 6.0))
+	arms.set_meta("walking", 0.0)
+
+
 func update(delta: float) -> void:
+	if driving:
+		return
 	var look := hud.consume_look()
 	arms.look(look)
 	arms.set_aiming(aiming)

@@ -289,7 +289,8 @@ func refresh() -> void:
 	var bar: Array[String] = []
 	if equipped != "":
 		bar.append(equipped)
-	var kinds := [Assets.Kind.GUN, Assets.Kind.MELEE, Assets.Kind.BLOCK, Assets.Kind.FOOD, Assets.Kind.DRINK, Assets.Kind.MEDICAL]
+	var kinds := [Assets.Kind.GUN, Assets.Kind.MELEE, Assets.Kind.BLOCK, Assets.Kind.VEHICLE,
+		Assets.Kind.FOOD, Assets.Kind.DRINK, Assets.Kind.MEDICAL]
 	for pass_ in 2:
 		for k in kinds:
 			for id in pickup_order:
@@ -433,6 +434,11 @@ func use_item(id: String) -> void:
 			equip("" if equipped == id else id)
 			if equipped == id:
 				hud.toast("拿着%s：对准地面或方块点「攻击」摆放，空手或近战打方块能拆" % Assets.display_name(id))
+		Assets.Kind.VEHICLE:
+			equip("" if equipped == id else id)
+			if equipped == id:
+				hud.toast("拿着%s：对准空地（离自己 %d 米外）点「攻击」摆放" % [
+					Assets.display_name(id), int(C.VEHICLE_PLACE_DIST)])
 		Assets.Kind.ATTACHMENT:
 			install_scope(id)
 			return
@@ -526,6 +532,10 @@ func give_all_items(top_up := false) -> void:
 			_put({"id": id, "count": want - have, "quality": 0, "durability": 0.0})
 	for id in Attachments.IDS:
 		Assets.ensure_item(id, Attachments.label(id)).kind = Assets.Kind.ATTACHMENT
+		if count(id) < 1:
+			_put({"id": id, "count": 1, "quality": 0, "durability": 0.0})
+	for id in C.VEHICLES:
+		Assets.ensure_item(id, str(C.VEHICLES[id].get("zh", id))).kind = Assets.Kind.VEHICLE
 		if count(id) < 1:
 			_put({"id": id, "count": 1, "quality": 0, "durability": 0.0})
 	_reindex()

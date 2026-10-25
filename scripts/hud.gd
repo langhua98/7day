@@ -18,11 +18,16 @@ signal quit_to_title
 signal back_to_title
 signal item_dropped(index: int)
 signal bag_compact_pressed
+## 载具：驾驶中按「下车」
+signal exit_vehicle_pressed
 
 var move := Vector2.ZERO          # 摇杆输出，x 右 y 前
 var look_delta := Vector2.ZERO    # 本帧视角拖动量（像素）
 var attack_held := false
 var aim_held := false
+## 驾驶：左摇杆 move.x 转向，右摇杆 drive.y 油门/刹车（上=前进，下=刹车/倒车）
+var driving := false
+var drive := Vector2.ZERO
 
 var _root := Control.new()
 var _status := Label.new()
@@ -123,6 +128,14 @@ var _joy_origin := Vector2.ZERO
 var _look_id := -1
 ## 能拖动转视角的手指上一帧位置：空白处的右半屏、攻击键、瞄准键都算（边开火边转）
 var _drag_last := {}
+## 驾驶右摇杆和速度表、下车键
+var _drive_id := -1
+var _drive_origin := Vector2.ZERO
+var _drive_base := Panel.new()
+var _drive_knob := Panel.new()
+var _speed_panel := PanelContainer.new()
+var _speed_label := Label.new()
+var _exit_btn := Button.new()
 var _toast_t := 0.0
 var _blood_day := false
 var _aim_id := -1
@@ -426,6 +439,44 @@ func _ready() -> void:
 	_joy_base.size = Vector2(JOY_RADIUS * 2, JOY_RADIUS * 2)
 	_joy_knob.size = Vector2(76, 76)
 	_reset_joystick()
+
+	# 驾驶：右半屏油门/刹车摇杆（按住才出现，和左摇杆一样跟着手指走）
+	for p in [_drive_base, _drive_knob]:
+		var sb2 := StyleBoxFlat.new()
+		sb2.bg_color = Color(1.0, 0.85, 0.5, 0.08 if p == _drive_base else 0.32)
+		sb2.border_color = Color(1.0, 0.85, 0.5, 0.4)
+		sb2.set_border_width_all(3 if p == _drive_base else 0)
+		sb2.set_corner_radius_all(int(JOY_RADIUS) if p == _drive_base else 38)
+		p.add_theme_stylebox_override("panel", sb2)
+		p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		p.visible = false
+		_safe.add_child(p)
+	_drive_base.size = Vector2(JOY_RADIUS * 2, JOY_RADIUS * 2)
+	_drive_knob.size = Vector2(76, 76)
+
+	# 速度表（驾驶时显示在底部中间）
+	_speed_panel.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_speed_panel.position = Vector2(-110, -230)
+	_speed_panel.size = Vector2(220, 96)
+	var sp_sb := StyleBoxFlat.new()
+	sp_sb.bg_color = Color(0.02, 0.02, 0.02, 0.5)
+	sp_sb.border_color = Color(1, 0.85, 0.5, 0.5)
+	sp_sb.set_border_width_all(1)
+	sp_sb.set_corner_radius_all(14)
+	sp_sb.set_content_margin_all(4)
+	_speed_panel.add_theme_stylebox_override("panel", sp_sb)
+	_speed_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_speed_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_speed_label.add_theme_font_override("font", number_font())
+	_speed_label.add_theme_font_size_override("font_size", 40)
+	_speed_label.add_theme_color_override("font_color", Color(1.0, 0.92, 0.75))
+	_speed_label.text = "0 km/h"
+	_speed_panel.add_child(_speed_label)
+	_speed_panel.visible = false
+	_safe.add_child(_speed_panel)
+
+	_round(_exit_btn, "下车", Control.PRESET_BOTTOM_RIGHT, Vector2(-320, -330), 150, 30)
+	_exit_btn.visible = false
 
 	_pause_btn.text = "设置"
 	_pause_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
@@ -1133,6 +1184,39 @@ func set_banner(text: String) -> void:
 	_banner.text = text
 
 
+## 上车 / 下车：切驾驶 HUD，隐藏战斗、背包和快捷栏
+func set_driving(on: bool) -> void:
+	driving = on
+	_release_touches()
+	_speed_panel.visible = on
+	_exit_btn.visible = on
+	_cross.visible = not on
+	_attack_btn.visible = not on
+	_jump_btn.visible = not on
+	_crouch_btn.visible = not on
+	_bag_btn.visible = not on
+	_craft_btn.visible = not on
+	_hotbar_panel.visible = not on
+	_hotbar_name.visible = not on
+	_action_btn.visible = (not on) and _action_text != ""
+	_fire_left.visible = (not on) and settings.left_fire > 0.5
+	_aim_btn.visible = (not on) and _ammo_text != ""
+	_ammo_panel.visible = (not on) and _ammo_text != ""
+	_progress.visible = (not on) and _progress_shown
+	_progress_label.visible = (not on) and _progress_shown
+	if on:
+		_speed_label.text = "0 km/h"
+
+
+## 驾驶速度表（km/h）
+func set_speed(kmh: float) -> void:
+	if not driving:
+		return
+	var text := "%d km/h" % roundi(kmh)
+	if text != _speed_label.text:
+		_speed_label.text = text
+
+
 ## 搜索 / 拾取按钮上的字；空字符串就隐藏。enabled=false 时变灰（比如容器已经翻过了）
 func set_action(text: String, enabled := true) -> void:
 	if text == _action_text and enabled == _action_enabled:
@@ -1474,10 +1558,39 @@ func _release_touches() -> void:
 	_joy_id = -1
 	move = Vector2.ZERO
 	_reset_joystick()
+	_drive_id = -1
+	drive = Vector2.ZERO
+	_drive_base.visible = false
+	_drive_knob.visible = false
 	_look_id = -1
 
 
 func _touch_down(index: int, pos: Vector2) -> void:
+	if driving:
+		if _exit_btn.get_global_rect().grow(14).has_point(pos):
+			_press_button(_exit_btn)
+			exit_vehicle_pressed.emit()
+			return
+		if _pause_btn.get_global_rect().grow(10).has_point(pos):
+			_tap_feedback()
+			set_paused(true)
+			return
+		var half_d := get_viewport().get_visible_rect().size.x * 0.5
+		if pos.x < half_d and _joy_id == -1:
+			_joy_id = index
+			_joy_origin = pos
+			_joy_base.position = pos - _joy_base.size * 0.5
+			_joy_knob.position = pos - _joy_knob.size * 0.5
+			_joy_base.modulate.a = 1.0
+			_joy_knob.modulate.a = 1.0
+		elif pos.x >= half_d and _drive_id == -1:
+			_drive_id = index
+			_drive_origin = pos
+			_drive_base.position = pos - _drive_base.size * 0.5
+			_drive_knob.position = pos - _drive_knob.size * 0.5
+			_drive_base.visible = true
+			_drive_knob.visible = true
+		return
 	if _aim_btn.visible and _aim_btn.get_global_rect().grow(12).has_point(pos):
 		_aim_id = index
 		_drag_last[index] = pos
@@ -1549,6 +1662,12 @@ func _touch_down(index: int, pos: Vector2) -> void:
 
 func _touch_up(index: int) -> void:
 	_drag_last.erase(index)
+	if index == _drive_id:
+		_drive_id = -1
+		drive = Vector2.ZERO
+		_drive_base.visible = false
+		_drive_knob.visible = false
+		return
 	if index == _aim_id:
 		_aim_id = -1
 		aim_held = false
@@ -1593,7 +1712,19 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventScreenDrag:
 		if _panel_open():
 			return
-		if event.index == _joy_id:
+		if driving and event.index == _drive_id:
+			var dd: Vector2 = event.position - _drive_origin
+			if dd.length() > JOY_RADIUS:
+				dd = dd.normalized() * JOY_RADIUS
+				_drive_origin = event.position - dd
+				_drive_base.position = _drive_origin - _drive_base.size * 0.5
+			_drive_knob.position = _drive_origin + dd - _drive_knob.size * 0.5
+			var draw := Vector2(dd.x, -dd.y) / JOY_RADIUS
+			if draw.length() <= JOY_DEADZONE:
+				drive = Vector2.ZERO
+			else:
+				drive = draw.normalized() * clampf((draw.length() - JOY_DEADZONE) / (1.0 - JOY_DEADZONE), 0.0, 1.0)
+		elif event.index == _joy_id:
 			var d: Vector2 = event.position - _joy_origin
 			if d.length() > JOY_RADIUS:
 				# 手指拖出圈外：摇杆跟着手指走，往回拖马上就能转向
