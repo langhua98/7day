@@ -17,6 +17,11 @@ func _ready() -> void:
 	check_eq(Weapons.ammo_mods("ammo762mmBulletSteelAP").label, "钢AP", "钢 AP 应有独立倍率")
 	check_eq(Weapons.ammo_mods("ammo762mmBulletAP").label, "AP", "普通 AP 保持原样")
 	check_eq(Weapons.ammo_mods("ammo9mmBulletHP").label, "HP", "HP 保持原样")
+	check_eq(Weapons.scope_level("gunRifleT1HuntingRifle", "scope4x"), 4, "装 4 倍镜")
+	check_eq(Weapons.scope_level("gunMGT2TacticalAR", "scope2x"), 2, "装 2 倍镜")
+	check_eq(Weapons.scope_level("gunHandgunT1Pistol", ""), 1, "没装倍镜用机瞄")
+	check_eq(Weapons.scope_fov("gunRifleT1HuntingRifle", "scope4x") <
+		Weapons.scope_fov("gunRifleT1HuntingRifle", "scope2x"), true, "高倍镜 FOV 更小")
 
 	if failures.is_empty():
 		print("PASS test_items")

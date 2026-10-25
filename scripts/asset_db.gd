@@ -5,7 +5,7 @@ extends Node
 const ROOT := "res://assets"
 const INDEX_PATH := "res://assets/index/icon_to_model.json"
 
-enum Kind { MELEE, GUN, FOOD, DRINK, MEDICAL, RESOURCE, OTHER, BLOCK }
+enum Kind { MELEE, GUN, FOOD, DRINK, MEDICAL, RESOURCE, OTHER, BLOCK, ATTACHMENT }
 
 ## 每项: {id, zh, en, model, icon, kind, power}
 var items: Array[Dictionary] = []
@@ -82,6 +82,7 @@ func scan() -> void:
 
 	_load_index()
 	_add_blocks()
+	_add_attachments()
 
 	if zombie_models.is_empty():
 		errors.append("assets/models/ 里没有文件名含 zombie 的模型")
@@ -193,6 +194,19 @@ func _add_blocks() -> void:
 			row.zh = info.zh
 		row.model = ""
 		row.kind = Kind.BLOCK
+		row.power = 0.0
+
+
+## 可拆装倍镜也当物品放进背包
+func _add_attachments() -> void:
+	for id in Attachments.IDS:
+		var row: Dictionary = items_by_id.get(id, {})
+		if row.is_empty():
+			row = {"id": id, "zh": Attachments.label(id), "en": "", "model": "", "icon": ""}
+			items.append(row)
+			items_by_id[id] = row
+		row.model = ""
+		row.kind = Kind.ATTACHMENT
 		row.power = 0.0
 
 
@@ -368,6 +382,8 @@ func icon(id: String) -> Texture2D:
 	var row: Dictionary = items_by_id.get(id, {})
 	if row.get("kind", -1) == Kind.BLOCK and row.icon == "":
 		return Blocks.icon(id)
+	if row.get("kind", -1) == Kind.ATTACHMENT and row.icon == "":
+		return Attachments.icon(id)
 	if row.is_empty() or row.icon == "":
 		return null
 	if not _icon_cache.has(id):

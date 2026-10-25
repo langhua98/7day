@@ -11,6 +11,7 @@ signal jump_pressed
 ## 6a：蹲伏切换
 signal crouch_pressed
 signal rotate_pressed
+signal scope_pressed
 signal continue_pressed
 signal settings_changed(settings: Dictionary)
 signal quit_to_title
@@ -34,6 +35,7 @@ var _effects := Label.new()
 var _jump_btn := Button.new()
 var _crouch_btn := Button.new()
 var _rotate_btn := Button.new()
+var _scope_btn := Button.new()
 var _ammo_panel := PanelContainer.new()
 var _ammo_mag := Label.new()
 var _ammo_reserve := Label.new()
@@ -52,6 +54,9 @@ var _action_btn := Button.new()
 var _action_title := Label.new()
 var _action_sub := Label.new()
 var _compass := Compass.new()
+var _scope := ScopeOverlay.new()
+var _scope_label := Label.new()
+var _scope_level := 0
 var _progress := ProgressBar.new()
 var _progress_label := Label.new()
 var _bag_btn := Button.new()
@@ -153,9 +158,23 @@ func _ready() -> void:
 	_hurt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_hurt)
 
+	_scope.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_root.add_child(_scope)
+
 	_safe.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_safe.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_safe)
+	_scope_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_scope_label.position = Vector2(-60, 70)
+	_scope_label.size = Vector2(120, 40)
+	_scope_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_scope_label.add_theme_font_override("font", number_font())
+	_scope_label.add_theme_font_size_override("font_size", 26)
+	_scope_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.75))
+	_scope_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_scope_label.add_theme_constant_override("outline_size", 6)
+	_scope_label.visible = false
+	_safe.add_child(_scope_label)
 
 	# 左上：天数、时间、血量、饱食度
 	var tl := VBoxContainer.new()
@@ -266,8 +285,10 @@ func _ready() -> void:
 	_round(_crouch_btn, "蹲", Control.PRESET_BOTTOM_RIGHT, Vector2(-130, -250), 110, 28)
 	_round(_aim_btn, "开镜", Control.PRESET_BOTTOM_RIGHT, Vector2(-440, -440), 110, 26)
 	_round(_rotate_btn, "旋转\n0°", Control.PRESET_BOTTOM_RIGHT, Vector2(-440, -270), 100, 20)
+	_round(_scope_btn, "倍镜\n无", Control.PRESET_BOTTOM_RIGHT, Vector2(-550, -270), 100, 20)
 	_aim_btn.visible = false
 	_rotate_btn.visible = false
+	_scope_btn.visible = false
 
 	# 搜索 / 拾取：走近容器或地上的东西才出现
 	_action_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
@@ -779,6 +800,7 @@ func set_paused(on: bool) -> void:
 func show_start(can_continue: bool) -> void:
 	_release_touches()
 	close_game_panels()
+	set_scope(0)
 	_settings_panel.visible = false
 	_continue_btn.visible = can_continue
 	_start_panel.visible = true
@@ -820,6 +842,7 @@ func set_start_info(text: String) -> void:
 func show_end(text: String) -> void:
 	_release_touches()
 	close_game_panels()
+	set_scope(0)
 	_settings_panel.visible = false
 	_end_label.text = text
 	_end_panel.visible = true
@@ -841,6 +864,12 @@ func set_block_controls(rot: int, on: bool) -> void:
 	_rotate_btn.visible = on
 	if on:
 		_rotate_btn.text = "旋转\n%d°" % (rot * 90)
+
+
+func set_scope_button(text: String, on: bool) -> void:
+	_scope_btn.visible = on
+	if on:
+		_scope_btn.text = text
 
 
 ## 拿着枪时显示「弹匣 / 背包」子弹数和换弹键；text 为空就隐藏
@@ -1288,6 +1317,10 @@ func _touch_down(index: int, pos: Vector2) -> void:
 		_press_button(_ammo_panel)
 		reload_pressed.emit()
 		return
+	if _scope_btn.visible and _scope_btn.get_global_rect().grow(10).has_point(pos):
+		_press_button(_scope_btn)
+		scope_pressed.emit()
+		return
 	if _rotate_btn.visible and _rotate_btn.get_global_rect().grow(10).has_point(pos):
 		_press_button(_rotate_btn)
 		rotate_pressed.emit()
@@ -1403,6 +1436,16 @@ func set_compass(yaw: float, markers: Array) -> void:
 
 func compass_relative(bearing: float) -> float:
 	return _compass.relative_angle(bearing)
+
+
+func set_scope(level: int) -> void:
+	if level == _scope_level:
+		return
+	_scope_level = level
+	_scope.visible = level >= 2
+	_scope_label.visible = level >= 2
+	if level >= 2:
+		_scope_label.text = "%d×" % level
 
 
 ## 打中僵尸时在命中位置飘一个伤害数字

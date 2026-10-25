@@ -222,6 +222,24 @@ func _ready() -> void:
 	hud.set_compass(-PI / 2.0, [])
 	check(absf(hud.compass_relative(0.0) + 90.0) < 0.01, "面向东时北在左边")
 
+	# 倍镜：2× 以上显示镜筒，1× 隐藏
+	hud.set_scope(4)
+	check(hud._scope.visible and hud._scope_label.visible, "4× 应显示镜筒")
+	check_eq(hud._scope_label.text, "4×", "倍镜标签")
+	hud.set_scope(1)
+	check(not hud._scope.visible and not hud._scope_label.visible, "1× 应隐藏镜筒")
+	hud.set_scope(0)
+
+	# 倍镜按钮：显示和点击
+	hud.set_scope_button("倍镜\n2×", true)
+	check(hud._scope_btn.visible and hud._scope_btn.text.contains("2×"), "倍镜按钮显示")
+	var scope_hits := [0]
+	hud.scope_pressed.connect(func(): scope_hits[0] += 1)
+	hud._touch_down(16, hud._scope_btn.get_global_rect().get_center())
+	hud._touch_up(16)
+	check_eq(scope_hits[0], 1, "点倍镜按钮发信号")
+	hud.set_scope_button("", false)
+
 	# 交互提示：大字动作 + 小字对象
 	hud.set_action("搜索\n垃圾桶")
 	check_eq(hud._action_title.text, "搜索", "交互提示大字")

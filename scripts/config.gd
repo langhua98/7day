@@ -51,6 +51,9 @@ const BASE_FOV := 70.0
 const SPRINT_FOV_BONUS := 7.0
 const AIM_FOV := 55.0
 const AIM_SENSITIVITY := 0.6
+## 倍镜 FOV：数值越小放得越大
+const SCOPE_FOV_RIFLE := 34.0
+const SCOPE_FOV_SNIPER := 22.0
 const RECOIL_RECOVERY := 12.0
 const RECOIL_AIM_SHARE := 0.16
 const LAND_DIP_MAX := 0.06

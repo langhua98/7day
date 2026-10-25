@@ -120,6 +120,29 @@ func _run() -> void:
 	GameState.block_changed.emit(cell)
 	check(not main.looting.crates.has(cell), "拆掉箱子后注销")
 
+	# 倍镜拆装
+	Assets.ensure_item("gunTestScope", "测试枪").kind = Assets.Kind.GUN
+	inv.add("gunTestScope", 1)
+	inv.add("scope2x", 1)
+	inv.add("scope4x", 1)
+	var s2_before := inv.count("scope2x")
+	var s4_before := inv.count("scope4x")
+	inv.equip("gunTestScope")
+	inv.cycle_scope()
+	check_eq(inv.scope_of("gunTestScope"), "scope2x", "装上 2 倍镜")
+	check_eq(inv.count("scope2x"), s2_before - 1, "2 倍镜从背包拿走")
+	inv.cycle_scope()
+	check_eq(inv.scope_of("gunTestScope"), "scope4x", "换成 4 倍镜")
+	check_eq(inv.count("scope2x"), s2_before, "2 倍镜退回背包")
+	inv.cycle_scope()
+	check_eq(inv.scope_of("gunTestScope"), "", "拆下倍镜")
+	check_eq(inv.count("scope4x"), s4_before, "4 倍镜退回背包")
+	inv.install_scope("scope4x")
+	check_eq(inv.scope_of("gunTestScope"), "scope4x", "背包点倍镜安装")
+	main.save_game.save()
+	main.save_game.continue_game()
+	check_eq(inv.scope_of("gunTestScope"), "scope4x", "倍镜存档保留")
+
 	# 旧存档「id → 数量」转格子
 	var old := {"seed": 1, "hours": 30.0, "hp": 42.0, "inventory": {"testAmmo": 650, "testKnife": 1},
 		"order": ["testKnife", "testAmmo"], "qualities": {"testKnife": 4}, "equipped": "", "mags": {}, "blocks": []}

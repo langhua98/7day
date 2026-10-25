@@ -54,6 +54,19 @@ static func _row(r: Array) -> Dictionary:
 		"range": r[7], "auto": r[8], "reload": r[9], "blast": r[10], "fire_snd": r[11], "reload_snd": r[12]}
 
 
+## 没有倍镜时用机瞄；装了倍镜按倍镜 FOV
+static func scope_fov(_gun_id: String, scope_id := "") -> float:
+	if Attachments.is_scope(scope_id):
+		return Attachments.scope_fov(scope_id)
+	return GameConfig.AIM_FOV
+
+
+static func scope_level(_gun_id: String, scope_id := "") -> int:
+	if Attachments.is_scope(scope_id):
+		return int(Attachments.DEFS[scope_id].get("level", 1))
+	return 1
+
+
 static func is_ammo(id: String) -> bool:
 	return id.begins_with("ammo")
 

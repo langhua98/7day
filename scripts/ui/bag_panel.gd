@@ -27,7 +27,7 @@ var _cap := 45
 var _used := 0
 var _filter := "all"
 const FILTERS := [["all", "全部"], ["weapon", "武器"], ["food", "食物"],
-	["medical", "药品"], ["material", "材料"], ["block", "方块"]]
+	["medical", "药品"], ["material", "材料"], ["block", "方块"], ["attachment", "附件"]]
 
 
 func _init() -> void:
@@ -139,7 +139,7 @@ func set_slots(slots: Array, cap: int, used: int, equipped: String) -> void:
 
 func _rebuild() -> void:
 	var names := {"all": "全部", "weapon": "武器", "food": "食物",
-		"medical": "药品", "material": "材料", "block": "方块"}
+		"medical": "药品", "material": "材料", "block": "方块", "attachment": "附件"}
 	_title.text = "背包 %d / %d 格" % [_used, _cap] + ("   超重：走得慢，不能冲刺" if _used > _cap else "")
 	if _filter != "all":
 		_title.text += " · " + str(names.get(_filter, ""))
@@ -178,6 +178,8 @@ static func _matches(id: String, filter: String) -> bool:
 			return kind == Assets.Kind.RESOURCE
 		"block":
 			return kind == Assets.Kind.BLOCK
+		"attachment":
+			return kind == Assets.Kind.ATTACHMENT
 		_:
 			return true
 
@@ -212,6 +214,8 @@ func _open_menu(i: int) -> void:
 		_use_btn.text = "卸下" if s.id == _equipped else "装备"
 	elif kind in [Assets.Kind.FOOD, Assets.Kind.DRINK, Assets.Kind.MEDICAL]:
 		_use_btn.text = "使用"
+	elif kind == Assets.Kind.ATTACHMENT:
+		_use_btn.text = "装到当前枪"
 	elif Weapons.is_ammo(s.id):
 		_use_btn.text = "装进枪里"
 	else:
