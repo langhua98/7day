@@ -1,6 +1,6 @@
 # 七日杀 · 口袋版
 
-个人自用的 iPhone 小游戏，用开源引擎 [Godot 4.4](https://godotengine.org) 写成，素材全部来自自己《七日杀》客户端导出的模型、贴图、图标和音乐。**素材只放在本地 `assets/`，不进仓库，游戏不分享、不发布。**
+个人自用的 iPhone 小游戏，用开源引擎 [Godot 4.7](https://godotengine.org) 写成，素材全部来自自己《七日杀》客户端导出的模型、贴图、图标和音乐。**素材只放在本地 `assets/`，不进仓库，游戏不分享、不发布。**
 
 ## 玩法
 
@@ -49,10 +49,10 @@ python3 tools/fetch_assets.py --zombies all --music 12   # 想要更多
 
 需要一台 Mac。
 
-1. 安装 [Godot 4.4.1](https://godotengine.org/download/archive/4.4.1-stable/)（标准版，不是 .NET 版）和 Xcode。
+1. 安装 [Godot 4.7.2](https://godotengine.org/download/archive/4.7.2-stable/)（标准版，不是 .NET 版）和 Xcode。
 2. 按上一节把素材同步到 `assets/`。
 3. 用 Godot 打开本项目（第一次会导入素材，几分钟）。可以先按 F5 在电脑上试玩：WASD 移动、方向键看、空格攻击，鼠标点拖模拟触屏。
-4. 菜单「编辑器 → 管理导出模板」，下载 4.4.1 的导出模板。
+4. 菜单「编辑器 → 管理导出模板」，下载 4.7.2 的导出模板。
 5. 菜单「项目 → 导出」，选 iOS：
    - `App Store Team ID` 填你的 Apple 开发者 Team ID（免费 Apple ID 也行，在 Xcode → Settings → Accounts 里能看到）。
    - `Bundle Identifier` 已经填了 `com.langhua98.sevenday`，如果冲突改成别的。

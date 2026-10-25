@@ -22,7 +22,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GODOT_VERSION: "4.4.1"
+  GODOT_VERSION: "4.7.2"
 
 jobs:
   build:
@@ -158,7 +158,21 @@ jobs:
             sed -i '' "s/^application\/bundle_identifier=.*/application\/bundle_identifier=\"$BUNDLE_ID\"/" export_presets.cfg
           fi
           mkdir -p build/ios
-          "$GODOT" --headless --export-release "iOS" build/ios/7day.ipa 2>&1 | tee build/export.log
+          # 导出时预编译着色器（Godot 4.5 起的 Shader Baker）：手机上第一次打开、第一次画某种东西不用现编，少卡顿。
+          # 预编译要用 Metal 显卡，所以不加 --headless，并且用和手机一样的 Mobile 渲染器；
+          # 云端 Mac 万一没法开显卡，20 分钟内没导完就退回无头导出（照常能玩，只是不带预编译的着色器）
+          baked=0
+          if perl -e 'alarm shift; exec @ARGV' 1200 "$GODOT" --rendering-method mobile --rendering-driver metal \
+              --export-release "iOS" build/ios/7day.ipa > build/export.log 2>&1 && test -d build/ios/7day.xcodeproj; then
+            baked=1
+          else
+            echo "::warning::带显卡导出失败，改用无头导出（不预编译着色器）"
+            tail -30 build/export.log || true
+            rm -rf build/ios && mkdir -p build/ios
+            "$GODOT" --headless --export-release "iOS" build/ios/7day.ipa 2>&1 | tee build/export.log
+          fi
+          echo "导出方式：$([ $baked = 1 ] && echo 带显卡（预编译着色器） || echo 无头（没有预编译着色器）)" >> "$GITHUB_STEP_SUMMARY"
+          grep -i "shader" build/export.log | tail -5 || true
           ls -la build/ios
           test -d build/ios/7day.xcodeproj
 

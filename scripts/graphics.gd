@@ -22,6 +22,8 @@ const HITCH_MS := 25.0
 var _hitch_times: Array[float] = []
 var _worst_ms := 0.0
 var _clock := 0.0
+## 着色器管线编译次数（引擎的累计计数）。画面卡一下时如果这个数跟着涨，说明是现编着色器
+var _pipe_hist: Array[Vector2] = []   # (时刻, 累计次数)，留最近 10 秒
 
 
 func setup(parent: Node3D, world_ref: World, atmo: Atmosphere, player_ref: PlayerSystem,
@@ -119,8 +121,22 @@ func _update_perf(delta: float) -> void:
 	var draws := int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
 	var prims := int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
 	var nodes := int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
-	hud.set_perf("FPS %d  %.1f ms\n绘制 %d  三角面 %dk\n3D %.2f  僵尸 %d  节点 %d\n最慢 %.0f ms  10 秒内卡顿 %d 次\n%s %s" % [
+	var pipes := pipeline_compilations()
+	_pipe_hist.append(Vector2(_clock, pipes))
+	while _pipe_hist.size() > 1 and _clock - _pipe_hist[0].x > 10.0:
+		_pipe_hist.pop_front()
+	var pipes_recent := pipes - int(_pipe_hist[0].y)
+	hud.set_perf("FPS %d  %.1f ms\n绘制 %d  三角面 %dk\n3D %.2f  僵尸 %d  节点 %d\n最慢 %.0f ms  10 秒内卡顿 %d 次\n着色器编译 共 %d  10 秒内 %d\n%s %s" % [
 		fps, ms, draws, prims / 1000, main.get_viewport().scaling_3d_scale,
-		zombie_root.get_child_count(), nodes, _worst_ms, _hitch_times.size(),
+		zombie_root.get_child_count(), nodes, _worst_ms, _hitch_times.size(), pipes, pipes_recent,
 		RenderingServer.get_current_rendering_driver_name(), world.full_debug(player.player.global_position)])
 	_worst_ms = 0.0
+
+
+## 引擎从开局到现在编译过的渲染管线总数（加载网格、换材质、第一次画某种效果都会触发）
+static func pipeline_compilations() -> int:
+	return int(Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_CANVAS)
+		+ Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_MESH)
+		+ Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_SURFACE)
+		+ Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_DRAW)
+		+ Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_SPECIALIZATION))
