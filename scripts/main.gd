@@ -185,6 +185,8 @@ func start(fresh := true) -> void:
 	for c in world.containers:
 		c.searched = false
 		c.erase("items")
+		c.erase("loot_day")
+		c.erase("hp")
 	world.clear_voxels()
 	world.door_load([])
 	for i in C.LOOT_COUNT / 2:

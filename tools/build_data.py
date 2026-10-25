@@ -494,6 +494,174 @@ def build_recipes(recipes: list, items: dict, block_names: set, loc: dict, ing_t
     return out, dropped
 
 
+# —— 掉落表（loot.xml）——
+
+def _loot_count(value, default):
+    """count="1" / "1,3" / "all" → (min, max) 或 "all"。"""
+    if value is None or str(value).strip() == "":
+        return default
+    v = str(value).strip().lower()
+    if v == "all":
+        return "all"
+    nums = [int(float(x)) for x in re.findall(r"-?\d+(?:\.\d+)?", v)]
+    if not nums:
+        return default
+    if len(nums) == 1:
+        return (nums[0], nums[0])
+    return (min(nums[0], nums[1]), max(nums[0], nums[1]))
+
+
+def _level_range(value):
+    nums = [int(float(x)) for x in re.findall(r"-?\d+(?:\.\d+)?", str(value or ""))]
+    if not nums:
+        return (0, 999999)
+    if len(nums) == 1:
+        return (nums[0], nums[0])
+    return (min(nums[0], nums[1]), max(nums[0], nums[1]))
+
+
+def _loot_entry(el) -> dict:
+    out = {}
+    if el.get("group"):
+        out["group"] = el.get("group")
+    else:
+        out["item"] = el.get("name", "")
+    out["count"] = _loot_count(el.get("count"), (1, 1))
+    if el.get("prob") not in (None, ""):
+        out["prob"] = _float(el.get("prob"), 1.0)
+    if el.get("loot_prob_template"):
+        out["prob_template"] = el.get("loot_prob_template")
+    return out
+
+
+def parse_loot_xml(text: str) -> dict:
+    """loot.xml → {prob, quality, groups, containers}，保留引用，build_loot 再裁剪。
+
+    带 <requirement> 的条目（需要技能/书）先丢掉，手机版不做技能门槛。
+    """
+    root = ET.fromstring(text)
+    prob = {}
+    for tpl in root.iter("lootprobtemplate"):
+        name = tpl.get("name")
+        if not name:
+            continue
+        rows = []
+        for el in tpl.findall("loot"):
+            lo, hi = _level_range(el.get("level"))
+            rows.append((lo, hi, _float(el.get("prob"), 0.0)))
+        prob[name] = rows
+    quality = {}
+    for tpl in root.iter("lootqualitytemplate"):
+        name = tpl.get("name")
+        if not name:
+            continue
+        rows = []
+        for el in tpl.findall("qualitytemplate"):
+            lo, hi = _level_range(el.get("level"))
+            rolls = [(_int(q.get("quality"), 1), _float(q.get("prob"), 1.0))
+                     for q in el.findall("loot")]
+            rows.append({"level": [lo, hi], "default": _int(el.get("default_quality"), 1),
+                         "loot": [list(r) for r in rolls]})
+        quality[name] = rows
+    groups = {}
+    for el in root.findall("lootgroup"):
+        name = el.get("name")
+        if not name:
+            continue
+        items, dropped = [], 0
+        for it in el.findall("item"):
+            if it.find("requirement") is not None:
+                dropped += 1
+                continue
+            items.append(_loot_entry(it))
+        # 官方默认：组没写 count 时只抽 1 个；写 count="all" 才全部过一遍
+        groups[name] = {"count": _loot_count(el.get("count"), (1, 1)), "items": items,
+                        "dropped": dropped}
+    containers = {}
+    for el in root.findall("lootcontainer"):
+        name = el.get("name")
+        if not name:
+            continue
+        items, dropped = [], 0
+        for it in el.findall("item"):
+            if it.find("requirement") is not None:
+                dropped += 1
+                continue
+            items.append(_loot_entry(it))
+        containers[name] = {
+            "count": _loot_count(el.get("count"), (1, 1)),
+            "quality": el.get("loot_quality_template", ""),
+            "items": items,
+            "dropped": dropped,
+        }
+    return {"prob": prob, "quality": quality, "groups": groups, "containers": containers}
+
+
+def _prune_loot(loot: dict, items: dict) -> tuple:
+    """只保留物品表里有的物品；空组、空容器去掉。返回 (裁剪后的表, 统计)。"""
+    stats = {"items": 0, "groups": 0, "containers": 0, "requirements": 0}
+    groups = loot["groups"]
+    kept = {}
+
+    def prune_group(name, visiting):
+        if name in kept:
+            return True
+        if name in visiting:
+            return False
+        visiting.add(name)
+        g = groups.get(name)
+        if g is None:
+            visiting.discard(name)
+            return False
+        out = []
+        for e in g["items"]:
+            if "group" in e:
+                if prune_group(e["group"], visiting):
+                    out.append(e)
+                else:
+                    stats["items"] += 1
+            elif e.get("item", "") in items:
+                out.append(e)
+            else:
+                stats["items"] += 1
+        visiting.discard(name)
+        stats["requirements"] += g.get("dropped", 0)
+        if not out:
+            stats["groups"] += 1
+            return False
+        kept[name] = {"count": g["count"], "items": out}
+        return True
+
+    for name in list(groups):
+        prune_group(name, set())
+
+    containers = {}
+    for name, c in loot["containers"].items():
+        out = []
+        for e in c["items"]:
+            if "group" in e:
+                if e["group"] in kept:
+                    out.append(e)
+                else:
+                    stats["items"] += 1
+            elif e.get("item", "") in items:
+                out.append(e)
+            else:
+                stats["items"] += 1
+        stats["requirements"] += c.get("dropped", 0)
+        if not out:
+            stats["containers"] += 1
+            continue
+        containers[name] = {"count": c["count"], "quality": c["quality"], "items": out}
+    return {"prob": loot["prob"], "quality": loot["quality"], "groups": kept,
+            "containers": containers}, stats
+
+
+def build_loot(loot_xml: str, items: dict) -> tuple:
+    """loot.xml + items.json → (loot.json 表, 统计)。"""
+    return _prune_loot(parse_loot_xml(loot_xml), items)
+
+
 def _api_base() -> str:
     return os.environ.get("XIAOJU_API", API_DEFAULT)
 
@@ -625,6 +793,20 @@ def build_all(dest: Path, zip_path: Path, index_path: Path, only: str = "all") -
         path = out_dir / "entitygroups.json"
         path.write_text(json.dumps(mapped, ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"僵尸组: {len(mapped)} 组，可用模型 {len(available)} 个 → {path}")
+    if only in ("loot", "all"):
+        items_path = dest / "data" / "items.json"
+        if not items_path.exists():
+            sys.exit(f"找不到 {items_path}，先运行 --only items")
+        items_table = json.loads(items_path.read_text(encoding="utf-8"))
+        loot_xml = read_config_file(zip_path, "loot.xml")
+        if not loot_xml:
+            sys.exit(f"{zip_path} 里没有 Config/loot.xml")
+        loot, stats = build_loot(loot_xml, items_table)
+        path = dest / "data" / "loot.json"
+        path.write_text(json.dumps(loot, ensure_ascii=False, indent=1), encoding="utf-8")
+        print(f"掉落表: 容器 {len(loot['containers'])} 个，组 {len(loot['groups'])} 个；"
+              f"丢掉物品条目 {stats['items']}、空组 {stats['groups']}、空容器 {stats['containers']}、"
+              f"需要技能的条目 {stats['requirements']} → {path}")
     if only in ("recipes", "all"):
         items_path = dest / "data" / "items.json"
         if not items_path.exists():
@@ -650,7 +832,7 @@ def main() -> int:
     ap.add_argument("--dest", default=str(DEFAULT_DEST), help="assets 目录")
     ap.add_argument("--zip", default="", help="本地 Data_Config.zip（不传就从云盘下载）")
     ap.add_argument("--index", default="", help="icon_to_model.json（默认 assets/index/）")
-    ap.add_argument("--only", default="all", choices=["all", "items", "buffs", "gamestages", "entitygroups", "recipes"], help="只生成某张表")
+    ap.add_argument("--only", default="all", choices=["all", "items", "buffs", "gamestages", "entitygroups", "recipes", "loot"], help="只生成某张表")
     args = ap.parse_args()
     dest = Path(args.dest)
     zip_path = Path(args.zip) if args.zip else dest / "cache" / ZIP_NAME

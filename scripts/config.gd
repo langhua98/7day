@@ -232,12 +232,19 @@ const LOOT_SIZE := 0.55
 ## 离物品多近能拾取
 const PICKUP_RADIUS := 2.0
 ## 翻一次容器要几秒（车要久一点）
-const SEARCH_TIME := 1.6
-const SEARCH_TIME_CAR := 2.6
-## 翻容器掉几件东西，翻到空的概率
+const SEARCH_TIME := 1.5
+const SEARCH_TIME_CAR := 3.0
+## 翻容器掉几件东西，翻到空的概率（没有 loot.json 时的旧兜底）
 const SEARCH_MIN := 1
 const SEARCH_MAX := 3
 const SEARCH_EMPTY_CHANCE := 0.15
+## 容器翻空后多少游戏天重新刷
+const LOOT_RESPAWN_DAYS := 5
+## 保险箱：撬锁要几秒、每次断撬锁工具的几率、没有工具时砸开要多少伤害
+const SEARCH_TIME_SAFE := 6.0
+const LOCKPICK_ID := "resourceLockPick"
+const LOCKPICK_BREAK_CHANCE := 0.4
+const SAFE_HP := 120.0
 
 ## 音乐判定距离
 const COMBAT_DISTANCE := 11.0

@@ -27,6 +27,9 @@ var corpse_bags: Array = []
 
 const CRATE_ID := "cntWoodWritableCrate"
 const LOOT_SCRIPT := "res://scripts/loot.gd"
+## 旧版街边容器的分类标签 → 官方 lootcontainer 名（老素材目录没重跑 fetch_assets 时兜底）
+const LEGACY_LOOT := {"trash": "garbage", "food": "foodPileMed", "drink": "cooler",
+	"medical": "medicalPileSmall", "weapon": "weaponsBagSmall", "tool": "toolBox", "any": "garbage"}
 
 
 func setup(parent: Node3D, world_ref: World, player_ref: PlayerSystem, inv_ref: InventorySystem,
@@ -42,6 +45,7 @@ func setup(parent: Node3D, world_ref: World, player_ref: PlayerSystem, inv_ref: 
 func build() -> void:
 	main.add_child(loot_root)
 	GameState.block_changed.connect(_on_block_changed)
+	GameState.day_started.connect(_on_day_started)
 	hud.container_panel.closed.connect(_on_panel_closed)
 
 
@@ -161,7 +165,7 @@ func update_action(delta: float) -> void:
 		return
 	if not _search.is_empty():
 		var c: Dictionary = _search
-		var need: float = C.SEARCH_TIME_CAR if c.kind == "car" else C.SEARCH_TIME
+		var need := _search_need(c)
 		if player_sys.player.position.distance_to(_search_from) > 0.8:
 			_search = {}
 			hud.set_progress(-1.0)
@@ -201,6 +205,10 @@ func update_action(delta: float) -> void:
 		hud.set_action("打开\n%s" % c.name)
 	elif c.searched:
 		hud.set_action("%s\n已翻过" % c.name, false)
+	elif is_safe(c) and not inventory.has(C.LOCKPICK_ID):
+		hud.set_action("%s\n用武器砸开" % c.name)
+	elif is_safe(c):
+		hud.set_action("撬锁\n%s" % c.name)
 	else:
 		hud.set_action("搜索\n%s" % c.name)
 
@@ -244,6 +252,14 @@ func action() -> void:
 			hud.release_touches()
 			open_panel(c)
 		return
+	if is_safe(c):
+		if not inventory.has(C.LOCKPICK_ID):
+			hud.toast("保险箱锁着：用武器砸开，或找撬锁工具")
+			return
+		if rng.randf() < C.LOCKPICK_BREAK_CHANCE:
+			inventory.remove(C.LOCKPICK_ID, 1)
+			inventory.refresh()
+			hud.toast("撬断了一根撬锁工具")
 	_search = c
 	_search_t = 0.0
 	Sfx.play("search", c.pos + Vector3.UP * 0.8)
@@ -283,6 +299,7 @@ func _finish_search(c: Dictionary) -> void:
 	_search = {}
 	hud.set_progress(-1.0)
 	c.searched = true
+	c["loot_day"] = GameState.day
 	var got := roll_container(c)
 	var items: Array = []
 	items.resize(maxi(C.CONTAINER_SLOTS, got.size()))
@@ -301,11 +318,12 @@ func roll_container(c: Dictionary) -> Array:
 	if ResourceLoader.exists(LOOT_SCRIPT):
 		var loot_cls = load(LOOT_SCRIPT)
 		if loot_cls and loot_cls.has_method("roll"):
-			for e in loot_cls.roll(str(c.get("loot_name", c.get("loot", "any"))), GameState.gamestage(), rng):
+			for e in loot_cls.roll(_loot_name(c), GameState.gamestage(), rng):
 				if Assets.items_by_id.has(str(e.get("id", ""))):
 					out.append({"id": str(e.id), "count": maxi(1, int(e.get("count", 1))),
 						"quality": int(e.get("quality", 0)), "durability": 0.0})
-			return out
+			if not out.is_empty():
+				return out
 	if rng.randf() < C.SEARCH_EMPTY_CHANCE:
 		return out
 	for i in rng.randi_range(C.SEARCH_MIN, C.SEARCH_MAX):
@@ -318,6 +336,63 @@ func roll_container(c: Dictionary) -> Array:
 		var n: int = Weapons.pickup_count(id, rng) if Weapons.is_ammo(id) else 1
 		out.append({"id": id, "count": n, "quality": quality, "durability": 0.0})
 	return out
+
+
+## 容器的官方掉落名：楼里的 container 字段优先；街边旧标签转成官方名
+func _loot_name(c: Dictionary) -> String:
+	var name := str(c.get("container", ""))
+	if name != "":
+		return name
+	var tag := str(c.get("loot", "any"))
+	return str(LEGACY_LOOT.get(tag, tag))
+
+
+## 保险箱（要撬锁或用武器砸）：看方块名、掉落名和中文名
+func is_safe(c: Dictionary) -> bool:
+	if c.is_empty():
+		return false
+	var t := (str(c.get("block", "")) + " " + str(c.get("container", "")) + " " + str(c.get("name", ""))).to_lower()
+	return t.contains("safe") or t.contains("保险箱")
+
+
+func _search_need(c: Dictionary) -> float:
+	if is_safe(c):
+		return C.SEARCH_TIME_SAFE
+	if c.get("kind", "") == "car":
+		return C.SEARCH_TIME_CAR
+	return C.SEARCH_TIME
+
+
+## 用武器把保险箱砸开：直接翻出东西
+func break_container(c: Dictionary) -> void:
+	if c.is_empty() or c.get("searched", false):
+		return
+	c["hp"] = 0.0
+	c.searched = true
+	c["loot_day"] = GameState.day
+	var got := roll_container(c)
+	var items: Array = []
+	items.resize(maxi(C.CONTAINER_SLOTS, got.size()))
+	for i in items.size():
+		items[i] = got[i] if i < got.size() else {}
+	c["items"] = items
+	hud.toast("砸开了%s" % c.name)
+	if not got.is_empty():
+		open_panel(c)
+
+
+## 翻空 5 个游戏天后重新刷
+func _on_day_started(day: int) -> void:
+	for c in world.containers:
+		if not c.get("searched", false) or _has_items(c):
+			continue
+		var last := int(c.get("loot_day", day))
+		if day - last < C.LOOT_RESPAWN_DAYS:
+			continue
+		c.searched = false
+		c.erase("items")
+		c.erase("loot_day")
+		c.erase("hp")
 
 
 func _has_items(c: Dictionary) -> bool:
@@ -339,6 +414,9 @@ func _on_panel_closed() -> void:
 	_open = {}
 	if was.get("bag", false) and not _has_items(was):
 		_remove_corpse_bag(was)
+	elif not was.is_empty() and not _has_items(was):
+		# 刚把容器拿空：从今天开始算 5 天重生
+		was["loot_day"] = GameState.day
 
 
 ## 离玩家最近、够得着的储物箱（尸体背包也算）
@@ -478,7 +556,16 @@ func save_data() -> Dictionary:
 	var bags := []
 	for b in corpse_bags:
 		bags.append({"pos": [b.pos.x, b.pos.y, b.pos.z], "items": _pack(b.items)})
-	return {"container_items": left, "crates": cr, "corpse_bags": bags}
+	var days := {}
+	var hps := {}
+	for i in world.containers.size():
+		var c: Dictionary = world.containers[i]
+		if c.has("loot_day"):
+			days[str(i)] = int(c.loot_day)
+		if c.has("hp"):
+			hps[str(i)] = float(c.hp)
+	return {"container_items": left, "crates": cr, "corpse_bags": bags,
+		"container_days": days, "container_hp": hps}
 
 
 ## 在 world.voxel_load 之后调用
@@ -488,6 +575,16 @@ func load_data(d: Dictionary) -> void:
 		var i := int(k)
 		if i < world.containers.size():
 			world.containers[i]["items"] = _unpack(left[k], C.CONTAINER_SLOTS)
+	var days: Dictionary = d.get("container_days", {})
+	for k in days:
+		var i := int(k)
+		if i < world.containers.size():
+			world.containers[i]["loot_day"] = int(days[k])
+	var hps: Dictionary = d.get("container_hp", {})
+	for k in hps:
+		var i := int(k)
+		if i < world.containers.size():
+			world.containers[i]["hp"] = float(hps[k])
 	crates.clear()
 	for cell in world.voxels:
 		if world.voxels[cell].id == CRATE_ID:
