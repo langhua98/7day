@@ -49,6 +49,9 @@ var _aim_btn := Button.new()
 var _cross := Crosshair.new()
 var _hitmarker := Label.new()
 var _action_btn := Button.new()
+var _action_title := Label.new()
+var _action_sub := Label.new()
+var _compass := Compass.new()
 var _progress := ProgressBar.new()
 var _progress_label := Label.new()
 var _bag_btn := Button.new()
@@ -278,11 +281,32 @@ func _ready() -> void:
 
 	# 搜索 / 拾取：走近容器或地上的东西才出现
 	_action_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	_action_btn.position = Vector2(-620, -560)
-	_action_btn.size = Vector2(200, 84)
-	_action_btn.add_theme_font_size_override("font_size", 24)
+	_action_btn.position = Vector2(-640, -580)
+	_action_btn.size = Vector2(240, 96)
+	_action_btn.pivot_offset = _action_btn.size * 0.5
 	_action_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_action_btn.clip_text = true
+	_action_btn.clip_text = false
+	var act_sb := StyleBoxFlat.new()
+	act_sb.bg_color = Color(0.02, 0.02, 0.02, 0.55)
+	act_sb.border_color = Color(1, 0.82, 0.45, 0.7)
+	act_sb.set_border_width_all(2)
+	act_sb.set_corner_radius_all(12)
+	_action_btn.add_theme_stylebox_override("normal", act_sb)
+	var act_v := VBoxContainer.new()
+	act_v.set_anchors_preset(Control.PRESET_FULL_RECT)
+	act_v.alignment = BoxContainer.ALIGNMENT_CENTER
+	act_v.add_theme_constant_override("separation", 0)
+	act_v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_action_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_action_title.add_theme_font_size_override("font_size", 26)
+	_action_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	act_v.add_child(_action_title)
+	_action_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_action_sub.add_theme_font_size_override("font_size", 16)
+	_action_sub.modulate = Color(1, 1, 1, 0.75)
+	_action_sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	act_v.add_child(_action_sub)
+	_action_btn.add_child(act_v)
 	_action_btn.visible = false
 	_safe.add_child(_action_btn)
 
@@ -386,6 +410,7 @@ func _ready() -> void:
 	_safe.add_child(_pause_btn)
 
 	_build_status_bar()
+	_build_compass()
 	_build_start_panel()
 	_build_end_panel()
 	_build_pause_panel()
@@ -917,8 +942,14 @@ func set_action(text: String, enabled := true) -> void:
 	_action_text = text
 	_action_enabled = enabled
 	_action_btn.visible = text != ""
-	_action_btn.text = text
+	var lines := text.split("\n")
+	_action_title.text = lines[0] if lines.size() > 0 else ""
+	_action_sub.text = lines[1] if lines.size() > 1 else ""
 	_action_btn.modulate = Color.WHITE if enabled else Color(1, 1, 1, 0.45)
+	if text != "":
+		_action_btn.scale = Vector2(1.05, 1.05)
+		var tw := create_tween()
+		tw.tween_property(_action_btn, "scale", Vector2.ONE, 0.12)
 
 
 ## 翻找进度：value < 0 隐藏
@@ -1363,6 +1394,46 @@ func _input(event: InputEvent) -> void:
 
 # —— 状态图标条 ——
 
+
+func _build_compass() -> void:
+	_compass.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_compass.position = Vector2(-360, 14)
+	_compass.size = Vector2(720, 44)
+	_compass.font = Hud.game_font()
+	_safe.add_child(_compass)
+
+
+func set_compass(yaw: float, markers: Array) -> void:
+	_compass.set_data(yaw, markers)
+
+
+func compass_relative(bearing: float) -> float:
+	return _compass.relative_angle(bearing)
+
+
+## 打中僵尸时在命中位置飘一个伤害数字
+func damage_number(amount: float, headshot: bool, world_pos: Vector3) -> void:
+	var cam := get_viewport().get_camera_3d()
+	if cam == null or cam.is_position_behind(world_pos):
+		return
+	var at := cam.unproject_position(world_pos)
+	var l := Label.new()
+	l.text = str(roundi(amount))
+	l.add_theme_font_override("font", number_font())
+	l.add_theme_font_size_override("font_size", 34 if headshot else 26)
+	l.add_theme_color_override("font_color", Color(1, 0.35, 0.25) if headshot else Color(1, 1, 1, 0.95))
+	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	l.add_theme_constant_override("outline_size", 6)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.position = at + Vector2(-40, -32)
+	l.size = Vector2(80, 40)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(l)
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(l, "position:y", l.position.y - 38, 0.65)
+	tw.tween_property(l, "modulate:a", 0.0, 0.65)
+	tw.chain().tween_callback(l.queue_free)
 func _build_status_bar() -> void:
 	var holder := Control.new()
 	holder.set_anchors_preset(Control.PRESET_TOP_RIGHT)
