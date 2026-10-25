@@ -63,7 +63,7 @@ ZOMBIE_MODEL_MAP = {
     "zombieSand": "sand", "zombieSandFeral": "sand",
     "zombieThug": "thug", "zombieThugFeral": "thug",
     "zombieMechanic": "mechanic", "zombieMechanicFeral": "mechanic",
-    "zombieBigMama": "bigmama", "zombieBigMamaFeral": "bigmama",
+    "zombieFemaleFat": "bigmama", "zombieFemaleFatFeral": "bigmama",
     "zombieBurnt": "burnt", "zombieBurntFeral": "burnt",
 }
 
@@ -330,15 +330,32 @@ def parse_entitygroups(text: str) -> dict:
     return out
 
 
+def zombie_model(name: str):
+    """官方僵尸名 → 云盘模型名；Radiated/Charged/Infernal 这些变体用基础名查。"""
+    if name in ZOMBIE_MODEL_MAP:
+        return ZOMBIE_MODEL_MAP[name]
+    for suffix in ("Radiated", "Charged", "Infernal"):
+        if name.endswith(suffix):
+            base = name[:-len(suffix)]
+            if base in ZOMBIE_MODEL_MAP:
+                return ZOMBIE_MODEL_MAP[base]
+            feral = base + "Feral"
+            if feral in ZOMBIE_MODEL_MAP:
+                return ZOMBIE_MODEL_MAP[feral]
+    return None
+
+
 def map_entitygroups(groups: dict, available: set) -> dict:
     out = {}
     for name, entries in groups.items():
         mapped = []
         for e in entries:
-            model = ZOMBIE_MODEL_MAP.get(e["name"])
+            model = zombie_model(e["name"])
             if not model or model not in available:
                 continue
-            mapped.append({"id": model, "feral": e["name"].endswith("Feral"), "p": e["p"]})
+            mapped.append({"id": model, "class": e["name"],
+                "feral": "feral" in e["name"].lower() or e["name"].endswith("Feral"),
+                "radiated": e["name"].endswith("Radiated"), "p": e["p"]})
         if mapped:
             out[name] = mapped
     return out
@@ -723,6 +740,125 @@ def build_harvest(blocks_xml: str, items: dict) -> dict:
     return out
 
 
+# —— 僵尸种类（entityclasses.xml）——
+
+def _parse_entityclasses(text: str) -> tuple:
+    root = ET.fromstring(text)
+    vars_ = {}
+    for wrapper in ("replace_properties", "replace_passive_effect"):
+        for rp in root.iter(wrapper):
+            for pr in rp.iter("property"):
+                n = pr.get("name")
+                if n:
+                    vars_[n] = pr.get("value", "")
+    raw = {}
+    for el in root.iter("entity_class"):
+        name = el.get("name")
+        if not name:
+            continue
+        props = {}
+        for pr in el.findall("property"):
+            k = pr.get("name")
+            if k:
+                props[k] = pr.get("value", "")
+        effects = [{"name": pe.get("name"), "operation": pe.get("operation"),
+                    "value": pe.get("value", "")} for pe in el.iter("passive_effect")]
+        raw[name] = {"extends": el.get("extends", ""), "props": props, "effects": effects}
+    return raw, vars_
+
+
+def _expand_var(value, vars_: dict, depth=0):
+    if not isinstance(value, str) or not value.startswith("^") or depth > 6:
+        return value
+    return _expand_var(vars_.get(value[1:], ""), vars_, depth + 1)
+
+
+def _resolve_class(name: str, raw: dict, memo: dict) -> tuple:
+    if name in memo:
+        return memo[name]
+    r = raw.get(name, {})
+    props, effects, order = {}, {}, []
+    parent = r.get("extends", "")
+    if parent and parent in raw and parent != name:
+        p_props, p_effects, p_order = _resolve_class(parent, raw, memo)
+        props.update(p_props)
+        effects.update(p_effects)
+        order = list(p_order)
+    props.update(r.get("props", {}))
+    for e in r.get("effects", []):
+        key = (e.get("name"), e.get("operation"))
+        effects[key] = e.get("value", "")
+        if key not in order:
+            order.append(key)
+    memo[name] = (props, effects, order)
+    return memo[name]
+
+
+def build_entityclasses(text: str, items: dict, loc: dict) -> dict:
+    """entityclasses.xml → {官方类名: {model, name, hp, speed, damage, xp, feral, radiated, special}}"""
+    raw, vars_ = _parse_entityclasses(text)
+    memo = {}
+    out = {}
+    for name in raw:
+        model = zombie_model(name)
+        if not model:
+            continue
+        props, effects, _ = _resolve_class(name, raw, memo)
+        tags = _expand_var(props.get("Tags", ""), vars_)
+        tags_low = tags.lower()
+        if "zombie" not in tags_low.split(","):
+            continue
+        hp_raw = effects.get(("HealthMax", "base_set"))
+        if hp_raw is None:
+            continue
+        hp = _int(_expand_var(hp_raw, vars_), 0)
+        if hp <= 0:
+            continue
+        agg = _expand_var(props.get("MoveSpeedAggro", ""), vars_)
+        nums = [float(x) for x in re.findall(r"-?(?:\d+(?:\.\d+)?|\.\d+)", agg)]
+        if nums:
+            speed = max(nums)
+        else:
+            speed = _float(_expand_var(props.get("MoveSpeed", "1"), vars_), 1.0)
+        hand = _expand_var(props.get("HandItem", ""), vars_)
+        hand_dmg = float(items.get(hand, {}).get("damage", 0.0)) if hand else 0.0
+        entity_dmg = _float(_expand_var(props.get("EntityDamage", "0"), vars_), 0.0)
+        xp = _int(_expand_var(props.get("ExperienceGain", "0"), vars_), 0)
+        low = name.lower()
+        if low.endswith("charged") or low.endswith("infernal"):
+            continue
+        special = ""
+        if "zombiecop" in tags_low or "fatcop" in low:
+            special = "cop"
+        if "demolition" in low:
+            special = "demolition"
+        elif "spider" in tags_low:
+            special = "spider"
+        elif "crawler" in tags_low:
+            special = "crawler"
+        elif "screamer" in tags_low or "screamer" in low:
+            special = "screamer"
+        elif model == "bigmama":
+            special = "bigmama"
+        elif "dog" in tags_low:
+            special = "dog"
+        out[name] = {
+            "class": name,
+            "model": model,
+            "name": loc.get(name) or loc.get(name + "Name") or name,
+            "hp": hp,
+            "speed": round(speed, 3),
+            "damage": round(hand_dmg, 2),
+            "entity_damage": round(entity_dmg, 2),
+            "xp": xp,
+            "feral": "feral" in tags_low or name.endswith("Feral"),
+            "radiated": name.endswith("Radiated") or "radiated" in tags_low,
+            "special": special,
+            "spawn": "dog" not in tags_low,
+        }
+    return out
+
+
 def _api_base() -> str:
     return os.environ.get("XIAOJU_API", API_DEFAULT)
 
@@ -868,6 +1004,18 @@ def build_all(dest: Path, zip_path: Path, index_path: Path, only: str = "all") -
         print(f"掉落表: 容器 {len(loot['containers'])} 个，组 {len(loot['groups'])} 个；"
               f"丢掉物品条目 {stats['items']}、空组 {stats['groups']}、空容器 {stats['containers']}、"
               f"需要技能的条目 {stats['requirements']} → {path}")
+    if only in ("entities", "all"):
+        items_table = parse_items_xml(items_xml)
+        ec_xml = read_config_file(zip_path, "entityclasses.xml")
+        if not ec_xml:
+            sys.exit(f"{zip_path} 里没有 Config/entityclasses.xml")
+        loc = load_localization(loc_csv)
+        table = build_entityclasses(ec_xml, items_table, loc)
+        path = dest / "data" / "zombies.json"
+        path.write_text(json.dumps(table, ensure_ascii=False, indent=1), encoding="utf-8")
+        feral = sum(1 for v in table.values() if v["feral"])
+        rad = sum(1 for v in table.values() if v["radiated"])
+        print(f"僵尸种类: {len(table)} 个（野性 {feral}，辐射 {rad}）→ {path}")
     if only in ("harvest", "all"):
         items_path = dest / "data" / "items.json"
         if not items_path.exists():
@@ -905,7 +1053,7 @@ def main() -> int:
     ap.add_argument("--dest", default=str(DEFAULT_DEST), help="assets 目录")
     ap.add_argument("--zip", default="", help="本地 Data_Config.zip（不传就从云盘下载）")
     ap.add_argument("--index", default="", help="icon_to_model.json（默认 assets/index/）")
-    ap.add_argument("--only", default="all", choices=["all", "items", "buffs", "gamestages", "entitygroups", "recipes", "loot", "harvest"], help="只生成某张表")
+    ap.add_argument("--only", default="all", choices=["all", "items", "buffs", "gamestages", "entitygroups", "entities", "recipes", "loot", "harvest"], help="只生成某张表")
     args = ap.parse_args()
     dest = Path(args.dest)
     zip_path = Path(args.zip) if args.zip else dest / "cache" / ZIP_NAME

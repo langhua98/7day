@@ -66,7 +66,7 @@ func update(delta: float, day: int, night: bool, horde: bool) -> void:
 		alive += 1
 		var dmg: float = z.try_attack()
 		if dmg > 0.0:
-			player_sys.zombie_hit(dmg, z.type)
+			player_sys.zombie_hit(dmg, z.type, z.big)
 		# 离太远的僵尸回收掉，在身边重新刷
 		if z.distance_to_target() > C.ZOMBIE_DESPAWN:
 			z.queue_free()
@@ -91,11 +91,15 @@ func spawn_zombie(day: int, night: bool, horde: bool, near := Vector3.INF) -> Zo
 	if Assets.zombie_models.is_empty():
 		return null
 	var group := "ZombiesNight" if night else "ZombiesDowntown"
-	var model := pick_model(group)
+	var cls := pick_class(group)
+	if cls == "":
+		return null
+	var model := str(Zombies.entry(cls).get("model", ""))
+	var variant := Zombies.pick_variant(model, GameState.gamestage(), rng)
 	if near != Vector3.INF:
-		return spawn_zombie_at(model, day, night, horde, world.free_point(near, 4.0, 10.0))
+		return spawn_zombie_at(cls, variant, day, night, horde, world.free_point(near, 4.0, 10.0))
 	var at := world.free_point(player_sys.player.position, 18.0, 32.0) if not horde else world.free_point(player_sys.player.position, 14.0, 24.0)
-	return spawn_zombie_at(model, day, night, horde, at)
+	return spawn_zombie_at(cls, variant, day, night, horde, at)
 
 
 static func speed_for(base: float, night: bool, horde: bool) -> float:
@@ -107,33 +111,49 @@ static func speed_for(base: float, night: bool, horde: bool) -> float:
 	return base * mult
 
 
-func pick_model(group: String) -> String:
+## 从官方刷怪组挑一个普通僵尸类；野性/辐射由 GS 另外决定
+func pick_class(group: String) -> String:
 	var entries = Data.get_table("entitygroups").get(group, [])
-	var models: Array[String] = []
+	var classes: Array[String] = []
 	var weights: Array[float] = []
 	for e in entries:
-		var key := Assets.zombie_key(str(e.get("id", "")))
-		if key != "":
-			models.append(key)
-			weights.append(maxf(0.01, float(e.get("p", 1.0))))
-	if models.is_empty():
-		return Assets.zombie_models[rng.randi_range(0, Assets.zombie_models.size() - 1)]
+		var cls := str(e.get("class", ""))
+		var st: Dictionary = Zombies.entry(cls)
+		if st.is_empty() or not bool(st.get("spawn", true)):
+			continue
+		if bool(st.get("feral", false)) or bool(st.get("radiated", false)):
+			continue
+		if Assets.zombie_key(str(st.get("model", ""))) == "":
+			continue
+		classes.append(cls)
+		weights.append(maxf(0.01, float(e.get("p", 1.0))))
+	if classes.is_empty():
+		for m in Assets.zombie_models:
+			var base: Dictionary = Zombies.base_class(m)
+			if not base.is_empty() and bool(base.get("spawn", true)):
+				return str(base.get("class", ""))
+		return ""
 	var total := 0.0
 	for w in weights:
 		total += w
 	var roll := rng.randf() * total
-	for i in models.size():
+	for i in classes.size():
 		roll -= weights[i]
 		if roll <= 0.0:
-			return models[i]
-	return models[-1]
+			return classes[i]
+	return classes[-1]
 
 
-func spawn_zombie_at(model: String, day: int, night: bool, horde: bool, at: Vector3) -> Zombie:
+func spawn_zombie_at(cls: String, variant: String, day: int, night: bool, horde: bool, at: Vector3) -> Zombie:
+	var model := str(Zombies.entry(cls).get("model", ""))
+	var st := Zombies.stats(model, variant)
+	if st.is_empty() or Assets.zombie_key(model) == "":
+		return null
 	var z := Zombie.new()
-	if not z.setup(model, C.ZOMBIE_BASE_HP + C.ZOMBIE_HP_PER_DAY * (day - 1), C.ZOMBIE_WALK_SPEED, player_sys.player):
+	if not z.setup(model, st, player_sys.player):
 		z.free()
 		return null
+	z.player_sys = player_sys
 	z.speed = speed_for(z.base_speed, night, horde)
 	z.world = world
 	z.position = at
@@ -196,12 +216,17 @@ func _on_noise(pos: Vector3, radius: float, _kind: String) -> void:
 func _on_heat_overflow(center: Vector3) -> void:
 	if Assets.zombie_models.is_empty() or zombie_root.get_child_count() >= C.ZOMBIE_MAX:
 		return
-	var model := pick_model("ZombiesNight")
-	for m in Assets.zombie_models:
-		if m.to_lower().contains("screamer"):
-			model = m
+	var rows: Dictionary = Zombies.table()
+	var cls := ""
+	for c in rows:
+		var e: Dictionary = rows[c]
+		if str(e.get("model", "")) == "screamer" and bool(e.get("spawn", true)) \
+				and not bool(e.get("feral", false)) and not bool(e.get("radiated", false)):
+			cls = str(e.get("class", ""))
 			break
-	var z := spawn_zombie_at(model, GameState.day, GameState.is_night(), false, world.free_point(center, 18.0, 30.0))
+	if cls == "":
+		return
+	var z := spawn_zombie_at(cls, "normal", GameState.day, GameState.is_night(), false, world.free_point(center, 18.0, 30.0))
 	if z:
 		z.brain.investigate(center)
 		hud.toast("这里动静太大，引来了尖叫者！")

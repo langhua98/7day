@@ -289,12 +289,13 @@ func has_fracture() -> bool:
 
 
 ## 被僵尸打中：流血、感染、大块头还可能打断腿
-func zombie_hit(amount: float, zombie_type: String) -> void:
+func zombie_hit(amount: float, zombie_type: String, big := false) -> void:
 	take_damage(amount, "zombie", C.BLEED_CHANCE)
 	if rng.randf() < C.INFECTION_CHANCE:
 		infect()
-	var t: Dictionary = C.ZOMBIE_TYPES.get(zombie_type, {})
-	if float(t.get("hp", 1.0)) >= C.BIG_ZOMBIE_HP_MULT and rng.randf() < C.BIG_HIT_FRACTURE_CHANCE:
+	if not big:
+		big = zombie_type in C.BIG_ZOMBIE_MODELS
+	if big and rng.randf() < C.BIG_HIT_FRACTURE_CHANCE:
 		break_leg()
 
 

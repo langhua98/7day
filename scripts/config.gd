@@ -99,8 +99,6 @@ const FALL_DAMAGE_PER_M := 15.0
 const SPRAIN_HEIGHT := 3.0
 const SPRAIN_CHANCE := 0.5
 const FRACTURE_HEIGHT := 4.0
-## 大块头僵尸（类型 HP 倍率 ≥ 这个值）打中有几率骨折
-const BIG_ZOMBIE_HP_MULT := 1.5
 const BIG_HIT_FRACTURE_CHANCE := 0.1
 ## 被僵尸打中感染几率；感染度从 1% 开始，每游戏小时涨多少，到 100% 死亡
 const INFECTION_CHANCE := 0.1
@@ -174,7 +172,6 @@ const GUN_COOLDOWN := 0.45
 
 const ZOMBIE_HEIGHT := 1.85
 const ZOMBIE_BASE_HP := 60.0
-const ZOMBIE_HP_PER_DAY := 12.0
 const ZOMBIE_DAMAGE := 9.0
 const ZOMBIE_REACH := 1.5
 const ZOMBIE_ATTACK_COOLDOWN := 1.2
@@ -194,17 +191,25 @@ const ZOMBIE_HEADSHOT_STAGGER := 0.6
 ## 爆头伤害倍数
 const HEADSHOT_MULT := 2.2
 
-## 8 种僵尸（按模型文件名 zombie_<名字>），血量、速度、伤害是基础值的倍数
-const ZOMBIE_TYPES := {
-	"soldier": {"name": "士兵僵尸", "hp": 1.5, "speed": 0.9, "damage": 1.2},
-	"cop": {"name": "胖警察", "hp": 1.9, "speed": 0.8, "damage": 1.3},
-	"nurse": {"name": "护士僵尸", "hp": 0.8, "speed": 1.15, "damage": 0.9},
-	"biker": {"name": "飞车党僵尸", "hp": 1.3, "speed": 1.0, "damage": 1.3},
-	"lumberjack": {"name": "伐木工僵尸", "hp": 1.7, "speed": 0.9, "damage": 1.5},
-	"joe": {"name": "乔", "hp": 1.0, "speed": 1.0, "damage": 1.0},
-	"arlene": {"name": "阿琳", "hp": 0.9, "speed": 1.1, "damage": 0.9},
-	"screamer": {"name": "尖叫者", "hp": 0.7, "speed": 1.2, "damage": 0.8, "screams": true},
-}
+## 手机版僵尸整体倍率（数值来自 assets/data/zombies.json，官方值 × 这些）
+const ZOMBIE_HP_SCALE := 0.35
+const ZOMBIE_SPEED_SCALE := 0.8
+const ZOMBIE_DAMAGE_SCALE := 0.9
+## 野性 / 辐射变体：野性血 ×1.5、更快；辐射再 ×2 并且每秒回 2% 血
+const ZOMBIE_FERAL_HP := 1.5
+const ZOMBIE_FERAL_SPEED := 1.15
+const ZOMBIE_RADIATED_HP := 2.0
+const ZOMBIE_RADIATED_REGEN := 0.02
+## GS 到多少开始出野性 / 辐射；野性几率 = (GS − 30) × 0.01，最多 40%
+const ZOMBIE_GS_FERAL := 30
+const ZOMBIE_GS_RADIATED := 60
+const ZOMBIE_FERAL_CHANCE_PER_GS := 0.01
+const ZOMBIE_FERAL_CHANCE := 0.4
+const ZOMBIE_RADIATED_CHANCE := 0.15
+## 官方血量 ≥ 这个值算大块头（打断腿、体型判定）
+const ZOMBIE_BIG_HP := 400.0
+const BIG_ZOMBIE_MODELS := ["lumberjack", "soldier", "biker", "cop", "bigmama", "demolition",
+	"mutated", "wight", "frostclaw", "hawaiian", "burnt", "chuck", "thug"]
 
 ## 背包 45 格（官方）；超过后每多 1 格移速 −10%，最多 −50%，超重时不能冲刺
 const BAG_SLOTS := 45

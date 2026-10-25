@@ -97,8 +97,10 @@ func start() -> void:
 			break
 	_pool = _build_pool(_stage)
 	if _pool.is_empty():
-		for id in Assets.zombie_models:
-			_pool.append({"id": id, "p": 1.0})
+		for m in Assets.zombie_models:
+			var base: Dictionary = Zombies.base_class(m)
+			if not base.is_empty() and bool(base.get("spawn", true)):
+				_pool.append({"class": str(base.get("class", "")), "p": 1.0})
 	started = true
 	active = true
 	_timer = 0.0
@@ -136,9 +138,15 @@ func _build_pool(stage: Dictionary) -> Array:
 	for s in stage.get("spawns", []):
 		var entries = groups.get(s.get("group", ""), [])
 		for e in entries:
-			var key := Assets.zombie_key(str(e.get("id", "")))
-			if key != "":
-				pool.append({"id": key, "p": maxf(0.01, float(e.get("p", 1.0)))})
+			var cls := str(e.get("class", ""))
+			var st: Dictionary = Zombies.entry(cls)
+			if st.is_empty() or not bool(st.get("spawn", true)):
+				continue
+			if bool(st.get("feral", false)) or bool(st.get("radiated", false)):
+				continue
+			if Assets.zombie_key(str(st.get("model", ""))) == "":
+				continue
+			pool.append({"class": cls, "p": maxf(0.01, float(e.get("p", 1.0)))})
 	return pool
 
 
@@ -149,12 +157,14 @@ func _spawn(day: int) -> bool:
 	for e in _pool:
 		total += float(e.get("p", 1.0))
 	var roll := rng.randf() * total
-	var model: String = _pool[0].get("id", "")
+	var cls: String = str(_pool[0].get("class", ""))
 	for e in _pool:
 		roll -= float(e.get("p", 1.0))
 		if roll <= 0.0:
-			model = e.get("id", "")
+			cls = str(e.get("class", ""))
 			break
+	var model := str(Zombies.entry(cls).get("model", ""))
+	var variant := Zombies.pick_variant(model, GameState.gamestage(), rng)
 	var base := player_sys.player.global_position
 	var at := world.free_point(base, 35.0, 50.0)
 	for i in 12:
@@ -163,7 +173,7 @@ func _spawn(day: int) -> bool:
 		if world.line_blocked(base + Vector3.UP * 1.6, p + Vector3.UP * 1.2):
 			at = p
 			break
-	var z = spawner.spawn_zombie_at(model, day, true, true, at)
+	var z = spawner.spawn_zombie_at(cls, variant, day, true, true, at)
 	if z == null:
 		return false
 	z.set_meta("horde", true)

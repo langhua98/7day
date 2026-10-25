@@ -327,3 +327,52 @@ class HarvestDataTest(unittest.TestCase):
                    for key in ("harvest", "destroy") for r in m[key]]
         self.assertNotIn("unknownItem", all_ids)
         self.assertNotIn("knownC", all_ids)
+
+
+ENTITY_XML = """<entity_classes>
+  <replace_properties>
+    <property name="xpSlim01" value="400"/>
+    <property name="xpNormal01" value="300"/>
+  </replace_properties>
+  <replace_passive_effect>
+    <property name="healthSlim" value="125"/>
+    <property name="healthSlimFeral" value="500"/>
+  </replace_passive_effect>
+  <entity_class name="zombieTemplateMale">
+    <property name="Tags" value="entity,zombie,walker"/>
+    <property name="MoveSpeedAggro" value=".2, 1.25"/>
+    <property name="HandItem" value="meleeHandZombie01"/>
+    <property name="ExperienceGain" value="^xpNormal01"/>
+    <effect_group><passive_effect name="HealthMax" operation="base_set" value="^healthSlim"/></effect_group>
+  </entity_class>
+  <entity_class name="zombieJoe" extends="zombieTemplateMale">
+    <property name="ExperienceGain" value="^xpSlim01"/>
+  </entity_class>
+  <entity_class name="zombieJoeFeral" extends="zombieJoe">
+    <property name="Tags" value="entity,zombie,walker,feral"/>
+    <effect_group><passive_effect name="HealthMax" operation="base_set" value="^healthSlimFeral"/></effect_group>
+  </entity_class>
+  <entity_class name="zombieUnknown" extends="zombieTemplateMale">
+    <property name="Mesh" value="x"/>
+  </entity_class>
+</entity_classes>"""
+
+
+class EntityClassDataTest(unittest.TestCase):
+    def test_build_entityclasses(self):
+        items = {"meleeHandZombie01": {"damage": 10.0}}
+        loc = {"zombieJoe": "乔", "zombieJoeFeral": "野性乔"}
+        out = build_data.build_entityclasses(ENTITY_XML, items, loc)
+        self.assertIn("zombieJoe", out)
+        self.assertIn("zombieJoeFeral", out)
+        self.assertNotIn("zombieUnknown", out)  # 没有模型映射
+        joe = out["zombieJoe"]
+        self.assertEqual(joe["model"], "joe")
+        self.assertEqual(joe["hp"], 125)
+        self.assertAlmostEqual(joe["speed"], 1.25)
+        self.assertEqual(joe["damage"], 10.0)
+        self.assertEqual(joe["xp"], 400)
+        self.assertFalse(joe["feral"])
+        feral = out["zombieJoeFeral"]
+        self.assertEqual(feral["hp"], 500)
+        self.assertTrue(feral["feral"])

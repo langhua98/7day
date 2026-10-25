@@ -15,6 +15,13 @@ var damage := GameConfig.ZOMBIE_DAMAGE
 var type := ""
 var type_name := "僵尸"
 var can_scream := false
+## 野性 / 辐射变体和特殊能力
+var feral := false
+var radiated := false
+var special := ""
+var big := false
+var xp := 0
+var player_sys: PlayerSystem
 var target: Node3D
 ## 市中心（用来绕开楼和车）
 var world: World
@@ -65,9 +72,18 @@ var _limp_leg := "Right"
 var _arm_style := [0, 0]   # 0 往前伸，1 垂着甩
 var _arm_h := [0.0, 0.0]
 var _lead := 1.0           # 抬哪只手先砍：1 右手，-1 左手
+## 野性/辐射的眼睛（一个网格一次绘制）、吐酸、跳跃、自爆
+var _eye_node: MeshInstance3D
+var _spit_cd := 0.0
+var _jump_cd := 0.0
+var _jump_vy := 0.0
+var _leap_t := 0.0
+var _exploded := false
+## 变体发光材质共享，避免每只僵尸都复制一份
+static var _glow_mats := {}
 
 
-func setup(model_name: String, hp_value: float, speed_value: float, player: Node3D) -> bool:
+func setup(model_name: String, stats: Dictionary, player: Node3D) -> bool:
 	_model = Assets.make_model(model_name, 0.0)
 	if _model == null:
 		return false
@@ -81,14 +97,18 @@ func setup(model_name: String, hp_value: float, speed_value: float, player: Node
 	add_child(_model)
 	_model.rotation.y = GameConfig.ZOMBIE_FACING_OFFSET
 	type = model_name.trim_prefix("zombie_")
-	var t: Dictionary = GameConfig.ZOMBIE_TYPES.get(type, {})
-	type_name = t.get("name", "僵尸")
-	can_scream = t.get("screams", false)
-	hp = hp_value * t.get("hp", 1.0)
+	type_name = str(stats.get("name", "僵尸"))
+	special = str(stats.get("special", ""))
+	feral = bool(stats.get("feral", false))
+	radiated = bool(stats.get("radiated", false))
+	big = bool(stats.get("big", false))
+	xp = int(stats.get("xp", 0))
+	can_scream = special == "screamer"
+	hp = float(stats.get("hp", GameConfig.ZOMBIE_BASE_HP))
 	max_hp = hp
-	speed = speed_value * t.get("speed", 1.0) * _rng.randf_range(0.85, 1.15)
+	speed = float(stats.get("speed", 1.0)) * _rng.randf_range(0.85, 1.15)
 	base_speed = speed
-	damage = GameConfig.ZOMBIE_DAMAGE * t.get("damage", 1.0)
+	damage = float(stats.get("damage", GameConfig.ZOMBIE_DAMAGE))
 	_fall_dir = -1.0 if _rng.randf() < 0.6 else 1.0
 	target = player
 	_phase = _rng.randf() * TAU
@@ -102,7 +122,8 @@ func setup(model_name: String, hp_value: float, speed_value: float, player: Node
 	var style := _rng.randi_range(0, 2)   # 两手前伸 / 两手垂着 / 一伸一垂
 	_arm_style = [0, 0] if style == 0 else ([1, 1] if style == 1 else ([0, 1] if _rng.randf() < 0.5 else [1, 0]))
 	_arm_h = [_rng.randf_range(-0.25, 0.15), _rng.randf_range(-0.25, 0.15)]
-	_voice = "zf_" if type in ["nurse", "arlene", "screamer"] or type.contains("female") else "zm_"
+	_voice = "zf_" if type in ["nurse", "arlene", "screamer", "marlene", "darlene",
+		"cocktailwaitress", "bigmama"] else "zm_"
 	_roam_t = _rng.randf_range(2.0, 9.0)
 	var found := _model.find_children("*", "Skeleton3D", true, false)
 	if found.size() > 0:
@@ -118,7 +139,84 @@ func setup(model_name: String, hp_value: float, speed_value: float, player: Node
 		# 僵尸不投影：阴影里再算一遍骨骼很贵，近处也看不出少了它
 		(m as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_detect_facing()
+	_apply_variant()
 	return true
+
+
+## 野性：身上淡淡红光 + 眼睛发光；辐射：绿色自发光
+func _apply_variant() -> void:
+	if not feral and not radiated:
+		return
+	var color := Color(0.25, 1.0, 0.35) if radiated else Color(1.0, 0.25, 0.15)
+	var energy := 0.35 if radiated else 0.18
+	for m in _meshes:
+		if m.mesh == null:
+			continue
+		for i in m.mesh.get_surface_count():
+			var mat := m.get_active_material(i)
+			if not (mat is StandardMaterial3D):
+				continue
+			var key := "%d|%s" % [mat.get_instance_id(), ("rad" if radiated else "fer")]
+			if not _glow_mats.has(key):
+				var dup := (mat as StandardMaterial3D).duplicate() as StandardMaterial3D
+				dup.emission_enabled = true
+				dup.emission = color
+				dup.emission_energy_multiplier = energy
+				_glow_mats[key] = dup
+			m.set_surface_override_material(i, _glow_mats[key])
+	# 眼睛：两个小球合成一个网格（一次绘制），挂在头骨位置
+	if _bones.has("Head") and _eye_node == null:
+		var sphere := SphereMesh.new()
+		sphere.radius = 0.045
+		sphere.height = 0.09
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		st.append_from(sphere, 0, Transform3D(Basis(), Vector3(-0.06, 0.0, 0.0)))
+		st.append_from(sphere, 0, Transform3D(Basis(), Vector3(0.06, 0.0, 0.0)))
+		_eye_node = MeshInstance3D.new()
+		_eye_node.mesh = st.commit()
+		var eye_mat := StandardMaterial3D.new()
+		eye_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		eye_mat.albedo_color = color
+		eye_mat.emission_enabled = true
+		eye_mat.emission = color
+		eye_mat.emission_energy_multiplier = 4.0
+		_eye_node.material_override = eye_mat
+		_eye_node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(_eye_node)
+
+
+func _update_eyes() -> void:
+	if _eye_node == null or _skel == null or not _bones.has("Head"):
+		return
+	var head: Vector3 = _skel.global_transform * _skel.get_bone_global_pose(_bones["Head"]).origin
+	# 僵尸节点的 +Z 是正前方：眼睛放在头前面一点点
+	_eye_node.position = to_local(head) + Vector3(0.0, 0.04, 0.12)
+
+
+## 警察吐酸：从嘴里抛出一团绿酸，落地小范围伤害
+func _spit() -> void:
+	if target == null:
+		return
+	var acid := ZombieAcid.new()
+	get_parent().add_child(acid)
+	acid.setup(global_position + Vector3.UP * (_height * 0.8), target.global_position + Vector3.UP,
+		damage * 0.8, player_sys, world)
+	Sfx.play(_voice + "attack", global_position + Vector3.UP * 1.6)
+
+
+## 拆弹僵尸背后被打中：自爆
+func _explode() -> void:
+	GameState.make_noise(global_position, "explosion")
+	Sfx.play("explosion", global_position + Vector3.UP, 8.0)
+	Fx.impact(get_parent(), global_position + Vector3.UP, Vector3.UP)
+	if player_sys and player_sys.player.position.distance_to(global_position) < 4.0:
+		player_sys.take_damage(50.0, "explosion")
+	for z in get_parent().get_children():
+		if z == self or not (z is Zombie) or (z as Zombie).dead:
+			continue
+		if z.global_position.distance_to(global_position) < 4.0:
+			(z as Zombie).take_hit(80.0, global_position)
 
 
 ## 用脚 → 脚尖的方向判断模型正面，让所有僵尸都脸朝前走路
@@ -167,9 +265,15 @@ func _process(delta: float) -> void:
 		position.y = lerp(position.y, 0.15, min(1.0, delta * 5.0)) if _death_t < 2.5 else position.y
 		if _death_t > 2.5:
 			position.y -= delta * 0.5
+		if _eye_node:
+			_eye_node.visible = false
 		if _death_t > 4.0:
 			queue_free()
 		return
+	_update_eyes()
+	# 辐射变体每秒回 2% 血
+	if radiated and hp < max_hp:
+		hp = minf(max_hp, hp + max_hp * GameConfig.ZOMBIE_RADIATED_REGEN * delta)
 	_attack_cd = max(0.0, _attack_cd - delta)
 	_lunge = max(0.0, _lunge - delta * 3.0)
 	if _hit_flash > 0.0:
@@ -183,6 +287,28 @@ func _process(delta: float) -> void:
 	var dist := to.length()
 	var goal := brain.tick(delta, self, target, get_meta("horde", false))
 	var chasing := brain.chasing()
+	# 警察吐酸
+	if special == "cop":
+		_spit_cd = maxf(0.0, _spit_cd - delta)
+		if _spit_cd <= 0.0 and chasing and brain.can_see and dist >= 4.0 and dist <= 15.0:
+			_spit_cd = 4.0
+			_spit()
+	# 蜘蛛跳 3–4 米
+	if special == "spider":
+		_jump_cd = maxf(0.0, _jump_cd - delta)
+		if _jump_cd <= 0.0 and chasing and _jump_vy <= 0.0 and position.y <= 0.05 \
+				and dist >= 2.5 and dist <= 6.5:
+			_jump_vy = 6.0
+			_leap_t = 0.7
+			_jump_cd = 4.0
+	if _leap_t > 0.0:
+		_leap_t -= delta
+	if _jump_vy != 0.0 or position.y > 0.0:
+		position.y += _jump_vy * delta
+		_jump_vy -= GameConfig.GRAVITY * delta
+		if position.y <= 0.0:
+			position.y = 0.0
+			_jump_vy = 0.0
 	# 出手：抬手 → 砸下来，砸下来那一刻还在够得着的距离才算打中
 	if _windup >= 0.0:
 		_windup -= delta
@@ -235,7 +361,7 @@ func _process(delta: float) -> void:
 		rotation.y = lerp_angle(rotation.y, atan2(face.x, face.z), min(1.0, delta * 6.0))
 		var stop := GameConfig.ZOMBIE_REACH * 0.8 if chasing else 0.3
 		if gdist > stop and _windup < 0.0 and _scream_t <= 0.0 and _dir != Vector3.ZERO:
-			var spd := speed * brain.speed_mult()
+			var spd := speed * brain.speed_mult() * (3.0 if _leap_t > 0.0 else 1.0)
 			position += _dir * spd * delta
 			if world:
 				position = world.push_out(position, 0.35)
@@ -281,6 +407,16 @@ func height() -> float:
 func take_hit(amount: float, from: Vector3, headshot := false) -> void:
 	if dead:
 		return
+	# 拆弹僵尸背后被打中：自爆
+	if special == "demolition" and not _exploded:
+		var back := from - global_position
+		back.y = 0.0
+		var fwd := global_basis.z
+		fwd.y = 0.0
+		if back.length() > 0.01 and fwd.length() > 0.01 and fwd.normalized().dot(back.normalized()) < -0.2:
+			_exploded = true
+			_explode()
+			hp = 0.0
 	hp -= amount
 	brain.on_hit()
 	_hit_flash = 0.15

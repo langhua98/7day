@@ -56,7 +56,11 @@ STATION_MODELS = {
     "chemistryStation": ("ChemSetB.obj", "chemistryStation.png"),
     "cementMixer": ("cementMixerBody_LOD0.obj", "cementMixer.png"),
 }
-DEFAULT_ZOMBIES = ["soldier", "nurse", "cop", "biker", "lumberjack", "joe", "arlene", "screamer"]
+## 刷怪表用到的全部僵尸模型（不含暂时不刷的 dog）
+DEFAULT_ZOMBIES = ["arlene", "bigmama", "biker", "boe", "burnt", "chuck", "cocktailwaitress",
+    "cop", "crawler", "darlene", "demolition", "frostclaw", "hawaiian", "joe", "lab", "lumberjack",
+    "marlene", "moe", "mutated", "nurse", "plaguespitter", "rancher", "screamer", "soldier", "spider",
+    "steve", "suit", "tomclark", "wight", "worker", "yo"]
 ## 玩家方块形状：按形状名/ 下的官方 glb，运行时由 build_block_shapes.py 转成 JSON
 BLOCK_SHAPE_FILES = ("cube.glb", "cubeHalf.glb", "ramp.glb", "stairs.glb", "pole.glb", "plate.glb")
 # 游戏会用到的物品前缀（图标太多，只取这些，--all-icons 可以全取）
