@@ -8,6 +8,8 @@ var inventory: InventorySystem
 ## 正在看的容器的格子（直接改这个数组，存档跟着容器走）
 var items: Array = []
 var _title := Label.new()
+var _hint := Label.new()
+var _top_label := Label.new()
 var _top := GridContainer.new()
 var _bottom := GridContainer.new()
 var _bag_label := Label.new()
@@ -15,10 +17,10 @@ var _bag_label := Label.new()
 
 func _init() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	offset_left = 120
-	offset_right = -120
-	offset_top = 30
-	offset_bottom = -30
+	offset_left = 80
+	offset_right = -80
+	offset_top = 24
+	offset_bottom = -24
 	visible = false
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
@@ -37,6 +39,14 @@ func _init() -> void:
 	close.pressed.connect(close_panel)
 	head.add_child(close)
 	v.add_child(head)
+	_hint.text = "点容器物品拿到背包，点背包物品放进容器"
+	_hint.add_theme_font_size_override("font_size", 18)
+	_hint.modulate = Color(1, 1, 1, 0.6)
+	v.add_child(_hint)
+	_top_label.text = "容器"
+	_top_label.add_theme_font_size_override("font_size", 24)
+	_top_label.modulate = Color(1, 0.9, 0.72)
+	v.add_child(_top_label)
 	for pair in [[_top, 0.42], [_bottom, 0.58]]:
 		var scroll := ScrollContainer.new()
 		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -116,6 +126,7 @@ func take_all() -> void:
 func _rebuild() -> void:
 	if not visible:
 		return
+	_top_label.text = "容器 · %d 格" % items.size()
 	for g in [_top, _bottom]:
 		for c in g.get_children():
 			g.remove_child(c)

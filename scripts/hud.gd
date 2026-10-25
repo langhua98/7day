@@ -133,6 +133,10 @@ var _water_value := -1.0
 var _stamina_value := -1.0
 var _hp_value := -1.0
 var _food_value := -1.0
+var _hp_text := Label.new()
+var _food_text := Label.new()
+var _water_text := Label.new()
+var _stamina_text := Label.new()
 
 
 func _ready() -> void:
@@ -155,7 +159,7 @@ func _ready() -> void:
 
 	# 左上：天数、时间、血量、饱食度
 	var tl := VBoxContainer.new()
-	tl.position = Vector2(28, 18)
+	tl.position = Vector2(28, 70)
 	tl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_safe.add_child(tl)
 	_status.add_theme_font_size_override("font_size", 30)
@@ -163,37 +167,23 @@ func _ready() -> void:
 	_blood_info.add_theme_font_size_override("font_size", 20)
 	_blood_info.add_theme_color_override("font_color", Color(0.86, 0.78, 0.62, 0.9))
 	tl.add_child(_blood_info)
-	for pair in [[_hp_bar, Color(0.75, 0.12, 0.1)], [_food_bar, Color(0.8, 0.6, 0.15)], [_water_bar, Color(0.2, 0.5, 0.85)], [_stamina_bar, Color(0.3, 0.7, 0.45)]]:
-		var bar: ProgressBar = pair[0]
-		bar.custom_minimum_size = Vector2(260, 16 if bar != _stamina_bar else 8)
-		bar.show_percentage = false
-		bar.max_value = 100
-		var fill := StyleBoxFlat.new()
-		fill.bg_color = pair[1]
-		var bg := StyleBoxFlat.new()
-		bg.bg_color = Color(0, 0, 0, 0.45)
-		bar.add_theme_stylebox_override("fill", fill)
-		bar.add_theme_stylebox_override("background", bg)
-		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		if bar == _hp_bar:
-			continue  # 血条放底部中间、武器栏下面（吃鸡手游的位置）
-		tl.add_child(bar)
-	_hp_bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_hp_bar.position = Vector2(-200, -26)
-	_hp_bar.size = Vector2(400, 12)
-	_safe.add_child(_hp_bar)
+	for pair in [["血", _hp_bar, Color(0.75, 0.12, 0.1), 16, _hp_text],
+			["饿", _food_bar, Color(0.8, 0.6, 0.15), 14, _food_text],
+			["水", _water_bar, Color(0.2, 0.5, 0.85), 14, _water_text],
+			["力", _stamina_bar, Color(0.3, 0.7, 0.45), 8, _stamina_text]]:
+		_add_stat_row(tl, pair[0], pair[1], pair[2], pair[3], pair[4])
 	_effects.add_theme_font_size_override("font_size", 24)
 	_effects.add_theme_color_override("font_color", Color(1, 0.55, 0.45))
 	tl.add_child(_effects)
 
 	_kills.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_kills.position = Vector2(-370, 26)
+	_kills.position = Vector2(-370, 70)
 	_kills.size = Vector2(240, 40)
 	_kills.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_safe.add_child(_kills)
 
 	_banner.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_banner.position = Vector2(-400, 90)
+	_banner.position = Vector2(-400, 120)
 	_banner.size = Vector2(800, 60)
 	_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_banner.add_theme_font_size_override("font_size", 40)
@@ -892,6 +882,7 @@ func set_survival(water: float, effects: String) -> void:
 	if not is_equal_approx(water, _water_value):
 		_water_value = water
 		_water_bar.value = water
+		_set_stat_text(_water_text, water, water < 25.0)
 	if effects != _effects_text:
 		_effects_text = effects
 		_effects.text = effects
@@ -902,6 +893,7 @@ func set_stamina(v: float) -> void:
 		return
 	_stamina_value = v
 	_stamina_bar.value = v
+	_set_stat_text(_stamina_text, v, v < 20.0)
 
 
 func set_status(day: int, hour: float, hp: float, food: float, kills: int, zombies: int, night: bool,
@@ -919,9 +911,11 @@ func set_status(day: int, hour: float, hp: float, food: float, kills: int, zombi
 	if not is_equal_approx(hp, _hp_value):
 		_hp_value = hp
 		_hp_bar.value = hp
+		_set_stat_text(_hp_text, hp, hp < 30.0)
 	if not is_equal_approx(food, _food_value):
 		_food_value = food
 		_food_bar.value = food
+		_set_stat_text(_food_text, food, food < 25.0)
 	var kills_text := "击杀 %d   附近 %d" % [kills, zombies]
 	if kills_text != _kills_text:
 		_kills_text = kills_text
@@ -1434,6 +1428,45 @@ func damage_number(amount: float, headshot: bool, world_pos: Vector3) -> void:
 	tw.tween_property(l, "position:y", l.position.y - 38, 0.65)
 	tw.tween_property(l, "modulate:a", 0.0, 0.65)
 	tw.chain().tween_callback(l.queue_free)
+
+
+func _add_stat_row(parent: VBoxContainer, name: String, bar: ProgressBar, color: Color, height: int,
+		value: Label) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var label := Label.new()
+	label.text = name
+	label.custom_minimum_size = Vector2(28, 0)
+	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_color_override("font_color", color.lightened(0.18))
+	row.add_child(label)
+	bar.custom_minimum_size = Vector2(210, height)
+	bar.show_percentage = false
+	bar.max_value = 100
+	bar.value = 100
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = color
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0, 0, 0, 0.45)
+	bar.add_theme_stylebox_override("fill", fill)
+	bar.add_theme_stylebox_override("background", bg)
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(bar)
+	value.text = "100"
+	value.custom_minimum_size = Vector2(52, 0)
+	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	value.add_theme_font_size_override("font_size", 18)
+	value.add_theme_color_override("font_color", Color(0.92, 0.9, 0.82))
+	row.add_child(value)
+	parent.add_child(row)
+
+
+func _set_stat_text(label: Label, value: float, low: bool) -> void:
+	label.text = str(roundi(value))
+	label.add_theme_color_override("font_color", Color(1, 0.35, 0.25) if low else Color(0.92, 0.9, 0.82))
+
+
 func _build_status_bar() -> void:
 	var holder := Control.new()
 	holder.set_anchors_preset(Control.PRESET_TOP_RIGHT)
@@ -1451,8 +1484,8 @@ func _build_status_bar() -> void:
 	_status_tip.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	_status_tip.offset_left = -700
 	_status_tip.offset_right = -30
-	_status_tip.offset_top = 220
-	_status_tip.offset_bottom = 300
+	_status_tip.offset_top = 270
+	_status_tip.offset_bottom = 350
 	_status_tip.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_status_tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_status_tip.add_theme_font_size_override("font_size", 22)

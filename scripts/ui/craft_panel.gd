@@ -32,10 +32,10 @@ var _tool_btn := Button.new()
 
 func _init() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	offset_left = 100
-	offset_right = -100
-	offset_top = 30
-	offset_bottom = -30
+	offset_left = 80
+	offset_right = -80
+	offset_top = 24
+	offset_bottom = -24
 	visible = false
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
@@ -51,6 +51,11 @@ func _init() -> void:
 	close.pressed.connect(func(): visible = false)
 	head.add_child(close)
 	v.add_child(head)
+	var hint := Label.new()
+	hint.text = "点配方查看材料 · 材料不够标红 · 队列最多 4 项"
+	hint.add_theme_font_size_override("font_size", 18)
+	hint.modulate = Color(1, 1, 1, 0.6)
+	v.add_child(hint)
 
 	# 分类标签（横向能滑）
 	var tab_scroll := ScrollContainer.new()
