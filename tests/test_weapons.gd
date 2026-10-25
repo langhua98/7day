@@ -42,8 +42,18 @@ func _ready() -> void:
 		if q < 1 or q > 6:
 			failures.append("GS60 品质应在 1–6")
 			break
-	if Weapons.roll_quality(1, qrng) != 1:
-		failures.append("GS1 品质应只有 1")
+	# 2a：品质改走官方模板。GS1 基础模板最高 3 级（没有 loot.json 时退回 1 级）
+	for i in 20:
+		var q1 := Weapons.roll_quality(1, qrng)
+		if q1 < 1 or q1 > 3:
+			failures.append("GS1 品质应在 1–3（实际 %d）" % q1)
+			break
+	if not Data.get_table("loot").is_empty():
+		var high := 0
+		for i in 200:
+			high = maxi(high, Weapons.roll_quality(60, qrng))
+		if high < 4:
+			failures.append("GS60 应能出 4 级以上（实际 %d）" % high)
 	if failures.is_empty():
 		print("PASS test_weapons")
 		get_tree().quit(0)

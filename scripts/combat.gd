@@ -158,7 +158,8 @@ func attack() -> void:
 		_hit_zombie(best, dmg * (C.HEADSHOT_MULT if head else 1.0), head,
 			best.global_position + Vector3.UP * (best.height() * (0.88 if head else 0.6)), flat_aim)
 	else:
-		_hit_block(dmg)
+		if not _hit_container(dmg):
+			_hit_block(dmg)
 
 
 ## 准星指着的地方：{hit: 方块格子或 null, place: 能摆的那一格}
@@ -242,6 +243,25 @@ func _place_block() -> void:
 	if not C.TEST_INFINITE:
 		inventory.remove(inventory.equipped)
 		inventory.refresh()
+
+
+## 空手或近战砸保险箱：先扣血量；砸开后才能翻
+func _hit_container(dmg: float) -> bool:
+	if not main.looting:
+		return false
+	var c: Dictionary = world.nearest_container(player_sys.player.position, C.MELEE_RANGE)
+	if c.is_empty() or c.get("searched", false) or not main.looting.is_safe(c):
+		return false
+	var hp := float(c.get("hp", C.SAFE_HP)) - dmg
+	c["hp"] = maxf(0.0, hp)
+	var at: Vector3 = Vector3(c.pos) + Vector3.UP * 0.8
+	Fx.impact(main, at, -player_sys.camera.global_basis.z)
+	Sfx.play("bullet_wall", at, -4.0)
+	if hp <= 0.0:
+		main.looting.break_container(c)
+	else:
+		hud.toast("%s 耐久 %d%%" % [c.name, int(hp / C.SAFE_HP * 100.0)])
+	return true
 
 
 ## 空手或近战打到方块：扣耐久，打碎了方块回到背包

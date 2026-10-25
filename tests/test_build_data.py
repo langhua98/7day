@@ -238,3 +238,63 @@ class RecipesTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+LOOT_XML = """<loot>
+  <lootprobtemplate name="med"><loot level="1,999999" prob="0.5"/></lootprobtemplate>
+  <lootqualitytemplate name="qualBase">
+    <qualitytemplate level="0,9" default_quality="1">
+      <loot quality="1" prob="0.8"/><loot quality="3" prob="1"/>
+    </qualitytemplate>
+    <qualitytemplate level="50,999999" default_quality="1">
+      <loot quality="4" prob="0.5"/><loot quality="6" prob="1"/>
+    </qualitytemplate>
+  </lootqualitytemplate>
+  <lootgroup name="g1" count="all">
+    <item name="knownA" count="1,3"/>
+    <item name="unknown" count="1"/>
+    <item group="g2" count="1" loot_prob_template="med"/>
+    <item name="knownB" count="1"><requirement class="RandomRoll"/></item>
+  </lootgroup>
+  <lootgroup name="g2"><item name="knownA" count="1" prob="0.5"/></lootgroup>
+  <lootgroup name="g3"><item name="knownA" count="1"/></lootgroup>
+  <lootgroup name="gone"><item name="unknown"/></lootgroup>
+  <lootcontainer name="c1" count="1" loot_quality_template="qualBase"><item group="g1"/></lootcontainer>
+  <lootcontainer name="empty" count="1"><item name="unknown"/></lootcontainer>
+</loot>"""
+
+
+class LootDataTest(unittest.TestCase):
+    def test_parse_loot_xml(self):
+        loot = build_data.parse_loot_xml(LOOT_XML)
+        self.assertEqual(loot["prob"]["med"], [(1, 999999, 0.5)])
+        self.assertEqual(len(loot["quality"]["qualBase"]), 2)
+        self.assertEqual(loot["quality"]["qualBase"][0]["level"], [0, 9])
+        self.assertEqual(loot["quality"]["qualBase"][1]["default"], 1)
+        g1 = loot["groups"]["g1"]
+        self.assertEqual(g1["count"], "all")
+        # requirement 条目丢掉
+        self.assertEqual(len(g1["items"]), 3)
+        self.assertEqual(g1["dropped"], 1)
+        self.assertEqual(g1["items"][0]["count"], (1, 3))
+        self.assertEqual(g1["items"][2]["prob_template"], "med")
+        self.assertEqual(loot["groups"]["g3"]["count"], (1, 1))
+        self.assertEqual(loot["containers"]["c1"]["quality"], "qualBase")
+        self.assertEqual(loot["containers"]["c1"]["count"], (1, 1))
+
+    def test_build_loot_prunes_unknown_and_empty(self):
+        pruned, stats = build_data.build_loot(LOOT_XML, {"knownA": {}, "knownB": {}})
+        self.assertIn("g1", pruned["groups"])
+        self.assertIn("g2", pruned["groups"])
+        self.assertNotIn("gone", pruned["groups"])
+        self.assertIn("c1", pruned["containers"])
+        self.assertNotIn("empty", pruned["containers"])
+        # c1 → g1；g1 只剩 knownA 和嵌套的 g2（knownB 需要技能，unknown 不在物品表）
+        items = pruned["containers"]["c1"]["items"]
+        self.assertEqual(items[0]["group"], "g1")
+        self.assertEqual([e.get("item") or e.get("group") for e in pruned["groups"]["g1"]["items"]],
+                         ["knownA", "g2"])
+        self.assertEqual(stats["items"], 3)
+        self.assertEqual(stats["groups"], 1)
+        self.assertEqual(stats["containers"], 1)
+        self.assertEqual(stats["requirements"], 1)

@@ -154,10 +154,9 @@ static func quality_mult(quality: int) -> float:
 	return 1.0 + 0.1 * (clampi(quality, 1, 6) - 1)
 
 
-## 按游戏阶段掷品质：第 1 天大多 1 级，GS 60 能到 5–6 级
+## 按游戏阶段掷品质：走官方 lootqualitytemplate（scripts/loot.gd）
 static func roll_quality(gs: int, rng: RandomNumberGenerator) -> int:
-	var maxq := clampi(1 + int(gs / 10.0), 1, 6)
-	return rng.randi_range(1, maxq)
+	return Loot.roll_quality(gs, Loot.QUALITY_FALLBACK, rng)
 
 
 ## 捡到一盒子弹给几发
