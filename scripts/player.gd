@@ -98,7 +98,7 @@ func update(delta: float) -> void:
 	arms.set_aiming(aiming)
 	var scope := 0
 	if aiming and inventory and inventory.equipped != "":
-		scope = Weapons.scope_level(inventory.equipped)
+		scope = Weapons.scope_level(inventory.equipped, inventory.scope_of(inventory.equipped))
 	arms.set_scoped(scope >= 2)
 	hud.set_scope(scope)
 	var look_sens: float = C.LOOK_SENSITIVITY * hud.settings.sensitivity * (C.AIM_SENSITIVITY if aiming else 1.0)
@@ -155,7 +155,7 @@ func update(delta: float) -> void:
 	var fov_target := C.BASE_FOV
 	if aiming:
 		if inventory and inventory.equipped != "":
-			fov_target = Weapons.scope_fov(inventory.equipped)
+			fov_target = Weapons.scope_fov(inventory.equipped, inventory.scope_of(inventory.equipped))
 		else:
 			fov_target = C.AIM_FOV
 	elif sprint:

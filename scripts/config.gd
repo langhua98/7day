@@ -51,10 +51,7 @@ const BASE_FOV := 70.0
 const SPRINT_FOV_BONUS := 7.0
 const AIM_FOV := 55.0
 const AIM_SENSITIVITY := 0.6
-## 枪械默认倍镜 FOV：数值越小放得越大
-const SCOPE_FOV_PISTOL := 55.0
-const SCOPE_FOV_SHOTGUN := 50.0
-const SCOPE_FOV_SMG := 44.0
+## 倍镜 FOV：数值越小放得越大
 const SCOPE_FOV_RIFLE := 34.0
 const SCOPE_FOV_SNIPER := 22.0
 const RECOIL_RECOVERY := 12.0

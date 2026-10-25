@@ -20,6 +20,8 @@ var equipped := ""
 var mags := {}
 var mags_type := {}
 var ammo_choice := {}
+## 每把枪装着的倍镜：gun_id -> scope_id
+var gun_scopes := {}
 ## 每种武器的最高品质（汇总，只读；combat 取伤害用）
 var qualities := {}
 var _slots: Array = []
@@ -47,6 +49,7 @@ func reset() -> void:
 	mags.clear()
 	mags_type.clear()
 	ammo_choice.clear()
+	gun_scopes.clear()
 	qualities.clear()
 	if arms:
 		arms.hold("")
@@ -349,6 +352,70 @@ func pickup(id: String, quality := 0, amount := 0) -> int:
 	return left
 
 
+func scope_of(gun_id: String) -> String:
+	var scope := str(gun_scopes.get(gun_id, ""))
+	return scope if Attachments.is_scope(scope) else ""
+
+
+func scope_button_text() -> String:
+	var scope := scope_of(equipped)
+	return "倍镜\n" + ("无" if scope == "" else Attachments.label(scope))
+
+
+## 点「倍镜」按钮：无 → 2× → 4× → 无，只装背包里有的
+func cycle_scope() -> void:
+	if equipped == "" or Assets.items_by_id.get(equipped, {}).get("kind", -1) != Assets.Kind.GUN:
+		hud.toast("先拿一把枪")
+		return
+	var current := scope_of(equipped)
+	var order := ["", "scope2x", "scope4x"]
+	var start := order.find(current)
+	if start < 0:
+		start = 0
+	for step in range(1, order.size()):
+		var nxt: String = order[(start + step) % order.size()]
+		if nxt == current:
+			continue
+		if nxt != "" and not has(nxt):
+			continue
+		if current != "":
+			if add(current, 1) > 0:
+				hud.toast("背包满了，拆不下倍镜")
+				return
+		if nxt != "":
+			remove(nxt, 1)
+			gun_scopes[equipped] = nxt
+		else:
+			gun_scopes.erase(equipped)
+		refresh()
+		changed.emit()
+		hud.toast("拆下倍镜" if nxt == "" else "装上%s" % Attachments.label(nxt))
+		return
+	hud.toast("背包里没有倍镜")
+
+
+## 背包里点倍镜：装到当前枪上
+func install_scope(scope_id: String) -> bool:
+	if not Attachments.is_scope(scope_id):
+		return false
+	if equipped == "" or Assets.items_by_id.get(equipped, {}).get("kind", -1) != Assets.Kind.GUN:
+		hud.toast("先拿一把枪")
+		return false
+	if scope_of(equipped) == scope_id or not has(scope_id):
+		return false
+	var old := scope_of(equipped)
+	if old != "":
+		if add(old, 1) > 0:
+			hud.toast("背包满了，换不了倍镜")
+			return false
+	remove(scope_id, 1)
+	gun_scopes[equipped] = scope_id
+	refresh()
+	changed.emit()
+	hud.toast("装上%s" % Attachments.label(scope_id))
+	return true
+
+
 func use_item(id: String) -> void:
 	if not inventory.has(id):
 		return
@@ -366,6 +433,9 @@ func use_item(id: String) -> void:
 			equip("" if equipped == id else id)
 			if equipped == id:
 				hud.toast("拿着%s：对准地面或方块点「攻击」摆放，空手或近战打方块能拆" % Assets.display_name(id))
+		Assets.Kind.ATTACHMENT:
+			install_scope(id)
+			return
 		_:
 			hud.toast("%s：材料，留着吧" % Assets.display_name(id))
 	GameState.item_used.emit(id)
@@ -454,6 +524,10 @@ func give_all_items(top_up := false) -> void:
 		var have := count(id)
 		if have < want:
 			_put({"id": id, "count": want - have, "quality": 0, "durability": 0.0})
+	for id in Attachments.IDS:
+		Assets.ensure_item(id, Attachments.label(id)).kind = Assets.Kind.ATTACHMENT
+		if count(id) < 1:
+			_put({"id": id, "count": 1, "quality": 0, "durability": 0.0})
 	_reindex()
 	changed.emit()
 	if top_up:
@@ -529,7 +603,8 @@ func save_data() -> Dictionary:
 	for sl in _slots:
 		packed.append(sl if not sl.is_empty() else null)
 	return {"bag": packed, "bag_cap": _cap, "inventory": inventory, "order": pickup_order, "equipped": equipped,
-		"mags": mags, "mags_type": mags_type, "ammo_choice": ammo_choice, "qualities": qualities}
+		"mags": mags, "mags_type": mags_type, "ammo_choice": ammo_choice, "gun_scopes": gun_scopes,
+		"qualities": qualities}
 
 
 func load_data(d: Dictionary) -> void:
@@ -565,6 +640,14 @@ func load_data(d: Dictionary) -> void:
 		mags_type[id] = str(d.mags_type[id])
 	for id in d.get("ammo_choice", {}):
 		ammo_choice[id] = str(d.ammo_choice[id])
+	gun_scopes.clear()
+	var saved_scopes = d.get("gun_scopes", {})
+	if saved_scopes is Dictionary:
+		for id in saved_scopes:
+			var gid := str(id)
+			var scope := str(saved_scopes[id])
+			if Attachments.is_scope(scope) and Assets.items_by_id.get(gid, {}).get("kind", -1) == Assets.Kind.GUN:
+				gun_scopes[gid] = scope
 	for id in mags:
 		if not mags_type.has(id):
 			mags_type[id] = Weapons.default_ammo(id)

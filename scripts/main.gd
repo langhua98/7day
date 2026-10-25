@@ -98,6 +98,7 @@ func _ready() -> void:
 	hud.action_pressed.connect(looting.action)
 	hud.reload_pressed.connect(combat.reload)
 	hud.rotate_pressed.connect(combat.rotate_block)
+	hud.scope_pressed.connect(inventory.cycle_scope)
 	hud.jump_pressed.connect(player_sys.jump)
 	hud.crouch_pressed.connect(player_sys.toggle_crouch)
 	hud.continue_pressed.connect(save_game.continue_game)

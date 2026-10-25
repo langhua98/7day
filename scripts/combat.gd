@@ -409,7 +409,9 @@ func _update_ammo_hud() -> void:
 	var row: Dictionary = Assets.items_by_id.get(inventory.equipped, {})
 	if row.get("kind", -1) != Assets.Kind.GUN:
 		hud.set_ammo("")
+		hud.set_scope_button("", false)
 		return
+	hud.set_scope_button(inventory.scope_button_text(), true)
 	var id := inventory.equipped
 	var st := Weapons.stats(id)
 	var mag := int(inventory.mags.get(id, 0))

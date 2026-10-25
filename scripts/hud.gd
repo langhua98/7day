@@ -11,6 +11,7 @@ signal jump_pressed
 ## 6a：蹲伏切换
 signal crouch_pressed
 signal rotate_pressed
+signal scope_pressed
 signal continue_pressed
 signal settings_changed(settings: Dictionary)
 signal quit_to_title
@@ -34,6 +35,7 @@ var _effects := Label.new()
 var _jump_btn := Button.new()
 var _crouch_btn := Button.new()
 var _rotate_btn := Button.new()
+var _scope_btn := Button.new()
 var _ammo_panel := PanelContainer.new()
 var _ammo_mag := Label.new()
 var _ammo_reserve := Label.new()
@@ -283,8 +285,10 @@ func _ready() -> void:
 	_round(_crouch_btn, "蹲", Control.PRESET_BOTTOM_RIGHT, Vector2(-130, -250), 110, 28)
 	_round(_aim_btn, "开镜", Control.PRESET_BOTTOM_RIGHT, Vector2(-440, -440), 110, 26)
 	_round(_rotate_btn, "旋转\n0°", Control.PRESET_BOTTOM_RIGHT, Vector2(-440, -270), 100, 20)
+	_round(_scope_btn, "倍镜\n无", Control.PRESET_BOTTOM_RIGHT, Vector2(-550, -270), 100, 20)
 	_aim_btn.visible = false
 	_rotate_btn.visible = false
+	_scope_btn.visible = false
 
 	# 搜索 / 拾取：走近容器或地上的东西才出现
 	_action_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
@@ -862,6 +866,12 @@ func set_block_controls(rot: int, on: bool) -> void:
 		_rotate_btn.text = "旋转\n%d°" % (rot * 90)
 
 
+func set_scope_button(text: String, on: bool) -> void:
+	_scope_btn.visible = on
+	if on:
+		_scope_btn.text = text
+
+
 ## 拿着枪时显示「弹匣 / 背包」子弹数和换弹键；text 为空就隐藏
 func set_ammo(text: String) -> void:
 	if text == _ammo_text and text != "":
@@ -1306,6 +1316,10 @@ func _touch_down(index: int, pos: Vector2) -> void:
 	if _ammo_panel.visible and _ammo_panel.get_global_rect().grow(8).has_point(pos):
 		_press_button(_ammo_panel)
 		reload_pressed.emit()
+		return
+	if _scope_btn.visible and _scope_btn.get_global_rect().grow(10).has_point(pos):
+		_press_button(_scope_btn)
+		scope_pressed.emit()
 		return
 	if _rotate_btn.visible and _rotate_btn.get_global_rect().grow(10).has_point(pos):
 		_press_button(_rotate_btn)
