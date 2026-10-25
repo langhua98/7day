@@ -102,6 +102,7 @@ func _ready() -> void:
 	hud.bag_compact_pressed.connect(inventory.compact)
 	hud.action_pressed.connect(looting.action)
 	hud.exit_vehicle_pressed.connect(func(): vehicles.exit_vehicle())
+	hud.bag_salvage_pressed.connect(inventory.salvage_slot)
 	hud.reload_pressed.connect(combat.reload)
 	hud.rotate_pressed.connect(combat.rotate_block)
 	hud.scope_pressed.connect(inventory.cycle_scope)
@@ -187,6 +188,7 @@ func start(fresh := true) -> void:
 		c.erase("items")
 		c.erase("loot_day")
 		c.erase("hp")
+	world.harvest_reset()
 	world.clear_voxels()
 	world.door_load([])
 	for i in C.LOOT_COUNT / 2:

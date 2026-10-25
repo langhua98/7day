@@ -246,6 +246,22 @@ const LOCKPICK_ID := "resourceLockPick"
 const LOCKPICK_BREAK_CHANCE := 0.4
 const SAFE_HP := 120.0
 
+# —— 采集和拆解（4b）——
+## 街边物件被拆掉后多少游戏天原地刷新
+const HARVEST_RESPAWN_DAYS := 5
+## 官方采集数量乘这个（手机版收敛一点），单次最多给多少
+const HARVEST_DROP_MULT := 0.5
+const HARVEST_MAX_DROPS := 15
+## 对上官方方块前的默认血量：金属 / 木 / 石 / 垃圾
+const HARVEST_HP := {"metal": 120.0, "wood": 40.0, "stone": 100.0, "trash": 20.0}
+## 够得着多远打物件
+const HARVEST_REACH := 2.4
+## 修理包 id（修满当前工具）
+const REPAIR_KIT_ID := "resourceRepairKit"
+## 背包拆解：耗时（秒）、返还材料的比例
+const SALVAGE_TIME := 2.0
+const SALVAGE_REFUND := 0.5
+
 ## 音乐判定距离
 const COMBAT_DISTANCE := 11.0
 const TENSION_DISTANCE := 26.0

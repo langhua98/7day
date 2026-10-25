@@ -662,6 +662,67 @@ def build_loot(loot_xml: str, items: dict) -> tuple:
     return _prune_loot(parse_loot_xml(loot_xml), items)
 
 
+# —— 采集（blocks.xml 的 Harvest / Destroy 掉落）——
+
+## 街边物件对不上具体方块，按材质取这些官方方块做代表
+HARVEST_MATERIAL_BLOCKS = {
+    "metal": ("cntTiltTruckEmpty", "electricalBox01", "cntWallSafeOpen"),
+    "wood": ("woodShapes",),
+    "stone": ("concreteShapes", "palletBagConcreteBaseFull"),
+    "trash": ("cntTrashPile01", "garbage_decor1", "garbage_decor2"),
+}
+
+
+def _count_pair(value):
+    nums = [int(float(x)) for x in re.findall(r"-?\d+(?:\.\d+)?", str(value or ""))]
+    if not nums:
+        return (1, 1)
+    return (min(nums[0], nums[1]), max(nums[0], nums[1])) if len(nums) > 1 else (nums[0], nums[0])
+
+
+def parse_block_drops(blocks_xml: str, wanted) -> dict:
+    """blocks.xml → {方块名: {harvest: [...], destroy: [...]}}，只要 wanted 里的方块。"""
+    root = ET.fromstring(blocks_xml)
+    out = {}
+    for el in root.iter("block"):
+        name = el.get("name")
+        if name not in wanted:
+            continue
+        harvest, destroy = [], []
+        for d in el.findall("drop"):
+            event = d.get("event")
+            item = d.get("name", "")
+            if event not in ("Harvest", "Destroy") or not item:
+                continue
+            lo, hi = _count_pair(d.get("count"))
+            if hi <= 0:
+                continue
+            row = {"id": item, "count": [lo, hi], "prob": _float(d.get("prob"), 1.0)}
+            (harvest if event == "Harvest" else destroy).append(row)
+        out[name] = {"harvest": harvest, "destroy": destroy}
+    return out
+
+
+def build_harvest(blocks_xml: str, items: dict) -> dict:
+    """官方方块掉落 → {materials: {metal/wood/stone/trash: {harvest, destroy}}}。"""
+    wanted = {b for blocks in HARVEST_MATERIAL_BLOCKS.values() for b in blocks}
+    parsed = parse_block_drops(blocks_xml, wanted)
+    out = {"materials": {}}
+    for mat, blocks in HARVEST_MATERIAL_BLOCKS.items():
+        harvest, destroy = [], []
+        for b in blocks:
+            e = parsed.get(b)
+            if e:
+                harvest += e["harvest"]
+                destroy += e["destroy"]
+        kept_h = [r for r in harvest if r["id"] in items]
+        kept_d = [r for r in destroy if r["id"] in items]
+        out["materials"][mat] = {"harvest": kept_h, "destroy": kept_d}
+        print(f"  采集 {mat}: 方块 {len(blocks)} 个，Harvest {len(kept_h)} 条，Destroy {len(kept_d)} 条"
+              f"（丢掉 {len(harvest) - len(kept_h) + len(destroy) - len(kept_d)} 条不在物品表）")
+    return out
+
+
 def _api_base() -> str:
     return os.environ.get("XIAOJU_API", API_DEFAULT)
 
@@ -807,6 +868,18 @@ def build_all(dest: Path, zip_path: Path, index_path: Path, only: str = "all") -
         print(f"掉落表: 容器 {len(loot['containers'])} 个，组 {len(loot['groups'])} 个；"
               f"丢掉物品条目 {stats['items']}、空组 {stats['groups']}、空容器 {stats['containers']}、"
               f"需要技能的条目 {stats['requirements']} → {path}")
+    if only in ("harvest", "all"):
+        items_path = dest / "data" / "items.json"
+        if not items_path.exists():
+            sys.exit(f"找不到 {items_path}，先运行 --only items")
+        items_table = json.loads(items_path.read_text(encoding="utf-8"))
+        blocks_xml = read_config_file(zip_path, "blocks.xml")
+        if not blocks_xml:
+            sys.exit(f"{zip_path} 里没有 Config/blocks.xml")
+        harvest = build_harvest(blocks_xml, items_table)
+        path = dest / "data" / "harvest.json"
+        path.write_text(json.dumps(harvest, ensure_ascii=False, indent=1), encoding="utf-8")
+        print(f"采集表: {len(harvest['materials'])} 种材质 → {path}")
     if only in ("recipes", "all"):
         items_path = dest / "data" / "items.json"
         if not items_path.exists():
@@ -832,7 +905,7 @@ def main() -> int:
     ap.add_argument("--dest", default=str(DEFAULT_DEST), help="assets 目录")
     ap.add_argument("--zip", default="", help="本地 Data_Config.zip（不传就从云盘下载）")
     ap.add_argument("--index", default="", help="icon_to_model.json（默认 assets/index/）")
-    ap.add_argument("--only", default="all", choices=["all", "items", "buffs", "gamestages", "entitygroups", "recipes", "loot"], help="只生成某张表")
+    ap.add_argument("--only", default="all", choices=["all", "items", "buffs", "gamestages", "entitygroups", "recipes", "loot", "harvest"], help="只生成某张表")
     args = ap.parse_args()
     dest = Path(args.dest)
     zip_path = Path(args.zip) if args.zip else dest / "cache" / ZIP_NAME

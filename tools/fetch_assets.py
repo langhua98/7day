@@ -1246,6 +1246,7 @@ SOUND_GROUPS = {
     "hit_flesh": ("impactsurface", r"(metalhitorganic|organichitorganic)\d*\.wav", 4),
     "bullet_flesh": ("impactsurface", r"bullethitorganic\d*\.wav", 3),
     "bullet_wall": ("impactsurface", r"bullethit(stone|metal)\d*\.wav", 4),
+    "hit_wood": ("impactsurface", r"bullethitwood\d*\.wav", 3),
     "explosion": ("explosions", r"explosion\d\.wav", 3),
     "zm_roam": ("enemies", r"zombiemale2?roam\d+\.wav", 5),
     "zm_alert": ("enemies", r"zombiemale2?alert\d+\.wav", 4),

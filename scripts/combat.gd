@@ -119,6 +119,10 @@ func attack() -> void:
 	if kind == Assets.Kind.BLOCK:
 		_place_block()
 		return
+	if kind == Assets.Kind.MELEE and inventory.is_broken(inventory.equipped):
+		hud.toast("%s 坏了，用修理包修一下" % Assets.display_name(inventory.equipped))
+		return
+	var tool := Harvest.tool_kind(inventory.equipped) if kind == Assets.Kind.MELEE else ""
 	attack_cd = C.MELEE_COOLDOWN
 	arms.swing(1.0 / C.MELEE_COOLDOWN * 0.9)
 	Sfx.play("swing" if kind == Assets.Kind.MELEE else "swing_fist", Vector3.INF, -4.0)
@@ -157,9 +161,14 @@ func attack() -> void:
 		var head := player_sys.pitch > 0.12
 		_hit_zombie(best, dmg * (C.HEADSHOT_MULT if head else 1.0), head,
 			best.global_position + Vector3.UP * (best.height() * (0.88 if head else 0.6)), flat_aim)
+		_wear_tool()
 	else:
-		if not _hit_container(dmg):
-			_hit_block(dmg)
+		if _hit_prop(dmg, tool):
+			_wear_tool()
+		elif _hit_container(dmg):
+			_wear_tool()
+		elif _hit_block(dmg):
+			_wear_tool()
 
 
 ## 准星指着的地方：{hit: 方块格子或 null, place: 能摆的那一格}
@@ -245,6 +254,40 @@ func _place_block() -> void:
 		inventory.refresh()
 
 
+## 近战打街边物件：扣血、出声音；拆掉时按材质和工具掉材料
+func _hit_prop(dmg: float, tool: String) -> bool:
+	var aim := -player_sys.camera.global_basis.z
+	var idx := world.nearest_prop(player_sys.player.position, C.HARVEST_REACH, aim)
+	if idx < 0:
+		return false
+	var res := world.hit_prop(idx, dmg)
+	if res.is_empty():
+		return false
+	var at: Vector3 = Vector3(res.pos) + Vector3.UP * 0.8
+	Fx.impact(main, at, aim)
+	var mat := str(res.material)
+	Sfx.play("hit_wood" if mat == "wood" else "bullet_wall", at, -4.0)
+	GameState.make_noise(res.pos, "block_break")
+	if bool(res.get("destroyed", false)):
+		Sfx.play("land", at, -2.0)
+		for d in Harvest.drops(mat, tool, rng):
+			var p := Vector3(res.pos) + Vector3(rng.randf_range(-0.6, 0.6), 0.25, rng.randf_range(-0.6, 0.6))
+			main.looting.spawn_loot(world.push_out(p, 0.3), str(d.id), 0, int(d.count))
+		hud.toast("拆掉了%s" % Assets.display_name(str(res.name)))
+	else:
+		var pr: Dictionary = world.props[idx]
+		hud.toast("%s 耐久 %d%%" % [Assets.display_name(str(res.name)),
+			int(float(pr.hp) / maxf(1.0, float(pr.max_hp)) * 100.0)])
+	return true
+
+
+## 每次近战命中扣 1 点耐久
+func _wear_tool() -> void:
+	if Assets.items_by_id.get(inventory.equipped, {}).get("kind", -1) != Assets.Kind.MELEE:
+		return
+	inventory.damage_tool(inventory.equipped, 1.0)
+
+
 ## 空手或近战砸保险箱：先扣血量；砸开后才能翻
 func _hit_container(dmg: float) -> bool:
 	if not main.looting:
@@ -265,10 +308,10 @@ func _hit_container(dmg: float) -> bool:
 
 
 ## 空手或近战打到方块：扣耐久，打碎了方块回到背包
-func _hit_block(dmg: float) -> void:
+func _hit_block(dmg: float) -> bool:
 	var aim := _aim_block(C.MELEE_RANGE + 0.6)
 	if aim.is_empty() or aim.hit == null:
-		return
+		return false
 	var c: Vector3i = aim.hit
 	var at := player_sys.camera.global_position - player_sys.camera.global_basis.z * float(aim.t)
 	Fx.impact(main, at + player_sys.camera.global_basis.z * 0.05, player_sys.camera.global_basis.z)
@@ -282,12 +325,13 @@ func _hit_block(dmg: float) -> void:
 			if left > 0 and main.looting:
 				main.looting.spawn_loot(Vector3(c) + Vector3(0.5, 0.2, 0.5), got, 0, left)
 				hud.toast("背包满了，%s 掉在地上" % Assets.display_name(got))
-				return
+				return true
 		hud.toast("拆掉了%s" % Assets.display_name(got))
 	else:
 		var vox = world.voxels.get(c)
 		if vox:
 			hud.toast("%s 耐久 %d%%" % [Assets.display_name(vox.id), int(world.voxel_health(c) * 100.0)])
+	return true
 
 
 ## 开枪：每颗弹丸从镜头沿准星方向射出，先打中的是僵尸还是墙
@@ -447,6 +491,11 @@ func _finish_reload() -> void:
 
 
 func _update_ammo_hud() -> void:
+	# 耐久条只给近战工具/武器看（枪暂时不掉耐久）
+	var melee_dur := 0.0
+	if Assets.items_by_id.get(inventory.equipped, {}).get("kind", -1) == Assets.Kind.MELEE:
+		melee_dur = inventory.max_durability(inventory.equipped)
+	hud.set_durability(inventory.durability_of(inventory.equipped), melee_dur)
 	var row: Dictionary = Assets.items_by_id.get(inventory.equipped, {})
 	if row.get("kind", -1) != Assets.Kind.GUN:
 		hud.set_ammo("")

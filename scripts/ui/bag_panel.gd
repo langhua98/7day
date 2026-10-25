@@ -4,6 +4,7 @@ extends PanelContainer
 
 signal use_pressed(id: String)
 signal drop_pressed(index: int)
+signal salvage_pressed(index: int)
 signal compact_pressed
 
 ## 品质 1–6：灰 棕 黄 绿 蓝 紫
@@ -19,6 +20,7 @@ var _menu := PanelContainer.new()
 var _menu_label := Label.new()
 var _use_btn := Button.new()
 var _drop_btn := Button.new()
+var _salvage_btn := Button.new()
 var _sel := -1
 const TAP_SLOP := 24.0
 var _slots: Array = []
@@ -94,9 +96,14 @@ func _init() -> void:
 	mv.add_theme_constant_override("separation", 10)
 	_menu_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	mv.add_child(_menu_label)
-	for b in [_use_btn, _drop_btn]:
+	for b in [_use_btn, _salvage_btn, _drop_btn]:
 		b.custom_minimum_size = Vector2(240, 72)
 		mv.add_child(b)
+	_salvage_btn.text = "拆解"
+	_salvage_btn.pressed.connect(func():
+		_menu.visible = false
+		if _sel >= 0:
+			salvage_pressed.emit(_sel))
 	var cancel := Button.new()
 	cancel.text = "取消"
 	cancel.custom_minimum_size = Vector2(240, 64)
@@ -215,6 +222,8 @@ func _open_menu(i: int) -> void:
 		("  Q%d" % s.quality if int(s.quality) > 0 else "")
 	if kind in [Assets.Kind.GUN, Assets.Kind.MELEE, Assets.Kind.BLOCK, Assets.Kind.VEHICLE]:
 		_use_btn.text = "卸下" if s.id == _equipped else "装备"
+	elif kind == Assets.Kind.RESOURCE and s.id == GameConfig.REPAIR_KIT_ID:
+		_use_btn.text = "修理工具"
 	elif kind in [Assets.Kind.FOOD, Assets.Kind.DRINK, Assets.Kind.MEDICAL]:
 		_use_btn.text = "使用"
 	elif kind == Assets.Kind.ATTACHMENT:

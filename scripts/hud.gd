@@ -20,6 +20,8 @@ signal item_dropped(index: int)
 signal bag_compact_pressed
 ## 载具：驾驶中按「下车」
 signal exit_vehicle_pressed
+## 背包里按「拆解」
+signal bag_salvage_pressed(index: int)
 
 var move := Vector2.ZERO          # 摇杆输出，x 右 y 前
 var look_delta := Vector2.ZERO    # 本帧视角拖动量（像素）
@@ -136,6 +138,11 @@ var _drive_knob := Panel.new()
 var _speed_panel := PanelContainer.new()
 var _speed_label := Label.new()
 var _exit_btn := Button.new()
+## 当前工具耐久
+var _dur_bar := ProgressBar.new()
+var _dur_label := Label.new()
+var _dur_cur := 0.0
+var _dur_max := 0.0
 var _toast_t := 0.0
 var _blood_day := false
 var _aim_id := -1
@@ -414,6 +421,7 @@ func _ready() -> void:
 	_bag_panel.use_pressed.connect(func(id): item_used.emit(id))
 	_bag_panel.drop_pressed.connect(func(i): item_dropped.emit(i))
 	_bag_panel.compact_pressed.connect(func(): bag_compact_pressed.emit())
+	_bag_panel.salvage_pressed.connect(func(i): bag_salvage_pressed.emit(i))
 	_safe.add_child(_bag_panel)
 	_safe.add_child(container_panel)
 
@@ -477,6 +485,32 @@ func _ready() -> void:
 
 	_round(_exit_btn, "下车", Control.PRESET_BOTTOM_RIGHT, Vector2(-320, -330), 150, 30)
 	_exit_btn.visible = false
+
+	# 工具耐久：快捷栏上方，和弹药显示放一起
+	_dur_bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_dur_bar.position = Vector2(-110, -300)
+	_dur_bar.size = Vector2(220, 14)
+	_dur_bar.show_percentage = false
+	_dur_bar.max_value = 1.0
+	_dur_bar.step = 0.0
+	var dur_fill := StyleBoxFlat.new()
+	dur_fill.bg_color = Color(0.85, 0.6, 0.25)
+	var dur_back := StyleBoxFlat.new()
+	dur_back.bg_color = Color(0, 0, 0, 0.55)
+	_dur_bar.add_theme_stylebox_override("fill", dur_fill)
+	_dur_bar.add_theme_stylebox_override("background", dur_back)
+	_dur_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_dur_bar.visible = false
+	_safe.add_child(_dur_bar)
+	_dur_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_dur_label.position = Vector2(-110, -326)
+	_dur_label.size = Vector2(220, 24)
+	_dur_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_dur_label.add_theme_font_size_override("font_size", 18)
+	_dur_label.add_theme_color_override("font_color", Color(0.92, 0.9, 0.82))
+	_dur_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_dur_label.visible = false
+	_safe.add_child(_dur_label)
 
 	_pause_btn.text = "设置"
 	_pause_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
@@ -1204,8 +1238,30 @@ func set_driving(on: bool) -> void:
 	_ammo_panel.visible = (not on) and _ammo_text != ""
 	_progress.visible = (not on) and _progress_shown
 	_progress_label.visible = (not on) and _progress_shown
+	_dur_bar.visible = (not on) and _dur_max > 0.0
+	_dur_label.visible = (not on) and _dur_max > 0.0
 	if on:
 		_speed_label.text = "0 km/h"
+
+
+## 工具耐久条：maxv=0 时隐藏
+func set_durability(cur: float, maxv: float) -> void:
+	_dur_cur = cur
+	_dur_max = maxv
+	var on := maxv > 0.0 and not driving
+	if on != _dur_bar.visible:
+		_dur_bar.visible = on
+		_dur_label.visible = on
+	if not on:
+		return
+	var v := clampf(cur / maxv, 0.0, 1.0)
+	if not is_equal_approx(v, float(_dur_bar.value)):
+		_dur_bar.value = v
+	var text := "耐久 %d%%" % roundi(v * 100.0)
+	if text != _dur_label.text:
+		_dur_label.text = text
+	_dur_label.add_theme_color_override("font_color",
+		Color(1, 0.45, 0.35) if v <= 0.0 else Color(0.92, 0.9, 0.82))
 
 
 ## 驾驶速度表（km/h）

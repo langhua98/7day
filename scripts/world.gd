@@ -59,6 +59,10 @@ var rng := RandomNumberGenerator.new()
 var obstacles: Array[Dictionary] = []
 ## 能翻找的：{node, pos, name, loot, searched, r, kind}
 var containers: Array[Dictionary] = []
+## 可采集的街边物件：合批的藏 MultiMesh 实例，车藏独立节点；血量到 0 后 5 天重生
+var props: Array[Dictionary] = []
+## 合批节点："模型|格x|格z" -> {mmi, center}
+var _batch_nodes := {}
 ## 放了哪些楼：[{name, pos}]
 var buildings: Array[Dictionary] = []
 var models := {}
@@ -144,6 +148,10 @@ func _ready() -> void:
 # —— 对外接口 ——
 
 func build(seed_value: int) -> void:
+	# 用 /root 查单例：-s 脚本模式没有自动加载时也能编译运行
+	var gs := _game_state()
+	if gs and not gs.day_started.is_connected(_on_day_started):
+		gs.day_started.connect(_on_day_started)
 	rng.seed = seed_value
 	_flat_groups.clear()
 	_batch.clear()
@@ -436,6 +444,8 @@ func push_out(p: Vector3, radius: float) -> Vector3:
 					q = c + d
 	for i in _nearby(q):
 		var o: Dictionary = obstacles[i]
+		if o.get("dead", false):
+			continue
 		var d: Vector2 = q - o.c
 		if d.length() > o.r + radius:
 			continue
@@ -463,6 +473,8 @@ func blocked(p: Vector3, radius := 0.3) -> bool:
 				return true
 	for i in _nearby(q):
 		var o: Dictionary = obstacles[i]
+		if o.get("dead", false):
+			continue
 		var local: Vector2 = (q - o.c).rotated(o.rot)
 		if absf(local.x) < o.h.x + radius and absf(local.y) < o.h.y + radius:
 			return true
@@ -505,6 +517,8 @@ func nearest_container(p: Vector3, reach := 1.4) -> Dictionary:
 	var best := {}
 	var best_d := INF
 	for c in containers:
+		if c.get("dead", false):
+			continue
 		if c.get("indoor", false) and absf(p.y - c.pos.y) > 2.0:
 			continue
 		var d: float = Vector2(p.x - c.pos.x, p.z - c.pos.z).length() - c.r
@@ -1135,13 +1149,22 @@ func place(name: String, pos: Vector3, rot := 0.0, solid := true) -> Node3D:
 	var size: Vector3 = info.size
 	if _batching and not (kind in ["loot", "car"]):
 		# 不能翻的道具不建独立节点，攒进 MultiMesh（几百个路障变成几十次绘制）
+		var oi := -1
 		if solid and kind == "prop" and size.x * size.z > 0.08:
-			_add_obstacle(Vector2(pos.x, pos.z), Vector2(size.x, size.z) * 0.5 * 0.9, rot, size.y > 2.5)
+			oi = _add_obstacle(Vector2(pos.x, pos.z), Vector2(size.x, size.z) * 0.5 * 0.9, rot, size.y > 2.5)
 		var cell := Vector2i(floori(pos.x / BATCH_CELL), floori(pos.z / BATCH_CELL))
 		var bkey := "%s|%d|%d" % [name, cell.x, cell.y]
 		if not _batch.has(bkey):
-			_batch[bkey] = {"name": name, "cell": cell, "xfs": []}
+			_batch[bkey] = {"name": name, "cell": cell, "xfs": [], "props": []}
 		_batch[bkey].xfs.append(Transform3D(Basis(Vector3.UP, rot), pos) * info.xf)
+		if kind in ["prop", "small", "deco"]:
+			var mat := Harvest.material(name)
+			var hpmax := Harvest.hp(name)
+			props.append({"name": name, "pos": pos, "rot": rot, "kind": kind, "batched": true,
+				"bkey": bkey, "index": _batch[bkey].xfs.size() - 1, "obstacle": oi,
+				"material": mat, "hp": hpmax, "max_hp": hpmax, "dead": false, "dead_day": 0,
+				"local_xf": Transform3D.IDENTITY})
+			_batch[bkey].props.append(props.size() - 1)
 		return null
 	var mi := MeshInstance3D.new()
 	mi.mesh = info.mesh
@@ -1159,11 +1182,20 @@ func place(name: String, pos: Vector3, rot := 0.0, solid := true) -> Node3D:
 	# 投影在 start 后按玩家距离开关，标题界面不画阴影
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_prop_lod.append({"node": mi, "kind": kind})
+	var obs_i := -1
 	if solid and kind in ["loot", "car", "prop"] and size.x * size.z > 0.08:
-		_add_obstacle(Vector2(pos.x, pos.z), Vector2(size.x, size.z) * 0.5 * 0.9, rot, size.y > 2.5)
+		obs_i = _add_obstacle(Vector2(pos.x, pos.z), Vector2(size.x, size.z) * 0.5 * 0.9, rot, size.y > 2.5)
 	if kind in ["loot", "car"]:
+		var ci := containers.size()
 		containers.append({"node": holder, "pos": pos, "name": e.get("name", name), "loot": e.get("loot", "any"),
 			"searched": false, "r": max(size.x, size.z) * 0.5, "kind": kind})
+		if kind == "car":
+			var mat2 := Harvest.material(name)
+			var hpmax2 := Harvest.hp(name)
+			props.append({"name": name, "pos": pos, "rot": rot, "kind": kind, "batched": false,
+				"node": holder, "container": ci, "obstacle": obs_i,
+				"material": mat2, "hp": hpmax2, "max_hp": hpmax2, "dead": false, "dead_day": 0,
+				"local_xf": Transform3D.IDENTITY})
 	return holder
 
 
@@ -1181,10 +1213,13 @@ func _flush_batches() -> void:
 		mm.transform_format = MultiMesh.TRANSFORM_3D
 		mm.mesh = info.mesh
 		mm.instance_count = b.xfs.size()
+		var bprops: Array = b.get("props", [])
 		for k in b.xfs.size():
 			var xf: Transform3D = b.xfs[k]
 			xf.origin -= center
 			mm.set_instance_transform(k, xf)
+			if k < bprops.size():
+				props[int(bprops[k])]["local_xf"] = xf
 		var mmi := MultiMeshInstance3D.new()
 		mmi.name = "Batch_" + b.name
 		mmi.multimesh = mm
@@ -1196,6 +1231,7 @@ func _flush_batches() -> void:
 		# 投影由 update_shadows 按玩家距离开关
 		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mmi)
+		_batch_nodes[bkey] = {"mmi": mmi, "center": center}
 		_prop_lod.append({"node": mmi, "kind": kind, "pad": BATCH_CELL * 0.5})
 	_batch.clear()
 
@@ -1963,10 +1999,153 @@ func _scatter_decals() -> void:
 		_decal_lod.append({"node": mmi, "pad": BATCH_CELL * 0.5})
 
 
+# —— 采集（4b）——
+
+func _game_state() -> Node:
+	var loop := Engine.get_main_loop()
+	if loop is SceneTree:
+		return (loop as SceneTree).root.get_node_or_null("GameState")
+	return null
+
+
+func _day() -> int:
+	var gs := _game_state()
+	return int(gs.day) if gs else 0
+
+
+## 准星前够得着的可采集物件，返回 props 下标（-1 = 没有）
+func nearest_prop(p: Vector3, reach: float, aim: Vector3) -> int:
+	var best := -1
+	var best_d := INF
+	var flat := Vector3(aim.x, 0.0, aim.z)
+	if flat.length() > 0.01:
+		flat = flat.normalized()
+	for i in props.size():
+		var pr: Dictionary = props[i]
+		if pr.get("dead", false):
+			continue
+		var to: Vector3 = pr.pos - p
+		if absf(to.y) > 2.0:
+			continue
+		to.y = 0.0
+		var d := to.length()
+		if d > reach or d < 0.001:
+			continue
+		if flat != Vector3.ZERO and d > 1.0 and flat.dot(to / d) < 0.25:
+			continue
+		if _point_blocked(Vector3(pr.pos) + Vector3.UP * 0.8):
+			continue
+		if d < best_d:
+			best_d = d
+			best = i
+	return best
+
+
+## 打物件：扣血，拆掉时藏起外观、去掉碰撞；返回 {destroyed, material, name, pos}
+func hit_prop(idx: int, dmg: float) -> Dictionary:
+	if idx < 0 or idx >= props.size():
+		return {}
+	var pr: Dictionary = props[idx]
+	if pr.get("dead", false):
+		return {}
+	pr.hp = maxf(0.0, float(pr.hp) - dmg)
+	var out := {"destroyed": false, "material": str(pr.material), "name": str(pr.name), "pos": Vector3(pr.pos)}
+	if float(pr.hp) > 0.0:
+		return out
+	pr.dead = true
+	pr.dead_day = _day()
+	out.destroyed = true
+	_set_prop_hidden(pr, true)
+	if int(pr.get("obstacle", -1)) >= 0 and int(pr.obstacle) < obstacles.size():
+		obstacles[int(pr.obstacle)]["dead"] = true
+	if pr.has("container") and int(pr.container) < containers.size():
+		containers[int(pr.container)]["dead"] = true
+	return out
+
+
+func _set_prop_hidden(pr: Dictionary, hidden: bool) -> void:
+	if pr.get("batched", false):
+		var b: Dictionary = _batch_nodes.get(str(pr.bkey), {})
+		var mmi: MultiMeshInstance3D = b.get("mmi")
+		if mmi == null or mmi.multimesh == null:
+			return
+		var idx := int(pr.index)
+		if idx < 0 or idx >= mmi.multimesh.instance_count:
+			return
+		if hidden:
+			mmi.multimesh.set_instance_transform(idx, Transform3D(Basis().scaled(Vector3.ZERO), Vector3(0.0, -999.0, 0.0)))
+		else:
+			mmi.multimesh.set_instance_transform(idx, pr.local_xf)
+		return
+	var node = pr.get("node")
+	if node and is_instance_valid(node):
+		node.visible = not hidden
+
+
+func _restore_prop(pr: Dictionary) -> void:
+	pr.dead = false
+	pr.dead_day = 0
+	pr.hp = float(pr.get("max_hp", pr.get("hp", 1.0)))
+	_set_prop_hidden(pr, false)
+	if int(pr.get("obstacle", -1)) >= 0 and int(pr.obstacle) < obstacles.size():
+		obstacles[int(pr.obstacle)]["dead"] = false
+	if pr.has("container") and int(pr.container) < containers.size():
+		var c: Dictionary = containers[int(pr.container)]
+		c["dead"] = false
+		c.searched = false
+		c.erase("items")
+		c.erase("loot_day")
+		c.erase("hp")
+
+
+## 拆掉 5 个游戏天后原地刷新
+func _on_day_started(day: int) -> void:
+	for pr in props:
+		if not pr.get("dead", false):
+			continue
+		if day - int(pr.get("dead_day", day)) < GameConfig.HARVEST_RESPAWN_DAYS:
+			continue
+		_restore_prop(pr)
+
+
+func harvest_save() -> Dictionary:
+	var dead := []
+	for i in props.size():
+		var pr: Dictionary = props[i]
+		if pr.get("dead", false):
+			dead.append([i, int(pr.get("dead_day", 0))])
+	return {"harvest_dead": dead}
+
+
+func harvest_load(list) -> void:
+	harvest_reset()
+	for e in list:
+		if not (e is Array) or e.size() < 2:
+			continue
+		var i := int(e[0])
+		if i < 0 or i >= props.size():
+			continue
+		var pr: Dictionary = props[i]
+		pr.dead = true
+		pr.dead_day = int(e[1])
+		_set_prop_hidden(pr, true)
+		if int(pr.get("obstacle", -1)) >= 0 and int(pr.obstacle) < obstacles.size():
+			obstacles[int(pr.obstacle)]["dead"] = true
+		if pr.has("container") and int(pr.container) < containers.size():
+			containers[int(pr.container)]["dead"] = true
+
+
+## 重开/读档前把所有物件恢复
+func harvest_reset() -> void:
+	for pr in props:
+		_restore_prop(pr)
+
+
 # —— 车和杂物的碰撞 ——
 
-func _add_obstacle(c: Vector2, h: Vector2, rot: float, tall := false) -> void:
+func _add_obstacle(c: Vector2, h: Vector2, rot: float, tall := false) -> int:
 	obstacles.append({"c": c, "h": h, "rot": rot, "r": h.length(), "tall": tall})
+	return obstacles.size() - 1
 
 
 func _rebuild_grid() -> void:

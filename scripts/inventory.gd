@@ -24,6 +24,8 @@ var ammo_choice := {}
 var gun_scopes := {}
 ## 每种武器的最高品质（汇总，只读；combat 取伤害用）
 var qualities := {}
+## 每件工具/武器的当前耐久（id → 数值，满耐久按品质加成算）
+var durabilities := {}
 var _slots: Array = []
 ## 不超重的格子数（测试模式会自动扩）
 var _cap := C.BAG_SLOTS
@@ -51,6 +53,7 @@ func reset() -> void:
 	ammo_choice.clear()
 	gun_scopes.clear()
 	qualities.clear()
+	durabilities.clear()
 	if arms:
 		arms.hold("")
 	changed.emit()
@@ -96,6 +99,40 @@ func count(id: String) -> int:
 
 func has(id: String, amount := 1) -> bool:
 	return count(id) >= amount
+
+
+## 满耐久 = items.json 的 durability × 品质加成；没有耐久返回 0
+func max_durability(id: String) -> float:
+	var info: Dictionary = Data.items.get(id, {})
+	var base := float(info.get("durability", 0.0))
+	if base <= 0.0:
+		return 0.0
+	return base * Weapons.quality_mult(int(qualities.get(id, 1)))
+
+
+func durability_of(id: String) -> float:
+	if max_durability(id) <= 0.0:
+		return 0.0
+	return float(durabilities.get(id, max_durability(id)))
+
+
+func is_broken(id: String) -> bool:
+	return max_durability(id) > 0.0 and durability_of(id) <= 0.0
+
+
+## 每次命中扣一点；刚到 0 时提示一次
+func damage_tool(id: String, amount := 1.0) -> void:
+	if max_durability(id) <= 0.0:
+		return
+	var was := durability_of(id)
+	durabilities[id] = maxf(0.0, was - amount)
+	if was > 0.0 and durabilities[id] <= 0.0:
+		hud.toast("%s 坏了，用修理包修一下" % Assets.display_name(id))
+
+
+func repair_tool(id: String) -> void:
+	if max_durability(id) > 0.0:
+		durabilities[id] = max_durability(id)
 
 
 ## 放进背包，返回放不下的数量。item 可以是物品名，或 {id, count, quality, durability}
@@ -278,6 +315,17 @@ func _reindex() -> void:
 	for s in _slots:
 		if not s.is_empty() and not pickup_order.has(s.id):
 			pickup_order.append(s.id)
+	for id in inventory:
+		var mx := max_durability(id)
+		if mx <= 0.0:
+			durabilities.erase(id)
+		elif not durabilities.has(id):
+			durabilities[id] = mx
+		else:
+			durabilities[id] = clampf(float(durabilities[id]), 0.0, mx)
+	for id in durabilities.keys():
+		if not inventory.has(id):
+			durabilities.erase(id)
 
 
 func refresh() -> void:
@@ -442,10 +490,69 @@ func use_item(id: String) -> void:
 		Assets.Kind.ATTACHMENT:
 			install_scope(id)
 			return
+		Assets.Kind.RESOURCE:
+			if id == C.REPAIR_KIT_ID:
+				_use_repair_kit()
+				GameState.item_used.emit(id)
+				refresh()
+				return
+			hud.toast("%s：材料，留着吧" % Assets.display_name(id))
 		_:
 			hud.toast("%s：材料，留着吧" % Assets.display_name(id))
 	GameState.item_used.emit(id)
 	refresh()
+
+
+## 修理包：修满手里拿着的工具/武器
+func _use_repair_kit() -> void:
+	var id := equipped
+	if id == "" or max_durability(id) <= 0.0:
+		hud.toast("手里没有能修的工具")
+		return
+	if durability_of(id) >= max_durability(id):
+		hud.toast("%s 是好的，不用修" % Assets.display_name(id))
+		return
+	remove(C.REPAIR_KIT_ID, 1)
+	repair_tool(id)
+	hud.toast("修好了%s" % Assets.display_name(id))
+
+
+## 背包里拆解一件物品：返还约一半材料，2 秒后到账
+func salvage_slot(i: int) -> void:
+	if i < 0 or i >= _slots.size() or _slots[i].is_empty():
+		return
+	var id := str(_slots[i].id)
+	var rec := _salvage_recipe(id)
+	if rec.is_empty():
+		hud.toast("%s 不能拆解" % Assets.display_name(id))
+		return
+	remove(id, 1)
+	refresh()
+	hud.toast("正在拆解%s…" % Assets.display_name(id))
+	get_tree().create_timer(C.SALVAGE_TIME).timeout.connect(func():
+		for ing in rec.get("ingredients", []):
+			var n := int(floor(float(ing.get("count", 1)) * C.SALVAGE_REFUND))
+			if n <= 0:
+				continue
+			var left := add(str(ing.get("id", "")), n)
+			if left > 0 and main and main.looting:
+				main.looting.spawn_loot(main.player_sys.player.position, str(ing.get("id", "")), 0, left)
+		refresh()
+		hud.toast("拆解完成：%s" % Assets.display_name(id)))
+
+
+func _salvage_recipe(id: String) -> Dictionary:
+	var recipes: Dictionary = Data.get_table("recipes")
+	var fallback := {}
+	for key in recipes:
+		var r: Dictionary = recipes[key]
+		if str(r.get("id", "")) != id:
+			continue
+		if str(r.get("area", "")) == "":
+			return r
+		if fallback.is_empty():
+			fallback = r
+	return fallback
 
 
 ## 点背包里的子弹：手上的枪用这种子弹就换弹，不然换上背包里第一把用这种子弹的枪
@@ -614,10 +721,15 @@ func save_data() -> Dictionary:
 		packed.append(sl if not sl.is_empty() else null)
 	return {"bag": packed, "bag_cap": _cap, "inventory": inventory, "order": pickup_order, "equipped": equipped,
 		"mags": mags, "mags_type": mags_type, "ammo_choice": ammo_choice, "gun_scopes": gun_scopes,
-		"qualities": qualities}
+		"qualities": qualities, "durabilities": durabilities}
 
 
 func load_data(d: Dictionary) -> void:
+	var saved_dur = d.get("durabilities", {})
+	durabilities.clear()
+	if saved_dur is Dictionary:
+		for id in saved_dur:
+			durabilities[str(id)] = float(saved_dur[id])
 	var bag: Array = d.get("bag", [])
 	if not bag.is_empty():
 		# 新存档：按格子原样恢复

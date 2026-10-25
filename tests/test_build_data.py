@@ -298,3 +298,32 @@ class LootDataTest(unittest.TestCase):
         self.assertEqual(stats["groups"], 1)
         self.assertEqual(stats["containers"], 1)
         self.assertEqual(stats["requirements"], 1)
+
+
+HARVEST_XML = """<blocks>
+  <block name="cntTiltTruckEmpty">
+    <drop event="Harvest" name="knownA" count="1,3" />
+    <drop event="Harvest" name="unknownItem" count="2" />
+    <drop event="Destroy" name="knownB" count="4" prob="0.5" />
+    <drop event="Fall" name="knownC" count="1" />
+  </block>
+  <block name="woodShapes">
+    <drop event="Harvest" name="knownA" count="2" />
+  </block>
+  <block name="unwanted"><drop event="Harvest" name="knownA" count="1" /></block>
+</blocks>"""
+
+
+class HarvestDataTest(unittest.TestCase):
+    def test_build_harvest(self):
+        out = build_data.build_harvest(HARVEST_XML, {"knownA": {}, "knownB": {}})
+        metal = out["materials"]["metal"]
+        self.assertEqual([r["id"] for r in metal["harvest"]], ["knownA"])
+        self.assertEqual(metal["harvest"][0]["count"], [1, 3])
+        self.assertEqual([r["id"] for r in metal["destroy"]], ["knownB"])
+        self.assertEqual(metal["destroy"][0]["prob"], 0.5)
+        self.assertEqual([r["id"] for r in out["materials"]["wood"]["harvest"]], ["knownA"])
+        all_ids = [r["id"] for m in out["materials"].values()
+                   for key in ("harvest", "destroy") for r in m[key]]
+        self.assertNotIn("unknownItem", all_ids)
+        self.assertNotIn("knownC", all_ids)
