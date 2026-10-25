@@ -147,10 +147,11 @@ func pick_class(group: String) -> String:
 func spawn_zombie_at(cls: String, variant: String, day: int, night: bool, horde: bool, at: Vector3) -> Zombie:
 	var model := str(Zombies.entry(cls).get("model", ""))
 	var st := Zombies.stats(model, variant)
-	if st.is_empty() or Assets.zombie_key(model) == "":
+	var key := Assets.zombie_key(model)
+	if st.is_empty() or key == "":
 		return null
 	var z := Zombie.new()
-	if not z.setup(model, st, player_sys.player):
+	if not z.setup(key, st, player_sys.player):
 		z.free()
 		return null
 	z.player_sys = player_sys
