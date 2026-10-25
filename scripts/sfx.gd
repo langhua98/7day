@@ -6,7 +6,13 @@ const INDEX := "res://assets/sounds/index.json"
 const POOL_3D := 18
 const POOL_2D := 8
 
-## 音效和音乐各走一条总线，暂停菜单里分别调音量
+## 音效分条总线：Sfx、Zombies、UI；音乐走 Music（暂停菜单里分别调音量）
+static func bus_for(group: String) -> String:
+	if group.begins_with("zm_") or group.begins_with("zf_") or group == "scream":
+		return "Zombies"
+	if group == "loot":
+		return "UI"
+	return "Sfx"
 func set_volume(bus: String, v: float) -> void:
 	var i := AudioServer.get_bus_index(bus)
 	if i >= 0:
@@ -22,7 +28,7 @@ var _rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	_rng.randomize()
-	for bus in ["Sfx", "Music"]:
+	for bus in ["Sfx", "Music", "Zombies", "UI"]:
 		if AudioServer.get_bus_index(bus) < 0:
 			AudioServer.add_bus()
 			AudioServer.set_bus_name(AudioServer.bus_count - 1, bus)
@@ -72,6 +78,7 @@ func play(group: String, at := Vector3.INF, db := 0.0, pitch_jitter := 0.08) -> 
 		p.stream = stream
 		p.volume_db = db
 		p.pitch_scale = pitch
+		p.bus = bus_for(group)
 		p.play()
 	else:
 		var p := _free(_p3)
@@ -79,6 +86,7 @@ func play(group: String, at := Vector3.INF, db := 0.0, pitch_jitter := 0.08) -> 
 		p.volume_db = db
 		p.pitch_scale = pitch
 		p.global_position = at
+		p.bus = bus_for(group)
 		p.play()
 
 
@@ -111,7 +119,7 @@ func loop(group: String, target_db: float, delta: float) -> void:
 		p = AudioStreamPlayer.new()
 		p.stream = s
 		p.volume_db = -60.0
-		p.bus = "Sfx"
+		p.bus = bus_for(group)
 		add_child(p)
 		_loops[group] = p
 	p.volume_db = move_toward(p.volume_db, target_db, delta * 20.0)

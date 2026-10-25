@@ -116,10 +116,14 @@ var _end_back_btn: Button
 var _settings_back_btn: Button
 var _settings_reset_btn: Button
 var _left_fire_toggle: CheckButton
+var _aim_assist_toggle: CheckButton
+var _auto_sprint_toggle: CheckButton
+var _vibration_toggle: CheckButton
 var _layout_btn: Button
 ## 设置：灵敏度、亮度、音量、音乐音量（倍数）、画质档位、性能面板，存在 user://settings.cfg
 const DEFAULT_SETTINGS := {"sensitivity": 1.0, "brightness": 1.0, "volume": 1.0, "music": 0.8,
-	"quality": 1.0, "show_perf": 0.0, "left_fire": 0.0}
+	"zombies": 1.0, "ui": 1.0, "quality": 1.0, "show_perf": 0.0, "left_fire": 0.0,
+	"aim_assist": 1.0, "auto_sprint": 1.0, "vibration": 1.0}
 var settings := DEFAULT_SETTINGS.duplicate()
 const SETTINGS_PATH := "user://settings.cfg"
 
@@ -779,6 +783,21 @@ func _build_settings_panel() -> void:
 	v.add_child(title)
 	_settings_group(v, "操作")
 	_add_setting_row(v, "sensitivity", "视角灵敏度", 0.3, 2.5, 0.05)
+	_aim_assist_toggle = CheckButton.new()
+	_aim_assist_toggle.text = "开镜瞄准辅助（靠近僵尸头时降灵敏度）"
+	_aim_assist_toggle.button_pressed = settings.aim_assist > 0.5
+	_aim_assist_toggle.toggled.connect(_on_aim_assist_toggled)
+	v.add_child(_aim_assist_toggle)
+	_auto_sprint_toggle = CheckButton.new()
+	_auto_sprint_toggle.text = "摇杆推到底自动冲刺"
+	_auto_sprint_toggle.button_pressed = settings.auto_sprint > 0.5
+	_auto_sprint_toggle.toggled.connect(_on_auto_sprint_toggled)
+	v.add_child(_auto_sprint_toggle)
+	_vibration_toggle = CheckButton.new()
+	_vibration_toggle.text = "震动反馈"
+	_vibration_toggle.button_pressed = settings.vibration > 0.5
+	_vibration_toggle.toggled.connect(_on_vibration_toggled)
+	v.add_child(_vibration_toggle)
 	_left_fire_toggle = CheckButton.new()
 	_left_fire_toggle.text = "显示左侧开火键"
 	_left_fire_toggle.button_pressed = settings.left_fire > 0.5
@@ -815,6 +834,8 @@ func _build_settings_panel() -> void:
 	_settings_group(v, "声音")
 	_add_setting_row(v, "volume", "音效音量", 0.0, 1.0, 0.05)
 	_add_setting_row(v, "music", "音乐音量", 0.0, 1.0, 0.05)
+	_add_setting_row(v, "zombies", "僵尸音量", 0.0, 1.0, 0.05)
+	_add_setting_row(v, "ui", "界面音量", 0.0, 1.0, 0.05)
 	var btns := HBoxContainer.new()
 	btns.alignment = BoxContainer.ALIGNMENT_CENTER
 	btns.add_theme_constant_override("separation", 26)
@@ -889,6 +910,9 @@ func _reset_settings() -> void:
 	_quality_option.selected = clampi(int(settings.quality), 0, GameConfig.QUALITY_PRESETS.size() - 1)
 	_perf_toggle.set_pressed_no_signal(settings.show_perf > 0.5)
 	_left_fire_toggle.set_pressed_no_signal(settings.left_fire > 0.5)
+	_aim_assist_toggle.set_pressed_no_signal(settings.aim_assist > 0.5)
+	_auto_sprint_toggle.set_pressed_no_signal(settings.auto_sprint > 0.5)
+	_vibration_toggle.set_pressed_no_signal(settings.vibration > 0.5)
 	_fire_left.visible = settings.left_fire > 0.5
 	_save_settings()
 	settings_changed.emit(settings)
@@ -1063,6 +1087,9 @@ func _load_settings() -> void:
 		settings.quality = clampf(settings.quality, 0.0, GameConfig.QUALITY_PRESETS.size() - 1.0)
 		settings.show_perf = 1.0 if settings.show_perf > 0.5 else 0.0
 		settings.left_fire = 1.0 if settings.left_fire > 0.5 else 0.0
+		settings.aim_assist = 1.0 if settings.aim_assist > 0.5 else 0.0
+		settings.auto_sprint = 1.0 if settings.auto_sprint > 0.5 else 0.0
+		settings.vibration = 1.0 if settings.vibration > 0.5 else 0.0
 		var saved_layout = cf.get_value("layout", "buttons", {})
 		if saved_layout is Dictionary:
 			button_layout = saved_layout
@@ -1084,6 +1111,24 @@ func _on_quality_selected(index: int) -> void:
 
 func _on_show_perf_toggled(on: bool) -> void:
 	settings.show_perf = 1.0 if on else 0.0
+	_save_settings()
+	settings_changed.emit(settings)
+
+
+func _on_aim_assist_toggled(on: bool) -> void:
+	settings.aim_assist = 1.0 if on else 0.0
+	_save_settings()
+	settings_changed.emit(settings)
+
+
+func _on_auto_sprint_toggled(on: bool) -> void:
+	settings.auto_sprint = 1.0 if on else 0.0
+	_save_settings()
+	settings_changed.emit(settings)
+
+
+func _on_vibration_toggled(on: bool) -> void:
+	settings.vibration = 1.0 if on else 0.0
 	_save_settings()
 	settings_changed.emit(settings)
 
@@ -1572,9 +1617,15 @@ func _flash(control: Control) -> void:
 	tw.tween_property(control, "modulate", Color.WHITE, 0.12)
 
 
+## 震动统一走这里，设置里可以关
+func vibrate(ms: int) -> void:
+	if settings.vibration > 0.5:
+		Input.vibrate_handheld(ms)
+
+
 ## 点按钮时轻轻震一下（iPhone 的触感反馈）
 func _tap_feedback() -> void:
-	Input.vibrate_handheld(12)
+	vibrate(12)
 
 
 func _press_button(control: Control) -> void:

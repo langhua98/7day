@@ -84,7 +84,7 @@ func _run() -> void:
 	var horde_left: int = main.horde.remaining
 	main.save_game.save()
 	var d: Dictionary = main.save_game.read_save()
-	check_eq(d.get("version", -1), 2, "存档应有 version=2")
+	check_eq(int(d.get("version", -1)), 3, "存档应有 version=3")
 	check_close(float(d.get("hp", 0.0)), 77.0, 0.01, "存档 hp 应正确")
 	check_eq(int(d.get("blood_moons_survived", -1)), 2, "存档应保存血月次数")
 	main.player_sys.hp = 1.0

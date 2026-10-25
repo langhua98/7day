@@ -25,6 +25,26 @@ func _ready() -> void:
 	check_eq(d.get("hours"), 1.0, "主档损坏时读备份")
 	check(not FileAccess.file_exists(MAIN + ".tmp"), "不留下临时文件")
 
+	# 很旧的存档（版本 1）逐级迁移到当前版本，字段补齐、旧数据保留
+	var old := {"version": 1, "hours": 30.0, "hp": 42.0, "inventory": {"resourceWood": 5},
+		"order": ["resourceWood"]}
+	var migrated := SaveGameScript.migrate(old)
+	check_eq(migrated.get("version"), 3, "旧档应升到版本 3")
+	check_eq(migrated.get("hours"), 30.0, "迁移保留旧字段")
+	check_eq(migrated.get("hp"), 42.0, "迁移保留血量")
+	check(migrated.get("bag") is Array, "补上背包格子")
+	check(migrated.get("inventory") is Dictionary, "补上物品表")
+	check(migrated.get("durabilities") is Dictionary, "补上耐久")
+	check(migrated.get("container_days") is Dictionary, "补上容器天数")
+	check(migrated.get("container_hp") is Dictionary, "补上容器血量")
+	check(migrated.get("vehicles") is Array, "补上载具")
+	check(migrated.get("harvest_dead") is Array, "补上采集状态")
+	check(migrated.get("crates") is Array, "补上储物箱")
+	check(migrated.get("corpse_bags") is Array, "补上尸体背包")
+	check_eq(migrated.get("horde_started"), false, "补上血月默认值")
+	var empty_migrated := SaveGameScript.migrate({})
+	check_eq(empty_migrated.get("version"), 3, "空档迁移也不崩")
+
 	# 两个档都没了才返回空
 	_clean()
 	var empty := SaveGameScript.read_save_from(MAIN, BAK)

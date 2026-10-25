@@ -54,6 +54,10 @@ const AIM_SENSITIVITY := 0.6
 ## 倍镜 FOV：数值越小放得越大
 const SCOPE_FOV_RIFLE := 34.0
 const SCOPE_FOV_SNIPER := 22.0
+## 开镜瞄准辅助：准星离僵尸头这个角度内，视角灵敏度乘这个（只减速，不吸附）
+const AIM_ASSIST_ANGLE := 3.0
+const AIM_ASSIST_MULT := 0.6
+const AIM_ASSIST_RANGE := 50.0
 const RECOIL_RECOVERY := 12.0
 const RECOIL_AIM_SHARE := 0.16
 const LAND_DIP_MAX := 0.06

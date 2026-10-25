@@ -142,12 +142,15 @@ func update(delta: float) -> void:
 	arms.set_scoped(scope >= 2)
 	hud.set_scope(scope)
 	var look_sens: float = C.LOOK_SENSITIVITY * hud.settings.sensitivity * (C.AIM_SENSITIVITY if aiming else 1.0)
+	# 开镜瞄准辅助：准星贴近僵尸头时只降灵敏度，不吸附
+	if aiming and hud.settings.aim_assist > 0.5 and _near_zombie_head():
+		look_sens *= C.AIM_ASSIST_MULT
 	yaw -= look.x * look_sens
 	pitch = clamp(pitch - look.y * look_sens, -1.3, 1.3)
 	# 只做 iPhone 触屏：移动全靠左边摇杆
 	var mv := hud.move.limit_length(1.0)
-	# 冲刺：摇杆推到底往前；耗体力
-	var sprint := mv.length() > 0.92 and mv.y > 0.6
+	# 冲刺：设置开着时摇杆推到外圈 90% 往前；耗体力
+	var sprint: bool = hud.settings.auto_sprint > 0.5 and mv.length() > 0.9 and mv.y > 0.3
 	sprint = sprint and stamina > 1.0 and mv.y > 0.3 and not Status.blocked("no_sprint") and not crouching
 	# 背包超重：变慢，不能冲刺
 	var heavy: float = inventory.overload() if inventory else 0.0
@@ -220,6 +223,26 @@ func update(delta: float) -> void:
 	arms.set_meta("walking", mv.length() * (1.6 if sprint else 1.0))
 
 
+## 准星是不是贴着某只僵尸的头（开镜辅助用）
+func _near_zombie_head() -> bool:
+	var sp = main.get("spawner") if main else null
+	if sp == null:
+		return false
+	var eye := camera.global_position
+	var fwd := -camera.global_basis.z
+	var cos_lim := cos(deg_to_rad(C.AIM_ASSIST_ANGLE))
+	for z in sp.zombie_root.get_children():
+		if z.dead:
+			continue
+		var to: Vector3 = z.global_position + Vector3.UP * z.height() * 0.86 - eye
+		var d := to.length()
+		if d < 2.0 or d > C.AIM_ASSIST_RANGE:
+			continue
+		if fwd.dot(to / d) >= cos_lim:
+			return true
+	return false
+
+
 ## 体力上限：100 加上状态修正（口渴 −25），最少 10
 func stamina_max() -> float:
 	return maxf(10.0, 100.0 + Status.offset("stamina_max"))
@@ -280,7 +303,7 @@ func break_leg() -> void:
 		Status.remove(id)
 	if not Status.has("fracture"):
 		hud.toast("你的腿骨折了！用夹板或石膏")
-		Input.vibrate_handheld(200)
+		hud.vibrate(200)
 	Status.add("fracture")
 
 
@@ -374,7 +397,7 @@ func add_recoil(amount: float) -> void:
 func take_damage(amount: float, source: String, bleed_chance := 0.0) -> void:
 	hp -= amount
 	hud.hurt()
-	Input.vibrate_handheld(60)
+	hud.vibrate(60)
 	GameState.player_damaged.emit(amount, source)
 	if source == "zombie":
 		Sfx.play("pain", Vector3.INF, -3.0)

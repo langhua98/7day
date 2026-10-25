@@ -2068,6 +2068,21 @@ func _scatter_decals() -> void:
 		_decal_lod.append({"node": mmi, "pad": BATCH_CELL * 0.5})
 
 
+## 系统内存吃紧：放掉远处的完整楼和缓存（下次靠近会重新加载）
+func trim_memory(player_pos: Vector3) -> void:
+	var p := Vector2(player_pos.x, player_pos.z)
+	for e in _full_pois:
+		if int(e.state) != 2:
+			continue
+		var d := maxf(0.0, p.distance_to(e.pos) - float(e.radius))
+		if d > 60.0:
+			_hide_full(e)
+			e.state = 0
+	_prop_cache.clear()
+	_mesh_info.clear()
+	_mat_cache.clear()
+
+
 # —— 采集（4b）——
 
 func _game_state() -> Node:

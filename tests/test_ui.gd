@@ -196,9 +196,28 @@ func _ready() -> void:
 	volume_slider.value = 0.5
 	check(absf(hud.settings.volume - 0.5) < 0.001, "拖动音量应更新设置")
 	check_eq(hud._setting_values["volume"].text, "50%", "音量应显示百分比")
+	var zombie_slider: HSlider = hud._setting_sliders["zombies"]
+	zombie_slider.value = 0.4
+	check(absf(hud.settings.zombies - 0.4) < 0.001, "拖动僵尸音量应更新设置")
+	check_eq(hud._setting_values["zombies"].text, "40%", "僵尸音量应显示百分比")
+	var ui_slider: HSlider = hud._setting_sliders["ui"]
+	ui_slider.value = 0.3
+	check(absf(hud.settings.ui - 0.3) < 0.001, "拖动界面音量应更新设置")
+	hud._aim_assist_toggle.button_pressed = false
+	check(hud.settings.aim_assist < 0.5, "瞄准辅助开关应写入设置")
+	hud._auto_sprint_toggle.button_pressed = false
+	check(hud.settings.auto_sprint < 0.5, "自动冲刺开关应写入设置")
+	hud._vibration_toggle.button_pressed = false
+	check(hud.settings.vibration < 0.5, "震动开关应写入设置")
 	hud._settings_reset_btn.pressed.emit()
 	check(absf(hud.settings.volume - 1.0) < 0.001, "恢复默认音量")
 	check_eq(hud._setting_values["volume"].text, "100%", "恢复默认后显示 100%")
+	check(absf(hud.settings.zombies - 1.0) < 0.001 and absf(hud.settings.ui - 1.0) < 0.001, "恢复默认音频音量")
+	check(hud.settings.aim_assist > 0.5 and hud.settings.auto_sprint > 0.5 and hud.settings.vibration > 0.5,
+		"恢复默认辅助开关")
+	hud.settings.volume = 0.123
+	hud._load_settings()
+	check(absf(hud.settings.volume - 1.0) < 0.001, "设置会从 user://settings 重新读取")
 	hud.set_paused(true)
 	hud._pause_settings_btn.pressed.emit()
 	check(hud._settings_panel.visible and not hud._pause_panel.visible, "暂停页设置应打开")

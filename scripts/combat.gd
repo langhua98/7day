@@ -359,7 +359,7 @@ func _fire(row: Dictionary) -> void:
 	arms.swing(7.0)
 	Fx.muzzle(arms, arms.muzzle_position())
 	Sfx.play(st.fire_snd, Vector3.INF, -2.0, 0.05)
-	Input.vibrate_handheld(20)
+	hud.vibrate(20)
 	# 枪声按枪的类型：霰弹、全自动/远射程算步枪、其余手枪；爆炸另算
 	var gun_kind := "pistol"
 	if int(st.pellets) > 1:

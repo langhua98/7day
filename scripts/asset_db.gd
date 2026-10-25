@@ -355,6 +355,12 @@ func ensure_item(id: String, zh: String, en := "") -> Dictionary:
 	return row
 
 
+## 系统内存吃紧：清掉模型/材质/图标缓存（正在用的节点还拿着引用，不会消失）
+func trim_memory() -> void:
+	_cache.clear()
+	_icon_cache.clear()
+
+
 func display_name(id: String) -> String:
 	var row: Dictionary = items_by_id.get(id, {})
 	if row.is_empty():

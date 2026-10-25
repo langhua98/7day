@@ -104,6 +104,8 @@ func start() -> void:
 	started = true
 	active = true
 	_timer = 0.0
+	if spawner and spawner.hud:
+		spawner.hud.vibrate(400)
 
 
 func end() -> void:

@@ -4,6 +4,8 @@ extends RefCounted
 
 const SAVE_PATH := "user://save.json"
 const BACKUP_PATH := "user://save.bak"
+## 存档版本：3 = PR #20–#50 之后的字段（耐久、载具、容器天数/血量、采集等）
+const SAVE_VERSION := 3
 
 var main: Node3D
 var world: World
@@ -57,6 +59,42 @@ static func read_save() -> Dictionary:
 	return read_save_from(SAVE_PATH, BACKUP_PATH)
 
 
+## 按版本逐级迁移旧档：只补字段和默认值，不动旧数据
+static func migrate(d: Dictionary) -> Dictionary:
+	var out := d.duplicate(true)
+	var version := int(out.get("version", 1))
+	if version < 2:
+		if not (out.get("bag") is Array):
+			out["bag"] = []
+		if not (out.get("bag_cap") is int or out.get("bag_cap") is float):
+			out["bag_cap"] = 45
+		for key in ["inventory", "mags", "mags_type", "ammo_choice", "gun_scopes", "qualities", "container_items"]:
+			if not (out.get(key) is Dictionary):
+				out[key] = {}
+		for key in ["order", "searched", "blocks", "doors"]:
+			if not (out.get(key) is Array):
+				out[key] = []
+		if not (out.get("equipped") is String):
+			out["equipped"] = ""
+		version = 2
+	if version < 3:
+		for key in ["durabilities", "container_days", "container_hp", "status", "heat",
+				"station_queues", "station_state"]:
+			if not (out.get(key) is Dictionary):
+				out[key] = {}
+		for key in ["vehicles", "harvest_dead", "crates", "corpse_bags", "craft_queue", "recipes_unlocked"]:
+			if not (out.get(key) is Array):
+				out[key] = []
+		var defaults := {"horde_started": false, "horde_remaining": 0, "horde_spawned": 0,
+			"days_alive_lost": 0, "blood_moons_survived": 0, "kills": 0}
+		for key in defaults:
+			if not out.has(key):
+				out[key] = defaults[key]
+		version = 3
+	out["version"] = version
+	return out
+
+
 func reset_timer() -> void:
 	_save_t = 0.0
 
@@ -76,7 +114,7 @@ func save(background := false) -> void:
 		if world.containers[i].searched:
 			searched.append(i)
 	var d := {
-		"version": 2,
+		"version": SAVE_VERSION,
 		"seed": main.world_seed,
 		"searched": searched,
 		"blocks": world.voxel_save(),
@@ -167,6 +205,7 @@ func continue_game() -> void:
 	if not d.has("hours"):
 		main.start()
 		return
+	d = migrate(d)
 	main.start(false)
 	time_sys.load_data(d)
 	for i in d.get("searched", []):

@@ -146,6 +146,8 @@ func _ready() -> void:
 func _apply_settings(st: Dictionary) -> void:
 	Sfx.set_volume("Sfx", st.volume)
 	Sfx.set_volume("Music", st.music)
+	Sfx.set_volume("Zombies", float(st.get("zombies", 1.0)))
+	Sfx.set_volume("UI", float(st.get("ui", 1.0)))
 	atmosphere.set_brightness(st.brightness)
 	graphics.apply_settings(st)
 
@@ -153,6 +155,11 @@ func _apply_settings(st: Dictionary) -> void:
 # —— 存档：切到后台、关窗口时自动存 ——
 
 func _notification(what: int) -> void:
+	if what == NOTIFICATION_OS_MEMORY_WARNING:
+		if running and world and player_sys:
+			world.trim_memory(player_sys.player.position)
+			Assets.trim_memory()
+		return
 	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_CLOSE_REQUEST]:
 		if running and save_game:
 			save_game.save()
