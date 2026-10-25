@@ -31,6 +31,10 @@ func _run() -> void:
 	Assets.ensure_item("testAmmo", "测试子弹")
 	Assets.ensure_item("testKnife", "测试刀")
 	Assets.ensure_item("testFood", "测试罐头")
+	Assets.ensure_item("foodSample", "测试食物")
+	Assets.ensure_item("meleeSample", "测试武器")
+	Assets.ensure_item("medicalSample", "测试药品")
+	Assets.ensure_item("resourceSample", "测试材料")
 	var main = MAIN.instantiate()
 	add_child(main)
 	await get_tree().process_frame
@@ -71,6 +75,12 @@ func _run() -> void:
 	var panel: ContainerPanel = main.hud.container_panel
 	panel.open("测试柜子", items, inv)
 	check(panel.visible, "容器面板应打开")
+	check(panel._top_label.text.contains("3"), "容器标题显示格数")
+	check(BagPanel._matches("foodSample", "food"), "食物分类")
+	check(BagPanel._matches("meleeSample", "weapon"), "武器分类")
+	check(BagPanel._matches("medicalSample", "medical"), "药品分类")
+	check(BagPanel._matches("resourceSample", "material"), "材料分类")
+	check(not BagPanel._matches("foodSample", "weapon"), "食物不是武器")
 	panel.take(0)
 	check(items[0].is_empty(), "拿走后容器格子变空")
 	check(panel._top.get_child(0).icon == null, "拿走后容器面板第一格应刷新为空")

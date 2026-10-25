@@ -206,6 +206,16 @@ func _ready() -> void:
 	check(hud._pause_panel.visible and get_tree().paused, "设置返回暂停页")
 	hud.set_paused(false)
 
+	# 状态条：只显示数值和低值红色
+	hud.set_status(1, 8.0, 20.0, 20.0, 0, 0, false)
+	check_eq(hud._hp_text.text, "20", "血量数值")
+	check_eq(hud._food_text.text, "20", "饱食数值")
+	check(hud._hp_text.get_theme_color("font_color").g < 0.5, "低血量变红")
+	hud.set_survival(40.0, "")
+	check_eq(hud._water_text.text, "40", "水分数值")
+	hud.set_stamina(80.0)
+	check_eq(hud._stamina_text.text, "80", "体力数值")
+
 	# 指南针：面向北时东在右，面向东时北在左
 	hud.set_compass(0.0, [{"bearing": 90.0, "color": Color.RED}])
 	check(absf(hud.compass_relative(90.0) - 90.0) < 0.01, "面向北时东在右边")

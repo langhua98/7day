@@ -292,6 +292,8 @@ func refresh() -> void:
 			for id in pickup_order:
 				if bar.size() >= 6:
 					break
+				if not Assets.items_by_id.has(str(id)):
+					continue
 				if id != equipped and not bar.has(id) and Assets.items_by_id[id].kind == k:
 					bar.append(id)
 					if pass_ == 0:

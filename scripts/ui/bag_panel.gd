@@ -12,6 +12,8 @@ const QUALITY_COLORS := [Color(0.62, 0.62, 0.62), Color(0.6, 0.4, 0.22), Color(0
 const SLOT_SIZE := 96.0
 
 var _title := Label.new()
+var _tabs := HBoxContainer.new()
+var _empty := Label.new()
 var _grid := GridContainer.new()
 var _menu := PanelContainer.new()
 var _menu_label := Label.new()
@@ -23,14 +25,17 @@ var _slots: Array = []
 var _equipped := ""
 var _cap := 45
 var _used := 0
+var _filter := "all"
+const FILTERS := [["all", "全部"], ["weapon", "武器"], ["food", "食物"],
+	["medical", "药品"], ["material", "材料"], ["block", "方块"]]
 
 
 func _init() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	offset_left = 120
-	offset_right = -120
-	offset_top = 40
-	offset_bottom = -40
+	offset_left = 80
+	offset_right = -80
+	offset_top = 24
+	offset_bottom = -24
 	visible = false
 	var v := VBoxContainer.new()
 	add_child(v)
@@ -48,6 +53,33 @@ func _init() -> void:
 	close.pressed.connect(func(): visible = false)
 	head.add_child(close)
 	v.add_child(head)
+	var tab_scroll := ScrollContainer.new()
+	tab_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	tab_scroll.custom_minimum_size.y = 56
+	_tabs.add_theme_constant_override("separation", 6)
+	for pair in FILTERS:
+		var b := Button.new()
+		b.text = pair[1]
+		b.toggle_mode = true
+		b.focus_mode = Control.FOCUS_NONE
+		b.custom_minimum_size = Vector2(96, 52)
+		b.set_meta("filter", pair[0])
+		var key: String = pair[0]
+		b.pressed.connect(func(): _set_filter(key))
+		_tabs.add_child(b)
+	tab_scroll.add_child(_tabs)
+	v.add_child(tab_scroll)
+	var hint := Label.new()
+	hint.text = "点物品使用/装备或丢弃 · 分类标签筛选"
+	hint.add_theme_font_size_override("font_size", 18)
+	hint.modulate = Color(1, 1, 1, 0.6)
+	v.add_child(hint)
+	_empty.text = "这个分类没有东西"
+	_empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_empty.add_theme_font_size_override("font_size", 22)
+	_empty.modulate = Color(1, 1, 1, 0.6)
+	_empty.visible = false
+	v.add_child(_empty)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -106,12 +138,22 @@ func set_slots(slots: Array, cap: int, used: int, equipped: String) -> void:
 
 
 func _rebuild() -> void:
+	var names := {"all": "全部", "weapon": "武器", "food": "食物",
+		"medical": "药品", "material": "材料", "block": "方块"}
 	_title.text = "背包 %d / %d 格" % [_used, _cap] + ("   超重：走得慢，不能冲刺" if _used > _cap else "")
+	if _filter != "all":
+		_title.text += " · " + str(names.get(_filter, ""))
 	_title.add_theme_color_override("font_color", Color(1, 0.45, 0.35) if _used > _cap else Color(0.95, 0.92, 0.85))
 	for c in _grid.get_children():
 		_grid.remove_child(c)
 		c.queue_free()
+	var indices: Array[int] = []
 	for i in _slots.size():
+		var s: Dictionary = _slots[i]
+		if _filter == "all" or (not s.is_empty() and _matches(str(s.id), _filter)):
+			indices.append(i)
+	_empty.visible = _filter != "all" and indices.is_empty()
+	for i in indices:
 		var b := make_slot(_slots[i], SLOT_SIZE, _equipped != "" and _slots[i].get("id", "") == _equipped, i >= _cap)
 		var idx := i
 		# 背包能上下滑着找：手指按下后挪动超过 TAP_SLOP 算滑动，不打开菜单
@@ -119,6 +161,30 @@ func _rebuild() -> void:
 		b.button_mask = 0
 		b.gui_input.connect(func(ev: InputEvent): _slot_input(b, idx, ev))
 		_grid.add_child(b)
+	for b in _tabs.get_children():
+		b.button_pressed = b.get_meta("filter") == _filter
+
+
+static func _matches(id: String, filter: String) -> bool:
+	var kind: int = int(Assets.items_by_id.get(id, {}).get("kind", -1))
+	match filter:
+		"weapon":
+			return kind in [Assets.Kind.GUN, Assets.Kind.MELEE]
+		"food":
+			return kind in [Assets.Kind.FOOD, Assets.Kind.DRINK]
+		"medical":
+			return kind == Assets.Kind.MEDICAL
+		"material":
+			return kind == Assets.Kind.RESOURCE
+		"block":
+			return kind == Assets.Kind.BLOCK
+		_:
+			return true
+
+
+func _set_filter(key: String) -> void:
+	_filter = key
+	_rebuild()
 
 
 func _slot_input(b: Button, i: int, ev: InputEvent) -> void:
