@@ -234,16 +234,18 @@ func _try_tool_action(c: Vector3i) -> bool:
 	var info := Blocks.info(str(v.id))
 	var max_hp: float = float(info.get("hp", 100.0))
 	if float(v.hp) < max_hp - 0.01:
-		var mat := Blocks.repair_item(str(v.id))
-		if mat == "":
+		var needs := Blocks.repair_items(str(v.id))
+		if needs.is_empty():
 			return false
-		if not C.TEST_INFINITE and inventory.count(mat) < 1:
-			hud.toast("修理需要%s" % Assets.display_name(mat))
-			return true
 		if not C.TEST_INFINITE:
-			inventory.remove(mat, 1)
+			for r in needs:
+				if inventory.count(str(r.item)) < int(r.count):
+					hud.toast("修理需要%s ×%d" % [Assets.display_name(str(r.item)), int(r.count)])
+					return true
+			for r in needs:
+				inventory.remove(str(r.item), int(r.count))
 			inventory.refresh()
-		v.hp = minf(max_hp, float(v.hp) + max_hp * 0.25)
+		v.hp = max_hp
 		world.mark_voxel_dirty(c)
 		GameState.block_changed.emit(c)
 		hud.toast("修理%s" % Assets.display_name(str(v.id)))
@@ -265,6 +267,9 @@ func _try_tool_action(c: Vector3i) -> bool:
 		inventory.refresh()
 	world.upgrade_voxel(c, str(up.to))
 	GameState.block_changed.emit(c)
+	var snd := Blocks.upgrade_sound(str(v.id))
+	if snd != "":
+		Sfx.play(snd, Vector3(c) + Vector3(0.5, 0.5, 0.5), -4.0)
 	hud.toast("升级为%s" % Assets.display_name(str(up.to)))
 	return true
 

@@ -92,6 +92,63 @@ class BuildDataTest(unittest.TestCase):
         self.assertEqual(out["frameShapes"]["stack"], 999)
         self.assertEqual(out["woodShapes"]["durability"], 100.0)
 
+MATERIALS_XML = """<materials>
+  <material id="Mwood">
+    <property name="damage_category" value="wood"/>
+    <property name="stability_glue" value="40"/>
+    <property name="Mass" value="5"/>
+    <property name="MaxDamage" value="500"/>
+  </material>
+</materials>
+"""
+
+BLOCKS_TEST_XML = """<blocks>
+  <block name="frameShapes">
+    <property name="Material" value="Mwood"/>
+    <property name="Texture" value="65"/>
+    <property name="UpgradeSound" value="place_block_wood"/>
+    <property class="RepairItems">
+      <property name="resourceWood" value="3"/>
+    </property>
+    <property class="UpgradeBlock">
+      <property name="ToBlock" value="woodShapes"/>
+      <property name="Item" value="resourceWood"/>
+      <property name="ItemCount" value="8"/>
+      <property name="UpgradeHitCount" value="4"/>
+    </property>
+  </block>
+  <block name="woodShapes">
+    <property name="Extends" value="frameShapes"/>
+    <property name="Texture" value="241"/>
+    <property class="UpgradeBlock">
+      <property name="ToBlock" value="unknownShapes"/>
+      <property name="Item" value="resourceWood"/>
+      <property name="ItemCount" value="10"/>
+    </property>
+  </block>
+</blocks>
+"""
+
+
+class BlockDataTest(unittest.TestCase):
+    def test_official_block_stats(self):
+        blocks = build_data.parse_blocks_xml(BLOCKS_TEST_XML)
+        materials = build_data.parse_materials_xml(MATERIALS_XML)
+        out = build_data.build_blocks(blocks, materials, ["frameShapes", "woodShapes"])
+        frame = out["frameShapes"]
+        self.assertEqual(frame["hp"], 500.0)  # 材质血量
+        self.assertEqual(frame["overhang"], 8)  # stability_glue / Mass
+        self.assertEqual(frame["texture"], 65)
+        self.assertEqual(frame["repair"], [{"item": "resourceWood", "count": 3}])
+        self.assertEqual(frame["upgrade"]["to"], "woodShapes")
+        self.assertEqual(frame["upgrade"]["count"], 8)
+        self.assertEqual(frame["upgrade"]["hits"], 4)
+        self.assertEqual(frame["upgrade"]["sound"], "place_block_wood")
+        # 继承父方块；升级到未知方块时不生效
+        self.assertEqual(out["woodShapes"]["texture"], 241)
+        self.assertEqual(out["woodShapes"]["upgrade"], {})
+
+
 GAMESTAGES_XML = """<gamestages>
   <spawner name="BloodMoonHorde">
     <gamestage stage="1">

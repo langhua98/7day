@@ -3,8 +3,10 @@
 
 生成 assets/data/ 下的表：
   items.json    {id: {id, stack, value, durability, tags, zh}}
+  blocks.json   {id: {hp, mass, glue, overhang, category, texture, repair, upgrade}}
   recipes.json  {key: {id, count, area, time, tool, tags, cat, zh, learnable, ingredients:[{id,count,zh}]}}
 只保留 assets/index/icon_to_model.json 里的物品，再加上 scripts/blocks.gd 的方块。
+方块血量、升级、修理、悬挑来自官方 blocks.xml + materials.xml。
 Data_Config.zip 从云盘 /7day/小橘素材库/ 下载；令牌只读环境变量 XIAOJU_TOKEN。
 """
 import argparse
@@ -382,6 +384,137 @@ def parse_ingredient_times(items_text: str) -> dict:
     return out
 
 
+def parse_materials_xml(text: str) -> dict:
+    """materials.xml → {id: {hp, mass, glue, category, extends}}，处理 Extends。"""
+    if not text:
+        return {}
+    root = ET.fromstring(text)
+    raw = {}
+    for el in root.findall("material"):
+        mid = el.get("id")
+        if not mid:
+            continue
+        props = {p.get("name"): p.get("value", "") for p in el.findall("property") if p.get("name")}
+        raw[mid] = props
+    out, visiting = {}, set()
+
+    def resolve(mid):
+        if mid in out:
+            return out[mid]
+        if mid in visiting or mid not in raw:
+            return {}
+        visiting.add(mid)
+        row = {}
+        parent = raw[mid].get("Extends")
+        if parent:
+            row.update(resolve(parent))
+        row.update(raw[mid])
+        visiting.discard(mid)
+        out[mid] = row
+        return row
+
+    result = {}
+    for mid in raw:
+        p = resolve(mid)
+        result[mid] = {
+            "hp": _float(p.get("MaxDamage"), 0.0),
+            "mass": max(1, _int(p.get("Mass"), 1)),
+            "glue": max(0, _int(p.get("stability_glue"), 0)),
+            "category": p.get("damage_category", ""),
+        }
+    return result
+
+
+def parse_blocks_xml(text: str) -> dict:
+    """blocks.xml → {name: {props, classes, extends}}，处理方块 Extends。"""
+    if not text:
+        return {}
+    root = ET.fromstring(text)
+    raw = {}
+    for el in root.findall("block"):
+        name = el.get("name")
+        if not name:
+            continue
+        props, classes = {}, {}
+        for pr in el.findall("property"):
+            cls = pr.get("class")
+            if cls:
+                classes[cls] = {p.get("name"): p.get("value", "") for p in pr.findall("property") if p.get("name")}
+            elif pr.get("name"):
+                props[pr.get("name")] = pr.get("value", "")
+        raw[name] = {"props": props, "classes": classes, "extends": props.get("Extends", "")}
+    out, visiting = {}, set()
+
+    def resolve(name):
+        if name in out:
+            return out[name]
+        if name in visiting or name not in raw:
+            return {"props": {}, "classes": {}, "extends": ""}
+        visiting.add(name)
+        row = {"props": {}, "classes": {}, "extends": ""}
+        parent = raw[name].get("extends")
+        if parent:
+            row = resolve(parent)
+            row = {"props": dict(row["props"]), "classes": {k: dict(v) for k, v in row["classes"].items()}, "extends": ""}
+        row["props"].update(raw[name]["props"])
+        for k, v in raw[name]["classes"].items():
+            row["classes"].setdefault(k, {}).update(v)
+        visiting.discard(name)
+        out[name] = row
+        return row
+
+    return {name: resolve(name) for name in raw}
+
+
+def build_blocks(blocks: dict, materials: dict, wanted) -> dict:
+    """官方 blocks.xml + materials.xml → 建造方块表（血量、升级、修理、稳定、贴图编号）。"""
+    out = {}
+    for name in wanted:
+        if name == "bedroll":  # 睡袋是实体，不是建造方块；官方血量 1 不适合当墙
+            continue
+        row = blocks.get(name)
+        if not row:
+            continue
+        props, classes = row["props"], row["classes"]
+        mat = materials.get(props.get("Material", ""), {})
+        hp = _float(mat.get("hp"), 0.0) or _float(props.get("MaxDamage"), 0.0)
+        if hp <= 0:
+            continue
+        repair = []
+        for item, count in classes.get("RepairItems", {}).items():
+            repair.append({"item": item, "count": max(1, _int(count, 1))})
+        up = classes.get("UpgradeBlock", {})
+        upgrade = {}
+        to = base_name(up.get("ToBlock", ""))
+        if to and to in wanted:
+            upgrade = {
+                "to": to,
+                "item": up.get("Item", ""),
+                "count": max(1, _int(up.get("ItemCount"), 1)),
+                "hits": max(1, _int(up.get("UpgradeHitCount"), 4)),
+                "sound": props.get("UpgradeSound", ""),
+            }
+        mass = max(1, _int(mat.get("mass"), 1))
+        glue = max(0, _int(mat.get("glue"), 0))
+        tex = re.findall(r"\d+", props.get("Texture", ""))
+        out[name] = {
+            "id": name,
+            "hp": hp,
+            "mass": mass,
+            "glue": glue,
+            "overhang": max(1, min(16, glue // mass)) if glue else 0,
+            "category": mat.get("category", ""),
+            "texture": int(tex[0]) if tex else 0,
+            "repair": repair,
+            "upgrade": upgrade,
+        }
+    return out
+
+
+def block_names_from_gd(text: str) -> list:
+    return [b["id"] for b in block_types_from_gd(text)]
+
+
 def parse_block_names(text: str) -> set:
     if not text:
         return set()
@@ -575,13 +708,33 @@ def read_buffs_xml(path: Path) -> str:
 
 def build_all(dest: Path, zip_path: Path, index_path: Path, only: str = "all") -> dict:
     items_xml, loc_csv, gs_xml, eg_xml = read_config_zip(zip_path)
+    gd_text = (ROOT / "scripts" / "blocks.gd").read_text(encoding="utf-8")
+    official = {}
+    if only in ("blocks", "items", "all"):
+        official = build_blocks(
+            parse_blocks_xml(read_config_file(zip_path, "blocks.xml")),
+            parse_materials_xml(read_config_file(zip_path, "materials.xml")),
+            block_names_from_gd(gd_text),
+        )
+    if only in ("blocks", "all"):
+        out_dir = dest / "data"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        path = out_dir / "blocks.json"
+        path.write_text(json.dumps(official, ensure_ascii=False, indent=1), encoding="utf-8")
+        missing = [i for i in block_names_from_gd(gd_text) if i not in official]
+        print(f"方块配置: 官方 {len(official)} 个 → {path}")
+        if missing:
+            print(f"  blocks.xml 里没有、用脚本默认值的: {', '.join(missing)}")
     if only in ("items", "all"):
         items = parse_items_xml(items_xml)
         loc = load_localization(loc_csv)
         if not index_path.exists():
             sys.exit(f"找不到物品索引 {index_path}，先运行 tools/fetch_assets.py 的 fetch_index")
         index_rows = json.loads(index_path.read_text(encoding="utf-8"))
-        blocks = block_types_from_gd((ROOT / "scripts" / "blocks.gd").read_text(encoding="utf-8"))
+        blocks = block_types_from_gd(gd_text)
+        for b in blocks:
+            if b["id"] in official:
+                b["hp"] = official[b["id"]]["hp"]
         out = build_items(items, loc, index_rows, blocks)
         out_dir = dest / "data"
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -650,7 +803,7 @@ def main() -> int:
     ap.add_argument("--dest", default=str(DEFAULT_DEST), help="assets 目录")
     ap.add_argument("--zip", default="", help="本地 Data_Config.zip（不传就从云盘下载）")
     ap.add_argument("--index", default="", help="icon_to_model.json（默认 assets/index/）")
-    ap.add_argument("--only", default="all", choices=["all", "items", "buffs", "gamestages", "entitygroups", "recipes"], help="只生成某张表")
+    ap.add_argument("--only", default="all", choices=["all", "items", "buffs", "gamestages", "entitygroups", "recipes", "blocks"], help="只生成某张表")
     args = ap.parse_args()
     dest = Path(args.dest)
     zip_path = Path(args.zip) if args.zip else dest / "cache" / ZIP_NAME

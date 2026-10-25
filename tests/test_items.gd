@@ -23,8 +23,11 @@ func _ready() -> void:
 	check_eq(Weapons.scope_fov("gunRifleT1HuntingRifle", "scope4x") <
 		Weapons.scope_fov("gunRifleT1HuntingRifle", "scope2x"), true, "高倍镜 FOV 更小")
 	check_eq(Blocks.upgrade_info("frameShapes").get("to", ""), "woodShapes", "木框升级到木块")
+	check_eq(Blocks.upgrade_info("frameShapes").get("count", 0), 8, "官方升级材料数量")
+	check_eq(Blocks.upgrade_info("frameShapes").get("hits", 0), 4, "官方升级敲击次数")
 	check_eq(Blocks.repair_item("woodShapes"), "resourceWood", "木块用木头修理")
-	check_eq(Blocks.overhang("steelShapes"), 12, "钢块悬挑 12 格")
+	check_eq(Blocks.repair_items("woodShapes")[0].get("count", 0) >= 1, true, "木块修理要材料")
+	check_eq(Blocks.overhang("steelShapes") >= 10, true, "钢块悬挑至少 10 格")
 	check_eq(Blocks.is_repair_tool("meleeToolRepairT1ClawHammer"), true, "锤子是修理工具")
 	check_eq(Blocks.is_repair_tool("meleeWpnBladeT1HuntingKnife"), false, "刀不是修理工具")
 

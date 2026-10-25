@@ -6,7 +6,8 @@ class_name Blocks
 const POI_SHADER := preload("res://scripts/poi.gdshader")
 const DIR := "res://assets/poi"
 
-## [方块名（和游戏 blocks.xml 里一样）, 中文名, 英文名, 耐久, 没贴图时的颜色]
+## [方块名（和游戏 blocks.xml 里一样）, 中文名, 英文名, 默认耐久, 没贴图时的颜色]
+## 有 assets/data/blocks.json 时，血量/升级/修理/悬挑用官方数据；没有就用这里的默认值。
 const TYPES := [
 	["frameShapes", "木框", "Wood Frame", 40.0, Color(0.66, 0.5, 0.32)],
 	["woodShapes", "木块", "Wood Block", 100.0, Color(0.52, 0.36, 0.21)],
@@ -69,6 +70,27 @@ static var _station_materials := {}
 static var _icons := {}
 static var _shape_tris := {}
 static var _shape_loaded := false
+static var _official := {}
+static var _official_loaded := false
+
+
+static func _load_official() -> void:
+	if _official_loaded:
+		return
+	_official_loaded = true
+	var path := "res://assets/data/blocks.json"
+	if not FileAccess.file_exists(path):
+		return
+	var json := JSON.new()
+	if json.parse(FileAccess.get_file_as_string(path)) != OK or not (json.data is Dictionary):
+		return
+	_official = json.data
+
+
+static func _official_row(id: String) -> Dictionary:
+	_load_official()
+	var row = _official.get(base_of(id), {})
+	return row if row is Dictionary else {}
 
 
 static func _load_shape_tris() -> void:
@@ -142,7 +164,11 @@ static func variant_ids() -> Array[String]:
 static func _base_info(base_id: String) -> Dictionary:
 	for t in TYPES:
 		if t[0] == base_id:
-			return {"id": t[0], "zh": t[1], "en": t[2], "hp": t[3], "color": t[4]}
+			var hp := float(t[3])
+			var off := _official_row(base_id)
+			if not off.is_empty():
+				hp = maxf(1.0, float(off.get("hp", hp)) * GameConfig.BLOCK_HP_SCALE)
+			return {"id": t[0], "zh": t[1], "en": t[2], "hp": hp, "color": t[4]}
 	return {}
 
 
@@ -151,15 +177,37 @@ static func shape_name(shape: String) -> String:
 
 
 static func upgrade_info(id: String) -> Dictionary:
-	return UPGRADES.get(id, {})
+	var off := _official_row(id)
+	if off.has("upgrade") and off.upgrade is Dictionary:
+		return off.upgrade
+	return UPGRADES.get(base_of(id), {})
+
+
+static func upgrade_sound(id: String) -> String:
+	return str(upgrade_info(id).get("sound", ""))
+
+
+static func repair_items(id: String) -> Array:
+	var off := _official_row(id)
+	if off.has("repair") and off.repair is Array:
+		return off.repair
+	var one := str(REPAIR_ITEMS.get(base_of(id), ""))
+	return [] if one == "" else [{"item": one, "count": 1}]
 
 
 static func repair_item(id: String) -> String:
-	return REPAIR_ITEMS.get(id, "")
+	var off := _official_row(id)
+	if off.has("repair") and off.repair is Array and not off.repair.is_empty():
+		return str(off.repair[0].get("item", ""))
+	return str(REPAIR_ITEMS.get(base_of(id), ""))
 
 
 static func overhang(id: String) -> int:
-	return int(OVERHANG.get(id, 4))
+	var off := _official_row(id)
+	var n := int(off.get("overhang", 0))
+	if n > 0:
+		return n
+	return int(OVERHANG.get(base_of(id), 4))
 
 
 static func is_repair_tool(id: String) -> bool:

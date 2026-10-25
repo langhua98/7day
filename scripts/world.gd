@@ -964,9 +964,10 @@ func _support_drop_once(changed: Vector3i) -> int:
 			out.append(c)
 	for c in out:
 		remove_voxel(c)
-		var gs := get_node_or_null("/root/GameState")
-		if gs:
-			gs.emit_signal("block_changed", c)
+		if is_inside_tree():
+			var gs := get_node_or_null("/root/GameState")
+			if gs:
+				gs.emit_signal("block_changed", c)
 	return out.size()
 
 

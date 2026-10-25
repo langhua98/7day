@@ -29,6 +29,8 @@ const NIGHT_AMBIENT_ENERGY := 0.75
 const ZOMBIE_DESPAWN := 110.0
 ## 僵尸砸玩家方块的伤害倍率
 const ZOMBIE_BLOCK_DAMAGE_MULT := 3.0
+## 官方方块血量在手机上按这个倍率缩放（官方 MaxDamage 100~10000，原样太耐打）
+const BLOCK_HP_SCALE := 0.2
 
 const PLAYER_SPEED := 4.2
 ## 跑步：速度倍数、每秒耗体力、每秒回体力
