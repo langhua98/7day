@@ -44,8 +44,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: assets
-          key: assets-v5
-          restore-keys: assets-v4
+          key: assets-v6
+          restore-keys: assets-v5
 
       - name: 从小桔云盘下载素材
         env:
@@ -136,6 +136,7 @@ jobs:
           "$GODOT" --headless --path . -s tests/test_poi_containers.gd
           "$GODOT" --headless --path . -s tests/test_poi_interior.gd
           "$GODOT" --headless --path . res://tests/test_craft.tscn
+          "$GODOT" --headless --path . res://tests/test_vehicle.tscn
           "$GODOT" --headless --path . res://tests/test_workstations.tscn
 
       - name: 导出 Xcode 工程
