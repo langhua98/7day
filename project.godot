@@ -6,7 +6,7 @@ config_version=5
 
 config/name="七日杀 口袋版"
 config/description="个人自用的七日杀小游戏，素材来自本地 assets/ 目录"
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/boot.tscn"
 run/max_fps=60
 config/features=PackedStringArray("4.4", "Mobile")
 config/icon="res://icon.svg"

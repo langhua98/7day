@@ -35,6 +35,7 @@ var _effects := Label.new()
 var _jump_btn := Button.new()
 var _crouch_btn := Button.new()
 var _rotate_btn := Button.new()
+var _fire_left := Button.new()
 var _scope_btn := Button.new()
 var _ammo_panel := PanelContainer.new()
 var _ammo_mag := Label.new()
@@ -57,6 +58,15 @@ var _compass := Compass.new()
 var _scope := ScopeOverlay.new()
 var _scope_label := Label.new()
 var _scope_level := 0
+var _layout_panel := PanelContainer.new()
+var _layout_hint := Label.new()
+var _layout_edit := false
+var _layout_edit_btn: Button
+var _layout_buttons := {}
+var _layout_defaults := {}
+var _layout_prev_visible := {}
+var _layout_prev_ui := {}
+var button_layout := {}
 var _progress := ProgressBar.new()
 var _progress_label := Label.new()
 var _bag_btn := Button.new()
@@ -98,9 +108,11 @@ var _pause_settings_btn: Button
 var _end_back_btn: Button
 var _settings_back_btn: Button
 var _settings_reset_btn: Button
+var _left_fire_toggle: CheckButton
+var _layout_btn: Button
 ## 设置：灵敏度、亮度、音量、音乐音量（倍数）、画质档位、性能面板，存在 user://settings.cfg
 const DEFAULT_SETTINGS := {"sensitivity": 1.0, "brightness": 1.0, "volume": 1.0, "music": 0.8,
-	"quality": 1.0, "show_perf": 0.0}
+	"quality": 1.0, "show_perf": 0.0, "left_fire": 0.0}
 var settings := DEFAULT_SETTINGS.duplicate()
 const SETTINGS_PATH := "user://settings.cfg"
 
@@ -286,9 +298,11 @@ func _ready() -> void:
 	_round(_aim_btn, "开镜", Control.PRESET_BOTTOM_RIGHT, Vector2(-440, -440), 110, 26)
 	_round(_rotate_btn, "旋转\n0°", Control.PRESET_BOTTOM_RIGHT, Vector2(-440, -270), 100, 20)
 	_round(_scope_btn, "倍镜\n无", Control.PRESET_BOTTOM_RIGHT, Vector2(-550, -270), 100, 20)
+	_round(_fire_left, "开火", Control.PRESET_BOTTOM_LEFT, Vector2(50, -440), 110, 24)
 	_aim_btn.visible = false
 	_rotate_btn.visible = false
 	_scope_btn.visible = false
+	_fire_left.visible = false
 
 	# 搜索 / 拾取：走近容器或地上的东西才出现
 	_action_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
@@ -427,6 +441,8 @@ func _ready() -> void:
 	_build_pause_panel()
 	_build_settings_panel()
 	_build_death_ui()
+	_build_layout_panel()
+	_init_button_layout()
 	# 背包盖在摇杆上面
 	get_viewport().size_changed.connect(_update_safe_area)
 	_update_safe_area()
@@ -663,10 +679,14 @@ func _build_settings_panel() -> void:
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_settings_panel.add_child(center)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(720, 600)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	center.add_child(scroll)
 	var v := VBoxContainer.new()
 	v.custom_minimum_size = Vector2(660, 0)
 	v.add_theme_constant_override("separation", 8)
-	center.add_child(v)
+	scroll.add_child(v)
 	var title := Label.new()
 	title.text = "设置"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -674,6 +694,18 @@ func _build_settings_panel() -> void:
 	v.add_child(title)
 	_settings_group(v, "操作")
 	_add_setting_row(v, "sensitivity", "视角灵敏度", 0.3, 2.5, 0.05)
+	_left_fire_toggle = CheckButton.new()
+	_left_fire_toggle.text = "显示左侧开火键"
+	_left_fire_toggle.button_pressed = settings.left_fire > 0.5
+	_left_fire_toggle.toggled.connect(_on_left_fire_toggled)
+	v.add_child(_left_fire_toggle)
+	_layout_btn = Button.new()
+	_layout_btn.text = "调整按钮布局"
+	_layout_btn.custom_minimum_size = Vector2(340, 64)
+	_layout_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_layout_btn.add_theme_font_size_override("font_size", 28)
+	_layout_btn.pressed.connect(open_layout_editor)
+	v.add_child(_layout_btn)
 	_settings_group(v, "画面")
 	_add_setting_row(v, "brightness", "亮度", 0.5, 1.8, 0.05)
 	var qh := HBoxContainer.new()
@@ -771,6 +803,8 @@ func _reset_settings() -> void:
 		_setting_values[key].text = _setting_text(key, settings[key])
 	_quality_option.selected = clampi(int(settings.quality), 0, GameConfig.QUALITY_PRESETS.size() - 1)
 	_perf_toggle.set_pressed_no_signal(settings.show_perf > 0.5)
+	_left_fire_toggle.set_pressed_no_signal(settings.left_fire > 0.5)
+	_fire_left.visible = settings.left_fire > 0.5
 	_save_settings()
 	settings_changed.emit(settings)
 
@@ -788,6 +822,135 @@ func close_settings() -> void:
 		_start_panel.visible = true
 	else:
 		_pause_panel.visible = true
+func _build_layout_panel() -> void:
+	_layout_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_layout_panel.position = Vector2(-470, 8)
+	_layout_panel.custom_minimum_size = Vector2(940, 0)
+	_layout_panel.visible = false
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 10)
+	_layout_hint.text = "拖动按钮调整位置；点选后用 - / + 改大小"
+	_layout_hint.custom_minimum_size = Vector2(430, 0)
+	_layout_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_layout_hint.add_theme_font_size_override("font_size", 18)
+	h.add_child(_layout_hint)
+	for pair in [["-", -8], ["+", 8], ["恢复默认", 0], ["完成", -1]]:
+		var b := Button.new()
+		b.text = pair[0]
+		b.custom_minimum_size = Vector2(88, 56)
+		b.add_theme_font_size_override("font_size", 22)
+		var delta: int = pair[1]
+		if delta == -1:
+			b.pressed.connect(close_layout_editor)
+		elif delta == 0:
+			b.pressed.connect(_layout_apply_defaults)
+		else:
+			b.pressed.connect(func(): _layout_resize(delta))
+		h.add_child(b)
+	_layout_panel.add_child(h)
+	_root.add_child(_layout_panel)
+
+
+func _init_button_layout() -> void:
+	_layout_buttons = {
+		"attack": _attack_btn, "jump": _jump_btn, "crouch": _crouch_btn,
+		"aim": _aim_btn, "scope": _scope_btn, "rotate": _rotate_btn,
+		"action": _action_btn, "bag": _bag_btn, "craft": _craft_btn,
+		"pause": _pause_btn, "fire_left": _fire_left,
+	}
+	_layout_defaults.clear()
+	for key in _layout_buttons:
+		var b: Button = _layout_buttons[key]
+		_layout_defaults[key] = {"pos": [b.position.x, b.position.y], "size": [b.size.x, b.size.y]}
+	for key in _layout_buttons:
+		var e = button_layout.get(key)
+		if e is Dictionary:
+			_layout_apply_entry(_layout_buttons[key], e)
+	_fire_left.visible = settings.left_fire > 0.5
+
+
+func _layout_apply_entry(b: Button, e: Dictionary) -> void:
+	var pos = e.get("pos", [])
+	var size = e.get("size", [])
+	if pos is Array and pos.size() >= 2:
+		b.position = Vector2(float(pos[0]), float(pos[1]))
+	if size is Array and size.size() >= 2:
+		b.custom_minimum_size = Vector2(float(size[0]), float(size[1]))
+		b.size = b.custom_minimum_size
+
+
+func _layout_apply_defaults() -> void:
+	for key in _layout_buttons:
+		var b: Button = _layout_buttons[key]
+		var e: Dictionary = _layout_defaults.get(key, {})
+		if not e.is_empty():
+			_layout_apply_entry(b, e)
+	_layout_edit_btn = null
+	_layout_hint.text = "已恢复默认位置和大小"
+
+
+func _save_button_layout() -> void:
+	var out := {}
+	for key in _layout_buttons:
+		var b: Button = _layout_buttons[key]
+		out[key] = {"pos": [b.position.x, b.position.y], "size": [b.size.x, b.size.y]}
+	button_layout = out
+	_save_settings()
+
+
+func open_layout_editor() -> void:
+	_layout_edit = true
+	_release_touches()
+	_settings_panel.visible = false
+	_layout_prev_visible.clear()
+	for key in _layout_buttons:
+		var b: Button = _layout_buttons[key]
+		_layout_prev_visible[key] = b.visible
+		b.visible = true
+	_layout_prev_ui.clear()
+	for c in [_compass, _hotbar_panel, _hotbar_name, _ammo_panel, _scope_label, _banner]:
+		_layout_prev_ui[c] = c.visible
+		c.visible = false
+	_layout_edit_btn = null
+	_layout_hint.text = "拖动按钮调整位置；点选后用 - / + 改大小"
+	_layout_panel.visible = true
+
+
+func close_layout_editor() -> void:
+	_layout_edit = false
+	_layout_panel.visible = false
+	_save_button_layout()
+	for key in _layout_buttons:
+		_layout_buttons[key].visible = bool(_layout_prev_visible.get(key, true))
+	_fire_left.visible = settings.left_fire > 0.5
+	for c in _layout_prev_ui:
+		c.visible = _layout_prev_ui[c]
+	_layout_edit_btn = null
+	_settings_panel.visible = true
+
+
+func _layout_pick(pos: Vector2) -> void:
+	_layout_edit_btn = null
+	for key in _layout_buttons:
+		var b: Button = _layout_buttons[key]
+		if b.visible and b.get_global_rect().grow(8).has_point(pos):
+			_layout_edit_btn = b
+			_flash(b)
+			_layout_hint.text = "已选中按钮，用 - / + 改大小"
+			return
+
+
+func _layout_resize(delta: int) -> void:
+	if _layout_edit_btn == null:
+		_layout_hint.text = "先点一个按钮"
+		return
+	var s := _layout_edit_btn.size + Vector2(delta, delta)
+	s.x = maxf(60.0, s.x)
+	s.y = maxf(60.0, s.y)
+	_layout_edit_btn.custom_minimum_size = s
+	_layout_edit_btn.size = s
+
+
 func set_paused(on: bool) -> void:
 	if on:
 		_release_touches()
@@ -814,12 +977,17 @@ func _load_settings() -> void:
 			settings[k] = float(cf.get_value("settings", k, settings[k]))
 		settings.quality = clampf(settings.quality, 0.0, GameConfig.QUALITY_PRESETS.size() - 1.0)
 		settings.show_perf = 1.0 if settings.show_perf > 0.5 else 0.0
+		settings.left_fire = 1.0 if settings.left_fire > 0.5 else 0.0
+		var saved_layout = cf.get_value("layout", "buttons", {})
+		if saved_layout is Dictionary:
+			button_layout = saved_layout
 
 
 func _save_settings() -> void:
 	var cf := ConfigFile.new()
 	for k in settings:
 		cf.set_value("settings", k, settings[k])
+	cf.set_value("layout", "buttons", button_layout)
 	cf.save(SETTINGS_PATH)
 
 
@@ -831,6 +999,13 @@ func _on_quality_selected(index: int) -> void:
 
 func _on_show_perf_toggled(on: bool) -> void:
 	settings.show_perf = 1.0 if on else 0.0
+	_save_settings()
+	settings_changed.emit(settings)
+
+
+func _on_left_fire_toggled(on: bool) -> void:
+	settings.left_fire = 1.0 if on else 0.0
+	_fire_left.visible = on
 	_save_settings()
 	settings_changed.emit(settings)
 
@@ -1247,7 +1422,8 @@ func _panel_open() -> bool:
 
 func _press_attack(pressed: bool) -> void:
 	attack_held = pressed
-	_attack_btn.modulate = Color(1.6, 0.7, 0.6) if pressed else Color.WHITE
+	for b in [_attack_btn, _fire_left]:
+		b.modulate = Color(1.6, 0.7, 0.6) if pressed else Color.WHITE
 
 
 func _flash(control: Control) -> void:
@@ -1308,11 +1484,12 @@ func _touch_down(index: int, pos: Vector2) -> void:
 		aim_held = true
 		_aim_btn.modulate = Color(1.6, 0.7, 0.6)
 		return
-	if _attack_btn.get_global_rect().grow(16).has_point(pos):
-		_attack_ids[index] = true
-		_drag_last[index] = pos  # 按住开火再拖动可以边打边转视角
-		_press_attack(true)
-		return
+	for fire in [_attack_btn, _fire_left]:
+		if fire.visible and fire.get_global_rect().grow(16).has_point(pos):
+			_attack_ids[index] = true
+			_drag_last[index] = pos  # 按住开火再拖动可以边打边转视角
+			_press_attack(true)
+			return
 	if _ammo_panel.visible and _ammo_panel.get_global_rect().grow(8).has_point(pos):
 		_press_button(_ammo_panel)
 		reload_pressed.emit()
@@ -1388,6 +1565,21 @@ func _touch_up(index: int) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if _layout_edit:
+		if event is InputEventScreenTouch:
+			if _layout_panel.get_global_rect().has_point(event.position):
+				_layout_edit_btn = null
+				return
+			if event.pressed:
+				_layout_pick(event.position)
+			else:
+				_layout_edit_btn = null
+			return
+		if event is InputEventScreenDrag:
+			if _layout_edit_btn:
+				_layout_edit_btn.position += event.relative
+			return
+		return
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			if not _panel_open():
