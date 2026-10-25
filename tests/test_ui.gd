@@ -256,12 +256,30 @@ func _ready() -> void:
 	check_eq(slot.custom_minimum_size, Vector2(76, 76), "快捷栏格子 76")
 	check_eq(hud._hotbar_name.text, "测试物品", "切换时显示装备名")
 
+	# 左侧开火和按钮布局编辑
+	hud._on_left_fire_toggled(true)
+	check(hud._fire_left.visible, "左侧开火键开关")
+	hud._on_left_fire_toggled(false)
+	hud.open_layout_editor()
+	check(hud._layout_edit and hud._layout_panel.visible, "打开按钮布局编辑")
+	var layout_attack_before := hud._attack_btn.position
+	hud._layout_pick(hud._attack_btn.get_global_rect().get_center())
+	var drag_ev := InputEventScreenDrag.new()
+	drag_ev.relative = Vector2(10, 5)
+	hud._input(drag_ev)
+	check(hud._attack_btn.position != layout_attack_before, "拖动按钮改变位置")
+	hud.close_layout_editor()
+	check(not hud._layout_edit and hud._settings_panel.visible, "关闭布局编辑")
+
 	# 结算页回标题
 	var backs := [0]
 	hud.back_to_title.connect(func(): backs[0] += 1)
 	hud.show_end("测试")
 	hud._end_back_btn.pressed.emit()
 	check_eq(backs[0], 1, "结算回标题应发信号")
+	hud.button_layout.clear()
+	hud._layout_apply_defaults()
+	hud._save_button_layout()
 
 	_finish()
 

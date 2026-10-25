@@ -739,6 +739,7 @@ def _unpack_normal(im, size):
 # 市中心路口那几栋用完整方块数据生成（窗户、楼梯、屋檐都有），其余的楼用远景网格
 CONFIG_ZIP = "小橘素材库/Data_Config.zip"
 SHAPES_ZIP = "小橘素材库/shapes_by_name.zip"
+UI_ZIP = "小橘素材库/textures_assets_textures/ui.zip"
 
 
 def _zip_name(info):
@@ -832,6 +833,27 @@ def fetch_block_shapes(dest):
             print("云盘里没有 shapes_by_name.zip，形状先用程序几何")
     tool = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build_block_shapes.py")
     subprocess.run([sys.executable, tool, "--shapes", sdir, "--dest", dest], check=True)
+
+
+def fetch_ui(dest):
+    """官方背景、logo 和指南针底图 → assets/ui/。没有也不影响游戏，只是用纯色顶。"""
+    udir = os.path.join(dest, "ui")
+    need = ("background.png", "7DTD_logo.png", "compass_background3.png")
+    os.makedirs(udir, exist_ok=True)
+    if all(os.path.exists(os.path.join(udir, f)) for f in need):
+        return
+    zf = open_remote_zip(f"{DRIVE_ROOT}/{UI_ZIP}")
+    if zf is None:
+        print("云盘里没有 ui.zip，载入页和标题用纯色")
+        return
+    got = 0
+    for i in zf.infolist():
+        base = os.path.basename(_zip_name(i))
+        if base in need:
+            with zf.open(i) as src, open(os.path.join(udir, base), "wb") as dst:
+                shutil.copyfileobj(src, dst)
+            got += 1
+    print(f"UI 贴图: 取了 {got}/{len(need)} 张")
 
 
 def _godot_rotations():
@@ -1344,7 +1366,7 @@ def main():
     ap.add_argument("--zombies", default=",".join(DEFAULT_ZOMBIES), help="逗号分隔的僵尸名，或 all")
     ap.add_argument("--music", type=int, default=6, help="每类音乐取几段")
     ap.add_argument("--all-icons", action="store_true", help="取全部图标（默认只取游戏会用到的）")
-    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,respawn,poi,full,blockshapes,props,stations,blocks,terrain,effects,music,sounds,sky,data")
+    ap.add_argument("--skip", default="", help="跳过某些步骤，逗号分隔: icons,zombies,samples,items,arms,world,respawn,poi,full,blockshapes,props,stations,blocks,terrain,effects,music,sounds,sky,ui,data")
     args = ap.parse_args()
     skip = set(filter(None, args.skip.split(",")))
     dest = os.path.abspath(args.dest)
@@ -1386,6 +1408,8 @@ def main():
         fetch_sounds(dest)
     if "sky" not in skip:
         fetch_sky_fonts(dest)
+    if "ui" not in skip:
+        fetch_ui(dest)
     if "data" not in skip:
         print("官方配置表…")
         subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "build_data.py"), "--dest", dest], check=True)
