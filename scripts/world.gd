@@ -605,11 +605,29 @@ func flow_step(budget_usec: int) -> void:
 	var ox := _fj_center.x - FLOW_R
 	var oz := _fj_center.y - FLOW_R
 	# 第一步：把窗口里的墙填进字节表，后面 BFS 只查表
+	# 直接读 _cells / _iwall 两张表（不走 _wall()，GDScript 每格调函数太慢）
+	var cells := _cells
+	var iwall := _iwall
+	var has_low := not _low.is_empty()
+	var map2 := MAP * 2
+	var wall_out := _fj_wall
 	while _fj_row < size:
 		var base := _fj_row * size
 		var wz := oz + _fj_row
+		var mz := wz + MAP
+		var row_in := mz >= 0 and mz < map2
+		var rbase := mz * map2 + MAP
 		for x in size:
-			_fj_wall[base + x] = 1 if _wall(ox + x, wz) else 0
+			var gx := ox + x
+			var w := 0
+			var mx := gx + MAP
+			if row_in and mx >= 0 and mx < map2:
+				if (not cells.is_empty() and cells[rbase + gx] == 1) \
+						or (not iwall.is_empty() and iwall[rbase + gx] == 1):
+					w = 1
+			if w == 0 and has_low and _low.has(Vector2i(gx, wz)):
+				w = 1
+			wall_out[base + x] = w
 		_fj_row += 1
 		if _fj_row == size:
 			var start := FLOW_R * size + FLOW_R
@@ -635,24 +653,49 @@ func flow_step(budget_usec: int) -> void:
 		var w_r := x == size - 1 or wall[i + 1] == 1
 		var w_u := z == 0 or wall[i - size] == 1
 		var w_d := z == size - 1 or wall[i + size] == 1
-		# 上下左右
+		# 上下左右、再斜着（斜着要两边都不是墙）。没写成函数：每格 8 次函数调用比 BFS 本身还贵
+		# 没走过的格子：是墙标 -2，不是墙记距离并排进队列
+		var ni := 0
 		if x > 0:
-			tail = _flow_visit(i - 1, d1, tail)
+			ni = i - 1
+			if dist[ni] == -1:
+				if w_l: dist[ni] = -2
+				else: dist[ni] = d1; queue[tail] = ni; tail += 1
 		if x < size - 1:
-			tail = _flow_visit(i + 1, d1, tail)
+			ni = i + 1
+			if dist[ni] == -1:
+				if w_r: dist[ni] = -2
+				else: dist[ni] = d1; queue[tail] = ni; tail += 1
 		if z > 0:
-			tail = _flow_visit(i - size, d1, tail)
+			ni = i - size
+			if dist[ni] == -1:
+				if w_u: dist[ni] = -2
+				else: dist[ni] = d1; queue[tail] = ni; tail += 1
 		if z < size - 1:
-			tail = _flow_visit(i + size, d1, tail)
-		# 斜着：两边都不是墙才能走
+			ni = i + size
+			if dist[ni] == -1:
+				if w_d: dist[ni] = -2
+				else: dist[ni] = d1; queue[tail] = ni; tail += 1
 		if not w_r and not w_d:
-			tail = _flow_visit(i + size + 1, d1, tail)
+			ni = i + size + 1
+			if dist[ni] == -1:
+				if wall[ni] == 1: dist[ni] = -2
+				else: dist[ni] = d1; queue[tail] = ni; tail += 1
 		if not w_r and not w_u:
-			tail = _flow_visit(i - size + 1, d1, tail)
+			ni = i - size + 1
+			if dist[ni] == -1:
+				if wall[ni] == 1: dist[ni] = -2
+				else: dist[ni] = d1; queue[tail] = ni; tail += 1
 		if not w_l and not w_d:
-			tail = _flow_visit(i + size - 1, d1, tail)
+			ni = i + size - 1
+			if dist[ni] == -1:
+				if wall[ni] == 1: dist[ni] = -2
+				else: dist[ni] = d1; queue[tail] = ni; tail += 1
 		if not w_l and not w_u:
-			tail = _flow_visit(i - size - 1, d1, tail)
+			ni = i - size - 1
+			if dist[ni] == -1:
+				if wall[ni] == 1: dist[ni] = -2
+				else: dist[ni] = d1; queue[tail] = ni; tail += 1
 		count += 1
 		if count & 255 == 0 and Time.get_ticks_usec() - t0 > budget_usec:
 			_fj_head = head
@@ -669,17 +712,6 @@ func flow_step(budget_usec: int) -> void:
 	if _fj_has_next:
 		_fj_has_next = false
 		_start_flow(_fj_next)
-
-
-func _flow_visit(ni: int, d: int, tail: int) -> int:
-	if _fj_dist[ni] != -1:
-		return tail
-	if _fj_wall[ni] == 1:
-		_fj_dist[ni] = -2
-		return tail
-	_fj_dist[ni] = d
-	_fj_queue[tail] = ni
-	return tail + 1
 
 
 ## 从 p 出发往目标走的方向（不在距离场里返回 ZERO，调用方直接朝目标走）

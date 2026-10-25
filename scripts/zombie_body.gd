@@ -38,6 +38,8 @@ var _fall_dir := -1.0
 var _screamed := false
 var _scream_t := 0.0
 var _bones := {}
+## _aim 用到的「子骨头在父骨头静止姿势里的位置」缓存
+var _rest_off := {}
 var _rng := RandomNumberGenerator.new()
 var _meshes: Array[MeshInstance3D] = []
 var _height := GameConfig.ZOMBIE_HEIGHT
@@ -482,8 +484,14 @@ func _aim(bone_name: String, child_name: String, local_dir: Vector3) -> void:
 	var parent_g := _skel.get_bone_global_pose(parent) if parent >= 0 else Transform3D.IDENTITY
 	var rest_local := _skel.get_bone_rest(bone)
 	var g := parent_g * rest_local
-	# 中间可能隔着 ArmRoll 这类扭转骨，所以用两者的全局静止姿势求相对位置
-	var child_off := (_skel.get_bone_global_rest(bone).affine_inverse() * _skel.get_bone_global_rest(_bones[child_name])).origin
+	# 中间可能隔着 ArmRoll 这类扭转骨，所以用两者的全局静止姿势求相对位置（静止姿势不变，算一次就记下）
+	var key := bone * 4096 + int(_bones[child_name])
+	var child_off: Vector3
+	if _rest_off.has(key):
+		child_off = _rest_off[key]
+	else:
+		child_off = (_skel.get_bone_global_rest(bone).affine_inverse() * _skel.get_bone_global_rest(_bones[child_name])).origin
+		_rest_off[key] = child_off
 	if child_off.length() < 0.0001:
 		return
 	var cur := (g.basis * child_off).normalized()
