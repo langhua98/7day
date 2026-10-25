@@ -39,6 +39,51 @@ func _init() -> void:
 	quit()
 
 
+## 远景 LOD：位置按 cell 米聚类，去掉退化的三角形；贴图/颜色沿用原顶点
+func _lod_mesh(mesh: ArrayMesh, cell: float) -> ArrayMesh:
+	var coarse := ArrayMesh.new()
+	var any := false
+	for si in mesh.get_surface_count():
+		var arr := mesh.surface_get_arrays(si)
+		var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+		if verts.is_empty():
+			continue
+		var src_idx = arr[Mesh.ARRAY_INDEX]
+		var idx: PackedInt32Array = src_idx if src_idx != null else PackedInt32Array(range(verts.size()))
+		var reps := {}
+		var map := PackedInt32Array()
+		map.resize(verts.size())
+		var uvs2: PackedVector2Array = arr[Mesh.ARRAY_TEX_UV2]
+		var cols: PackedColorArray = arr[Mesh.ARRAY_COLOR]
+		for i in verts.size():
+			var v := verts[i]
+			# 只合并位置、贴图图集和颜色都一样的顶点，避免远处贴图串色
+			var u2 := uvs2[i] if i < uvs2.size() else Vector2.ZERO
+			var c := cols[i] if i < cols.size() else Color.WHITE
+			var key := "%d|%d|%d|%d|%d|%.3f|%.3f|%.3f" % [
+				roundi(v.x / cell), roundi(v.y / cell), roundi(v.z / cell),
+				roundi(u2.x), roundi(u2.y), c.r, c.g, c.b]
+			if not reps.has(key):
+				reps[key] = i
+			map[i] = reps[key]
+		var out := PackedInt32Array()
+		for t in range(0, idx.size() - 2, 3):
+			var a := map[idx[t]]
+			var b := map[idx[t + 1]]
+			var c := map[idx[t + 2]]
+			if a == b or b == c or a == c:
+				continue
+			out.append(a)
+			out.append(b)
+			out.append(c)
+		if out.is_empty():
+			continue
+		arr[Mesh.ARRAY_INDEX] = out
+		coarse.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+		any = true
+	return coarse if any else null
+
+
 func _convert(name: String) -> Dictionary:
 	var data := FileAccess.get_file_as_bytes("%s/%s.poimesh" % [DIR, name])
 	if data.size() < 8 or data.slice(0, 4).get_string_from_ascii() != "hsem":
@@ -119,6 +164,13 @@ func _convert(name: String) -> Dictionary:
 		total += nv
 	if mesh.get_surface_count() == 0:
 		return {}
+	# 远景网格加一档更粗的 LOD：按 1.2 米格子合并顶点（属性保留第一个顶点）
+	var coarse := _lod_mesh(mesh, 1.2)
+	if coarse:
+		ResourceSaver.save(coarse, "%s/%s_lod1.res" % [DIR, name], ResourceSaver.FLAG_COMPRESS)
+	var coarse2 := _lod_mesh(mesh, 2.4)
+	if coarse2:
+		ResourceSaver.save(coarse2, "%s/%s_lod2.res" % [DIR, name], ResourceSaver.FLAG_COMPRESS)
 	ResourceSaver.save(mesh, "%s/%s.res" % [DIR, name], ResourceSaver.FLAG_COMPRESS)
 	var xml := FileAccess.get_file_as_string("%s/%s.xml" % [DIR, name])
 	var fp := _footprint(chunk_data, lo, hi)

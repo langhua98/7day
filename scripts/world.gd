@@ -18,13 +18,20 @@ const POI_SHADER := preload("res://scripts/poi.gdshader")
 const TERRAIN_INDEX := "res://assets/terrain/terrain.json"
 ## 多远以内显示完整的楼（再远用简化的远景网格，省手机性能）
 const FULL_DETAIL_RANGE := 80.0
+## 走到楼边这个距离以内才画完整版；远处只画远景网格（楼里一屏几十万面，站远了不值得）
+const FULL_VISIBLE_RANGE := 40.0
+## 远景网格在这个距离外换成更粗的 _lod1，再远换 _lod2（三角面各减半）
+const FAR_LOD_DIST := 60.0
+const FAR_LOD2_DIST := 120.0
 ## 完整版至少要有远景网格这么多比例的顶点才用（否则当成没转好）
 const FULL_MIN_SHARE := 0.25
 ## 完整版的楼走近才加载、走远就释放（67 栋全放内存手机吃不消）。距离从楼的外接圆边上算
 const FULL_LOAD_RANGE := FULL_DETAIL_RANGE + 30.0
 const FULL_FREE_RANGE := FULL_DETAIL_RANGE + 70.0
-## 楼里的家具多远以内画（按 16 米 × 8 米一块分组，每块每种模型一个 MultiMesh）
-const PROP_RANGE := 28.0
+## 楼里的家具按大小分层：小件 30 米、中件 60 米、大件 85 米（按 16×8×16 米一块分组）
+const PROP_SMALL_RANGE := 22.0
+const PROP_MED_RANGE := 28.0
+const PROP_BIG_RANGE := 34.0
 const PROP_CHUNK := 16.0
 const PROP_CHUNK_H := 8.0
 
@@ -63,6 +70,8 @@ var containers: Array[Dictionary] = []
 var props: Array[Dictionary] = []
 ## 合批节点："模型|格x|格z" -> {mmi, center}
 var _batch_nodes := {}
+## 远景网格的第二级 LOD 节点（画质切换时改可见距离）
+var _poi_lods: Array[Dictionary] = []
 ## 放了哪些楼：[{name, pos}]
 var buildings: Array[Dictionary] = []
 var models := {}
@@ -180,10 +189,13 @@ func apply_quality(level: int, preset: Dictionary) -> void:
 		if e.get("shadow_only", false):
 			continue
 		var mi: MeshInstance3D = e.node
-		mi.visibility_range_end = preset.poi_range
+		mi.visibility_range_end = FAR_LOD_DIST if mi.has_meta("lod_split") else preset.poi_range
 	for e in _full_pois:
 		if e.has("far") and is_instance_valid(e.far):
-			e.far.visibility_range_end = preset.poi_range
+			e.far.visibility_range_end = FAR_LOD_DIST if e.far.has_meta("lod_split") else preset.poi_range
+	for e in _poi_lods:
+		if is_instance_valid(e.node):
+			e.node.visibility_range_end = FAR_LOD2_DIST if int(e.level) == 1 else preset.poi_range
 	for e in _decal_lod:
 		var mi: GeometryInstance3D = e.node
 		mi.visibility_range_end = preset.decal_range + e.get("pad", 0.0)
@@ -285,15 +297,18 @@ func _show_full(e: Dictionary, full: Resource) -> void:
 					fi.set_surface_override_material(i, _poi_material())
 		fi.position = mi.position
 		fi.rotation.y = e.rot
-		fi.visibility_range_end = FULL_DETAIL_RANGE
-		fi.visibility_range_end_margin = 10.0
+		fi.visibility_range_end = FULL_VISIBLE_RANGE
+		fi.visibility_range_end_margin = 5.0
 		# 影子用简化网格投（便宜得多），完整网格只负责看
 		fi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		fi.set_meta("poi_full_part", true)
 		add_child(fi)
 		e.parts.append(fi)
 	e.props = _build_full_props(e)
-	mi.visibility_range_begin = FULL_DETAIL_RANGE
-	mi.visibility_range_begin_margin = 10.0
+	mi.visibility_range_begin = FULL_VISIBLE_RANGE + 2.0
+	mi.visibility_range_begin_margin = 5.0
+	if e.get("far_lod1"):
+		e.far_lod1.visibility_range_begin = FULL_VISIBLE_RANGE + 2.0
 
 
 func _hide_full(e: Dictionary) -> void:
@@ -306,6 +321,8 @@ func _hide_full(e: Dictionary) -> void:
 	var mi: MeshInstance3D = e.far
 	mi.visibility_range_begin = 0.0
 	mi.visibility_range_begin_margin = 0.0
+	if e.get("far_lod1"):
+		e.far_lod1.visibility_range_begin = FAR_LOD_DIST
 
 
 ## 实体模型（家具、灯、柜子、门）：{mesh}，没有模型返回 {}
@@ -340,10 +357,12 @@ func _build_full_props(e: Dictionary) -> Node3D:
 			continue
 		# 方块数据是游戏的左手坐标，楼网格翻了 x，这里也翻；y 是方块底面，模型原点在方块中心
 		var pos := Vector3(-float(item[1]), float(item[2]) + 0.5, float(item[3]))
-		var gk := "%d|%d|%d|%d" % [mi_, floori(pos.x / PROP_CHUNK), floori(pos.y / PROP_CHUNK_H), floori(pos.z / PROP_CHUNK)]
+		# 同一栋楼里同一种家具合成一个 MultiMesh（按模型合并，减少绘制次数）
+		var gk := "%d" % mi_
 		if not groups.has(gk):
-			groups[gk] = {"key": names[mi_], "xfs": []}
+			groups[gk] = {"key": names[mi_], "xfs": [], "sum": Vector3.ZERO}
 		groups[gk].xfs.append(Transform3D(_prop_basis(int(item[4])), pos))
+		groups[gk].sum += pos
 	if groups.is_empty():
 		return null
 	var far: MeshInstance3D = e.far
@@ -357,11 +376,19 @@ func _build_full_props(e: Dictionary) -> Node3D:
 		mm.transform_format = MultiMesh.TRANSFORM_3D
 		mm.mesh = pm.mesh
 		mm.instance_count = g.xfs.size()
+		# 节点放在这组家具的中心，visibility_range 按中心算距离
+		var center: Vector3 = g.sum / maxf(1.0, float(g.xfs.size()))
 		for k in g.xfs.size():
-			mm.set_instance_transform(k, g.xfs[k])
+			var xf: Transform3D = g.xfs[k]
+			xf.origin -= center
+			mm.set_instance_transform(k, xf)
+		var aabb: AABB = pm.mesh.get_aabb()
+		var size := maxf(aabb.size.x, maxf(aabb.size.y, aabb.size.z))
+		var view := PROP_SMALL_RANGE if size < 0.7 else (PROP_MED_RANGE if size < 1.6 else PROP_BIG_RANGE)
 		var mmi := MultiMeshInstance3D.new()
 		mmi.multimesh = mm
-		mmi.visibility_range_end = PROP_RANGE
+		mmi.position = center
+		mmi.visibility_range_end = view
 		mmi.visibility_range_end_margin = 5.0
 		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		holder.add_child(mmi)
@@ -1529,7 +1556,47 @@ func _poi(name: String, c: Vector2) -> void:
 	mi.rotation.y = rot
 	mi.visibility_range_end = GameConfig.QUALITY_PRESETS[1].poi_range
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.set_meta("poi_far", true)
 	add_child(mi)
+	# 远处（FAR_LOD_DIST 以外）用更粗的远景 LOD
+	var lod1_path := "%s/poi/%s_lod1.res" % [ROOT, name]
+	var lod1: MeshInstance3D = null
+	var lod2_node: MeshInstance3D = null
+	if ResourceLoader.exists(lod1_path):
+		var coarse = load(lod1_path)
+		if coarse is Mesh:
+			lod1 = MeshInstance3D.new()
+			lod1.mesh = coarse
+			lod1.material_override = _poi_material()
+			lod1.visibility_range_begin = FAR_LOD_DIST
+			lod1.visibility_range_begin_margin = 5.0
+			lod1.visibility_range_end = GameConfig.QUALITY_PRESETS[1].poi_range
+			lod1.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			lod1.set_meta("poi_far", true)
+			add_child(lod1)
+			lod1.position = mi.position
+			lod1.rotation.y = rot
+			mi.set_meta("lod_split", true)
+			mi.visibility_range_end = FAR_LOD_DIST
+			lod1.visibility_range_end = FAR_LOD2_DIST
+			_poi_lods.append({"node": lod1, "level": 1})
+			var lod2_path := "%s/poi/%s_lod2.res" % [ROOT, name]
+			if ResourceLoader.exists(lod2_path):
+				var coarse2 = load(lod2_path)
+				if coarse2 is Mesh:
+					var lod2 := MeshInstance3D.new()
+					lod2.mesh = coarse2
+					lod2.material_override = _poi_material()
+					lod2.visibility_range_begin = FAR_LOD2_DIST
+					lod2.visibility_range_begin_margin = 5.0
+					lod2.visibility_range_end = GameConfig.QUALITY_PRESETS[1].poi_range
+					lod2.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+					lod2.set_meta("poi_far", true)
+					add_child(lod2)
+					lod2.position = mi.position
+					lod2.rotation.y = rot
+					lod2_node = lod2
+					_poi_lods.append({"node": lod2, "level": 2})
 	# 有完整方块数据生成的楼时，近处换成它（有窗户、楼梯、屋檐），远处还用简化的远景网格
 	var full_path := "%s/poi/%s_full.res" % [ROOT, name]
 	# 完整版顶点太少说明方块数据没转好（缺形状模型、方块表不对），用它楼会在近处消失，宁可还用远景网格
@@ -1537,10 +1604,12 @@ func _poi(name: String, c: Vector2) -> void:
 	if not use_full and ResourceLoader.exists(full_path):
 		push_warning("%s 的完整版只有 %d 顶点（远景 %d），不用" % [name, int(info.get("full_verts", 0)), int(info.get("verts", 0))])
 	if use_full:
-		_full_pois.append({"name": name, "pos": c, "far": mi, "parts": [], "props": null, "path": full_path,
-			"state": 0, "rot": rot, "radius": 0.5 * Vector2(float(info.grid_w), float(info.grid_h)).length()})
+		_full_pois.append({"name": name, "pos": c, "far": mi, "far_lod1": lod1, "parts": [], "props": null,
+			"path": full_path, "state": 0, "rot": rot,
+			"radius": 0.5 * Vector2(float(info.grid_w), float(info.grid_h)).length()})
 		var shadow := MeshInstance3D.new()
-		shadow.mesh = mesh
+		# 影子用最粗的 LOD 投，远处看不出差别
+		shadow.mesh = lod2_node.mesh if lod2_node else (lod1.mesh if lod1 else mesh)
 		shadow.material_override = _poi_material()
 		shadow.position = mi.position
 		shadow.rotation.y = rot
