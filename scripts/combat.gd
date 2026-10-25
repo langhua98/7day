@@ -358,6 +358,7 @@ func _explode(at: Vector3, st: Dictionary) -> void:
 
 func _hit_zombie(z: Zombie, dmg: float, head: bool, at: Vector3, dir: Vector3) -> void:
 	z.take_hit(dmg, player_sys.player.global_position, head)
+	hud.damage_number(dmg, head, at)
 	Fx.blood(main, at, dir.normalized() + Vector3.UP * 0.2, head)
 	var gun: bool = Assets.items_by_id.get(inventory.equipped, {}).get("kind", -1) == Assets.Kind.GUN
 	Sfx.play("bullet_flesh" if gun else "hit_flesh", at, -2.0)

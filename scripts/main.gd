@@ -207,6 +207,20 @@ func start(fresh := true) -> void:
 		save_game.save()
 
 
+func _compass_markers() -> Array:
+	var out := []
+	if respawn.has_bedroll():
+		out.append(_compass_marker(respawn.respawn_point(), Color(0.45, 0.75, 1.0)))
+	for b in looting.corpse_bags:
+		out.append(_compass_marker(b.pos, Color(1.0, 0.4, 0.3)))
+	return out
+
+
+func _compass_marker(pos: Vector3, color: Color) -> Dictionary:
+	var d := pos - player_sys.player.position
+	return {"bearing": rad_to_deg(atan2(d.x, -d.z)), "color": color}
+
+
 ## 死了：PERMADEATH 下结算删档；否则停住游戏，黑屏后在睡袋醒来（respawn.gd）
 func _die() -> void:
 	if C.PERMADEATH:
@@ -283,5 +297,6 @@ func _process(delta: float) -> void:
 			near += 1
 	hud.set_status(day, hour, player_sys.hp, player_sys.food, spawner.kills, near, night,
 		day % C.BLOOD_MOON_EVERY == 0 or blood_moon, blood_moon, GameState.next_blood_moon_day())
+	hud.set_compass(player_sys.yaw, _compass_markers())
 	if player_sys.hp <= 0.0:
 		_die()

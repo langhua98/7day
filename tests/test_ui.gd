@@ -206,6 +206,20 @@ func _ready() -> void:
 	check(hud._pause_panel.visible and get_tree().paused, "设置返回暂停页")
 	hud.set_paused(false)
 
+	# 指南针：面向北时东在右，面向东时北在左
+	hud.set_compass(0.0, [{"bearing": 90.0, "color": Color.RED}])
+	check(absf(hud.compass_relative(90.0) - 90.0) < 0.01, "面向北时东在右边")
+	hud.set_compass(-PI / 2.0, [])
+	check(absf(hud.compass_relative(0.0) + 90.0) < 0.01, "面向东时北在左边")
+
+	# 交互提示：大字动作 + 小字对象
+	hud.set_action("搜索\n垃圾桶")
+	check_eq(hud._action_title.text, "搜索", "交互提示大字")
+	check_eq(hud._action_sub.text, "垃圾桶", "交互提示小字")
+	hud.set_action("")
+	check(not hud._action_btn.visible, "没有交互时隐藏提示")
+	hud.damage_number(10.0, false, Vector3.ZERO)
+
 	# 快捷栏：格子缩小、显示装备名
 	Assets.ensure_item("testUiItem", "测试物品")
 	hud.set_inventory([{"id": "testUiItem", "count": 3, "equipped": true, "quality": 0}], ["testUiItem"])
