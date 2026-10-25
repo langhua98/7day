@@ -26,6 +26,7 @@ var _model: Node3D
 var _skel: Skeleton3D
 var _phase := 0.0
 var _attack_cd := 0.0
+var _block_cd := 0.0
 var _lunge := 0.0
 var _hit_flash := 0.0
 var _death_t := 0.0
@@ -169,6 +170,7 @@ func _process(delta: float) -> void:
 			queue_free()
 		return
 	_attack_cd = max(0.0, _attack_cd - delta)
+	_block_cd = max(0.0, _block_cd - delta)
 	_lunge = max(0.0, _lunge - delta * 3.0)
 	if _hit_flash > 0.0:
 		_hit_flash -= delta
@@ -228,11 +230,28 @@ func _process(delta: float) -> void:
 			if f != Vector3.ZERO:
 				_dir = f
 	_moving = 0.0
+	var blocked := false
+	# 前面有玩家方块就砸：木墙、门、台阶都算
+	if chasing and not GameConfig.TEST_ZOMBIES_NO_ATTACK and _windup < 0.0 and _dir != Vector3.ZERO and world:
+		var ahead := global_position + _dir * 0.8
+		for dy in [0, 1]:
+			var c := Vector3i(floori(ahead.x), floori(global_position.y) + dy, floori(ahead.z))
+			if not world.voxels.has(c):
+				continue
+			blocked = true
+			if _block_cd <= 0.0:
+				var got := world.damage_voxel(c, damage * GameConfig.ZOMBIE_BLOCK_DAMAGE_MULT)
+				GameState.block_changed.emit(c)
+				_block_cd = 0.7
+				Sfx.play("hit_wall", global_position + Vector3.UP, -4.0)
+				if got != "":
+					world.check_support(c)
+			break
 	if gdist > 0.05:
 		var face := to_goal / gdist if gdist < 3.0 else _dir
 		rotation.y = lerp_angle(rotation.y, atan2(face.x, face.z), min(1.0, delta * 6.0))
 		var stop := GameConfig.ZOMBIE_REACH * 0.8 if chasing else 0.3
-		if gdist > stop and _windup < 0.0 and _scream_t <= 0.0 and _dir != Vector3.ZERO:
+		if not blocked and gdist > stop and _windup < 0.0 and _scream_t <= 0.0 and _dir != Vector3.ZERO:
 			var spd := speed * brain.speed_mult()
 			position += _dir * spd * delta
 			if world:

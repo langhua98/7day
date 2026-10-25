@@ -45,6 +45,22 @@ const SHAPE_NAMES := {
 const BUILD_BASES := ["frameShapes", "woodShapes", "cobblestoneShapes", "flagstoneShapes",
 	"concreteShapes", "steelShapes"]
 
+## 升级链：木框 → 木块 → 圆石 → 混凝土 → 钢
+const UPGRADES := {
+	"frameShapes": {"to": "woodShapes", "item": "resourceWood", "count": 8, "hits": 4},
+	"woodShapes": {"to": "cobblestoneShapes", "item": "resourceCobblestones", "count": 10, "hits": 4},
+	"cobblestoneShapes": {"to": "concreteShapes", "item": "resourceConcreteMix", "count": 10, "hits": 4},
+	"concreteShapes": {"to": "steelShapes", "item": "resourceForgedSteel", "count": 10, "hits": 4},
+}
+const REPAIR_ITEMS := {
+	"frameShapes": "resourceWood", "woodShapes": "resourceWood", "flagstoneShapes": "resourceCobblestones",
+	"cobblestoneShapes": "resourceCobblestones", "concreteShapes": "resourceConcreteMix",
+	"steelShapes": "resourceForgedSteel",
+}
+## 水平悬挑上限（格）
+const OVERHANG := {"frameShapes": 4, "woodShapes": 4, "flagstoneShapes": 6,
+	"cobblestoneShapes": 6, "concreteShapes": 8, "steelShapes": 12}
+
 static var _mat: ShaderMaterial
 static var _layers := {}     # 方块名 -> [图集层号, 占几格]
 static var _layers_loaded := false
@@ -132,6 +148,23 @@ static func _base_info(base_id: String) -> Dictionary:
 
 static func shape_name(shape: String) -> String:
 	return SHAPE_NAMES.get(shape, SHAPE_NAMES["cube"])
+
+
+static func upgrade_info(id: String) -> Dictionary:
+	return UPGRADES.get(id, {})
+
+
+static func repair_item(id: String) -> String:
+	return REPAIR_ITEMS.get(id, "")
+
+
+static func overhang(id: String) -> int:
+	return int(OVERHANG.get(id, 4))
+
+
+static func is_repair_tool(id: String) -> bool:
+	var low := id.to_lower()
+	return "hammer" in low or "repair" in low
 
 
 static func is_valid_shape(shape: String) -> bool:
@@ -320,7 +353,7 @@ static func _rot_normal(n: Vector3, rot: int) -> Vector3:
 
 
 static func append_block(st: SurfaceTool, id: String, shape: String, rot: int, cell: Vector3i,
-		is_full: Callable) -> void:
+		is_full: Callable, health := 1.0) -> void:
 	var at := _layer(id)
 	var uv2 := Vector2(float(at[0]), float(at[1])) if at.size() >= 2 else Vector2(-1, 1)
 	var col: Color = info(id).get("color", Color.GRAY)
@@ -342,9 +375,10 @@ static func append_block(st: SurfaceTool, id: String, shape: String, rot: int, c
 			if shape == "cube" and is_full.call(cell + Vector3i(roundi(rn.x), roundi(rn.y), roundi(rn.z))):
 				continue
 			var shade := 1.0 if rn.y > 0.5 else (0.7 if rn.y < -0.5 else 0.85)
+			var fade := 0.55 + 0.45 * clampf(health, 0.0, 1.0)
 			for p in [a, b, c]:
 				st.set_normal(rn)
-				st.set_color(Color(col.r * shade, col.g * shade, col.b * shade))
+				st.set_color(Color(col.r * shade * fade, col.g * shade * fade, col.b * shade * fade))
 				st.set_uv(Vector2(p.x + p.z, p.y))
 				st.set_uv2(uv2)
 				st.add_vertex(_rot_point(p, rot) + Vector3(cell))
@@ -355,11 +389,12 @@ static func append_block(st: SurfaceTool, id: String, shape: String, rot: int, c
 			continue
 		var pts: Array = f["p"]
 		var shade := 1.0 if n.y > 0.5 else (0.7 if n.y < -0.5 else 0.85)
+		var fade := 0.55 + 0.45 * clampf(health, 0.0, 1.0)
 		var order := [0, 2, 1, 0, 3, 2] if pts.size() == 4 else [0, 2, 1]
 		for k in order:
 			var p: Vector3 = _rot_point(pts[k], rot) + Vector3(cell)
 			st.set_normal(n)
-			st.set_color(Color(col.r * shade, col.g * shade, col.b * shade))
+			st.set_color(Color(col.r * shade * fade, col.g * shade * fade, col.b * shade * fade))
 			st.set_uv(Vector2(p.x + p.z, p.y))
 			st.set_uv2(uv2)
 			st.add_vertex(p)

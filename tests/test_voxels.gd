@@ -100,6 +100,17 @@ func _test_chunks() -> void:
 	check(big.voxel_draw_groups() <= 8, "2000 块应合成很少的区块（%d）" % big.voxel_draw_groups())
 	big.free()
 
+	# 结构稳定：木块悬挑超过 4 格会掉
+	var sw := World.new()
+	sw.add_voxel(Vector3i(1, 0, 0), "woodShapes")
+	for x in range(1, 8):
+		sw.add_voxel(Vector3i(x, 1, 0), "woodShapes")
+	var dropped := sw.check_support(Vector3i(1, 0, 0))
+	check(dropped >= 2, "木块悬挑超过 4 格应掉落（%d）" % dropped)
+	check(not sw.voxels.has(Vector3i(7, 1, 0)), "最远端应掉落")
+	check(sw.voxels.has(Vector3i(5, 1, 0)), "4 格悬挑应保留")
+	sw.free()
+
 	var full := World.new()
 	for i in GameConfig.BLOCK_LIMIT:
 		full.voxels[Vector3i(i, 0, 0)] = {}
@@ -134,6 +145,16 @@ func _test_hud() -> void:
 	check(main.hud._rotate_btn.visible, "独立形状物品仍可旋转")
 	check_eq(main.combat._placement_shape(), "half", "半块物品按半块摆")
 	check(Blocks.info("woodShapes_half").zh.contains("半块"), "物品名带形状")
+
+	# 锤子升级木框
+	Assets.ensure_item("meleeToolRepairT1ClawHammer", "修理工锤")
+	main.inventory.add("meleeToolRepairT1ClawHammer", 1)
+	main.inventory.equip("meleeToolRepairT1ClawHammer")
+	var up_cell := Vector3i(0, 20, 0)
+	main.world.add_voxel(up_cell, "frameShapes")
+	for i in 4:
+		main.combat._try_tool_action(up_cell)
+	check_eq(str(main.world.voxels[up_cell].id), "woodShapes", "锤子升级木框")
 	main.free()
 
 
