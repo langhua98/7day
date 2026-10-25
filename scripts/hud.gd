@@ -52,6 +52,9 @@ var _action_btn := Button.new()
 var _action_title := Label.new()
 var _action_sub := Label.new()
 var _compass := Compass.new()
+var _scope := ScopeOverlay.new()
+var _scope_label := Label.new()
+var _scope_level := 0
 var _progress := ProgressBar.new()
 var _progress_label := Label.new()
 var _bag_btn := Button.new()
@@ -153,9 +156,23 @@ func _ready() -> void:
 	_hurt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_hurt)
 
+	_scope.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_root.add_child(_scope)
+
 	_safe.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_safe.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_safe)
+	_scope_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_scope_label.position = Vector2(-60, 70)
+	_scope_label.size = Vector2(120, 40)
+	_scope_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_scope_label.add_theme_font_override("font", number_font())
+	_scope_label.add_theme_font_size_override("font_size", 26)
+	_scope_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.75))
+	_scope_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_scope_label.add_theme_constant_override("outline_size", 6)
+	_scope_label.visible = false
+	_safe.add_child(_scope_label)
 
 	# 左上：天数、时间、血量、饱食度
 	var tl := VBoxContainer.new()
@@ -779,6 +796,7 @@ func set_paused(on: bool) -> void:
 func show_start(can_continue: bool) -> void:
 	_release_touches()
 	close_game_panels()
+	set_scope(0)
 	_settings_panel.visible = false
 	_continue_btn.visible = can_continue
 	_start_panel.visible = true
@@ -820,6 +838,7 @@ func set_start_info(text: String) -> void:
 func show_end(text: String) -> void:
 	_release_touches()
 	close_game_panels()
+	set_scope(0)
 	_settings_panel.visible = false
 	_end_label.text = text
 	_end_panel.visible = true
@@ -1403,6 +1422,16 @@ func set_compass(yaw: float, markers: Array) -> void:
 
 func compass_relative(bearing: float) -> float:
 	return _compass.relative_angle(bearing)
+
+
+func set_scope(level: int) -> void:
+	if level == _scope_level:
+		return
+	_scope_level = level
+	_scope.visible = level >= 2
+	_scope_label.visible = level >= 2
+	if level >= 2:
+		_scope_label.text = "%d×" % level
 
 
 ## 打中僵尸时在命中位置飘一个伤害数字

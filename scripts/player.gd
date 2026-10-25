@@ -82,6 +82,10 @@ func reset() -> void:
 	_recoil = 0.0
 	_land_dip = 0.0
 	aiming = false
+	arms.set_aiming(false)
+	arms.set_scoped(false)
+	if hud:
+		hud.set_scope(0)
 	_step_d = 0.0
 	_grounded = true
 	_air_top = 0.0
@@ -92,6 +96,11 @@ func update(delta: float) -> void:
 	var look := hud.consume_look()
 	arms.look(look)
 	arms.set_aiming(aiming)
+	var scope := 0
+	if aiming and inventory and inventory.equipped != "":
+		scope = Weapons.scope_level(inventory.equipped)
+	arms.set_scoped(scope >= 2)
+	hud.set_scope(scope)
 	var look_sens: float = C.LOOK_SENSITIVITY * hud.settings.sensitivity * (C.AIM_SENSITIVITY if aiming else 1.0)
 	yaw -= look.x * look_sens
 	pitch = clamp(pitch - look.y * look_sens, -1.3, 1.3)
@@ -145,7 +154,10 @@ func update(delta: float) -> void:
 	# 冲刺拉宽视野，开镜收窄，落地轻轻压头
 	var fov_target := C.BASE_FOV
 	if aiming:
-		fov_target = C.AIM_FOV
+		if inventory and inventory.equipped != "":
+			fov_target = Weapons.scope_fov(inventory.equipped)
+		else:
+			fov_target = C.AIM_FOV
 	elif sprint:
 		fov_target = C.BASE_FOV + C.SPRINT_FOV_BONUS
 	camera.fov = lerp(camera.fov, fov_target, 1.0 - exp(-delta * 8.0))

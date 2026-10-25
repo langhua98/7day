@@ -85,6 +85,7 @@ var _bob := 0.0
 var _sway := Vector2.ZERO
 var _sway_target := Vector2.ZERO
 var _aiming := false
+var _scoped := false
 var _rest_len := {}
 
 
@@ -347,6 +348,18 @@ func set_aiming(on: bool) -> void:
 	_aiming = on
 
 
+## 高倍镜开镜时整只手臂和枪都藏起来，让镜筒画面占满屏幕
+func set_scoped(on: bool) -> void:
+	if _scoped == on:
+		return
+	_scoped = on
+	visible = not on
+
+
+func is_scoped() -> bool:
+	return _scoped
+
+
 func _update_pose(delta: float) -> void:
 	if not has_arms:
 		return
@@ -424,6 +437,8 @@ func _pose_gun(t: float, bob: Vector3, delta: float) -> void:
 		+ Vector3(-0.05, -0.12, 0.06) * rl
 	if _aiming:
 		hand = Vector3(0.0, -0.19, -0.45) + bob
+		if _grip == Grip.RIFLE:
+			hand = Vector3(0.0, -0.20, -0.37) + bob
 	_place_arm("Right", hand, Vector3.LEFT, Vector3(0, -0.25, -1), Vector3(0.6, -1.0, 0.2))
 	_curl("Right", 0.85)
 	_update_mount(kick, rl)

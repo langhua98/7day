@@ -54,6 +54,33 @@ static func _row(r: Array) -> Dictionary:
 		"range": r[7], "auto": r[8], "reload": r[9], "blast": r[10], "fire_snd": r[11], "reload_snd": r[12]}
 
 
+## 默认倍镜 FOV 和倍率：手枪/霰弹 1×，SMG 1.5×，步枪 2×，狙击 4×
+static func scope_fov(gun_id: String) -> float:
+	var id := gun_id.to_lower()
+	if "sniper" in id or "hunting" in id or "lever" in id:
+		return GameConfig.SCOPE_FOV_SNIPER
+	if "rifle" in id or "tactical" in id or "ak47" in id or "m60" in id or "mg" in id:
+		return GameConfig.SCOPE_FOV_RIFLE
+	if "smg" in id:
+		return GameConfig.SCOPE_FOV_SMG
+	if "shotgun" in id:
+		return GameConfig.SCOPE_FOV_SHOTGUN
+	if "handgun" in id or "pistol" in id or "magnum" in id:
+		return GameConfig.SCOPE_FOV_PISTOL
+	if "crossbow" in id or "bow" in id:
+		return GameConfig.SCOPE_FOV_SMG
+	return GameConfig.AIM_FOV
+
+
+static func scope_level(gun_id: String) -> int:
+	var fov := scope_fov(gun_id)
+	if fov <= 28.0:
+		return 4
+	if fov <= 40.0:
+		return 2
+	return 1
+
+
 static func is_ammo(id: String) -> bool:
 	return id.begins_with("ammo")
 
