@@ -247,6 +247,7 @@ func _place_block() -> void:
 		hud.toast("方块到上限了（%d 块）" % GameConfig.BLOCK_LIMIT)
 		return
 	GameState.block_changed.emit(c)
+	world.check_support(c)
 	arms.swing(6.0)
 	Sfx.play("land", Vector3(c) + Vector3.ONE * 0.5, -4.0)
 	if not C.TEST_INFINITE:
@@ -307,6 +308,56 @@ func _hit_container(dmg: float) -> bool:
 	return true
 
 
+## 锤子敲方块：受损先修理，完好就升级
+func _try_tool_action(c: Vector3i) -> bool:
+	if not Blocks.is_repair_tool(inventory.equipped):
+		return false
+	var v: Dictionary = world.voxels.get(c, {})
+	if v.is_empty():
+		return false
+	var info := Blocks.info(str(v.id))
+	var max_hp: float = float(info.get("hp", 100.0))
+	if float(v.hp) < max_hp - 0.01:
+		var needs := Blocks.repair_items(str(v.id))
+		if needs.is_empty():
+			return false
+		if not C.TEST_INFINITE:
+			for r in needs:
+				if inventory.count(str(r.item)) < int(r.count):
+					hud.toast("修理需要%s ×%d" % [Assets.display_name(str(r.item)), int(r.count)])
+					return true
+			for r in needs:
+				inventory.remove(str(r.item), int(r.count))
+			inventory.refresh()
+		v.hp = max_hp
+		world.mark_voxel_dirty(c)
+		GameState.block_changed.emit(c)
+		hud.toast("修理%s" % Assets.display_name(str(v.id)))
+		return true
+	var up := Blocks.upgrade_info(str(v.id))
+	if up.is_empty():
+		return false
+	var need := int(up.get("count", 0))
+	if not C.TEST_INFINITE and inventory.count(str(up.item)) < need:
+		hud.toast("升级需要%s ×%d" % [Assets.display_name(str(up.item)), need])
+		return true
+	v.upgrade_hits = int(v.get("upgrade_hits", 0)) + 1
+	var hits := int(up.get("hits", 4))
+	if v.upgrade_hits < hits:
+		hud.toast("升级中 %d/%d" % [int(v.upgrade_hits), hits])
+		return true
+	if not C.TEST_INFINITE:
+		inventory.remove(str(up.item), need)
+		inventory.refresh()
+	world.upgrade_voxel(c, str(up.to))
+	GameState.block_changed.emit(c)
+	var snd := Blocks.upgrade_sound(str(v.id))
+	if snd != "":
+		Sfx.play(snd, Vector3(c) + Vector3(0.5, 0.5, 0.5), -4.0)
+	hud.toast("升级为%s" % Assets.display_name(str(up.to)))
+	return true
+
+
 ## 空手或近战打到方块：扣耐久，打碎了方块回到背包
 func _hit_block(dmg: float) -> bool:
 	var aim := _aim_block(C.MELEE_RANGE + 0.6)
@@ -316,9 +367,12 @@ func _hit_block(dmg: float) -> bool:
 	var at := player_sys.camera.global_position - player_sys.camera.global_basis.z * float(aim.t)
 	Fx.impact(main, at + player_sys.camera.global_basis.z * 0.05, player_sys.camera.global_basis.z)
 	Sfx.play("bullet_wall", at, -4.0)
+	if _try_tool_action(c):
+		return true
 	var got := world.damage_voxel(c, dmg)
 	GameState.block_changed.emit(c)
 	if got != "":
+		world.check_support(c)
 		if not C.TEST_INFINITE:
 			var left := inventory.add(got)
 			inventory.refresh()

@@ -8,8 +8,8 @@ func _ready() -> void:
 	var ammo: Dictionary = Data.items.get("ammo9mmBulletBall", {})
 	if int(ammo.get("stack", 0)) != 300:
 		failures.append("ammo9mmBulletBall.stack 应为 300，实际 %s" % ammo.get("stack"))
-	if int(Data.items.get("frameShapes", {}).get("durability", 0)) != 40:
-		failures.append("方块 frameShapes 应从 blocks.gd 进入 items.json")
+	if not Data.items.has("frameShapes") or float(Data.items["frameShapes"].get("durability", 0)) <= 0.0:
+		failures.append("方块 frameShapes 应从官方方块表进入 items.json")
 	if Data.get_table("items").size() != Data.items.size():
 		failures.append("Data.get_table('items') 和 Data.items 不一致")
 	if failures.is_empty():

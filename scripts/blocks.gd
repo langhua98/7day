@@ -6,7 +6,8 @@ class_name Blocks
 const POI_SHADER := preload("res://scripts/poi.gdshader")
 const DIR := "res://assets/poi"
 
-## [方块名（和游戏 blocks.xml 里一样）, 中文名, 英文名, 耐久, 没贴图时的颜色]
+## [方块名（和游戏 blocks.xml 里一样）, 中文名, 英文名, 默认耐久, 没贴图时的颜色]
+## 有 assets/data/blocks.json 时，血量/升级/修理/悬挑用官方数据；没有就用这里的默认值。
 const TYPES := [
 	["frameShapes", "木框", "Wood Frame", 40.0, Color(0.66, 0.5, 0.32)],
 	["woodShapes", "木块", "Wood Block", 100.0, Color(0.52, 0.36, 0.21)],
@@ -45,6 +46,22 @@ const SHAPE_NAMES := {
 const BUILD_BASES := ["frameShapes", "woodShapes", "cobblestoneShapes", "flagstoneShapes",
 	"concreteShapes", "steelShapes"]
 
+## 升级链：木框 → 木块 → 圆石 → 混凝土 → 钢
+const UPGRADES := {
+	"frameShapes": {"to": "woodShapes", "item": "resourceWood", "count": 8, "hits": 4},
+	"woodShapes": {"to": "cobblestoneShapes", "item": "resourceCobblestones", "count": 10, "hits": 4},
+	"cobblestoneShapes": {"to": "concreteShapes", "item": "resourceConcreteMix", "count": 10, "hits": 4},
+	"concreteShapes": {"to": "steelShapes", "item": "resourceForgedSteel", "count": 10, "hits": 4},
+}
+const REPAIR_ITEMS := {
+	"frameShapes": "resourceWood", "woodShapes": "resourceWood", "flagstoneShapes": "resourceCobblestones",
+	"cobblestoneShapes": "resourceCobblestones", "concreteShapes": "resourceConcreteMix",
+	"steelShapes": "resourceForgedSteel",
+}
+## 水平悬挑上限（格）
+const OVERHANG := {"frameShapes": 4, "woodShapes": 4, "flagstoneShapes": 6,
+	"cobblestoneShapes": 6, "concreteShapes": 8, "steelShapes": 12}
+
 static var _mat: ShaderMaterial
 static var _layers := {}     # 方块名 -> [图集层号, 占几格]
 static var _layers_loaded := false
@@ -53,6 +70,27 @@ static var _station_materials := {}
 static var _icons := {}
 static var _shape_tris := {}
 static var _shape_loaded := false
+static var _official := {}
+static var _official_loaded := false
+
+
+static func _load_official() -> void:
+	if _official_loaded:
+		return
+	_official_loaded = true
+	var path := "res://assets/data/blocks.json"
+	if not FileAccess.file_exists(path):
+		return
+	var json := JSON.new()
+	if json.parse(FileAccess.get_file_as_string(path)) != OK or not (json.data is Dictionary):
+		return
+	_official = json.data
+
+
+static func _official_row(id: String) -> Dictionary:
+	_load_official()
+	var row = _official.get(base_of(id), {})
+	return row if row is Dictionary else {}
 
 
 static func _load_shape_tris() -> void:
@@ -126,12 +164,55 @@ static func variant_ids() -> Array[String]:
 static func _base_info(base_id: String) -> Dictionary:
 	for t in TYPES:
 		if t[0] == base_id:
-			return {"id": t[0], "zh": t[1], "en": t[2], "hp": t[3], "color": t[4]}
+			var hp := float(t[3])
+			var off := _official_row(base_id)
+			if not off.is_empty():
+				hp = maxf(1.0, float(off.get("hp", hp)) * GameConfig.BLOCK_HP_SCALE)
+			return {"id": t[0], "zh": t[1], "en": t[2], "hp": hp, "color": t[4]}
 	return {}
 
 
 static func shape_name(shape: String) -> String:
 	return SHAPE_NAMES.get(shape, SHAPE_NAMES["cube"])
+
+
+static func upgrade_info(id: String) -> Dictionary:
+	var off := _official_row(id)
+	if off.has("upgrade") and off.upgrade is Dictionary:
+		return off.upgrade
+	return UPGRADES.get(base_of(id), {})
+
+
+static func upgrade_sound(id: String) -> String:
+	return str(upgrade_info(id).get("sound", ""))
+
+
+static func repair_items(id: String) -> Array:
+	var off := _official_row(id)
+	if off.has("repair") and off.repair is Array:
+		return off.repair
+	var one := str(REPAIR_ITEMS.get(base_of(id), ""))
+	return [] if one == "" else [{"item": one, "count": 1}]
+
+
+static func repair_item(id: String) -> String:
+	var off := _official_row(id)
+	if off.has("repair") and off.repair is Array and not off.repair.is_empty():
+		return str(off.repair[0].get("item", ""))
+	return str(REPAIR_ITEMS.get(base_of(id), ""))
+
+
+static func overhang(id: String) -> int:
+	var off := _official_row(id)
+	var n := int(off.get("overhang", 0))
+	if n > 0:
+		return n
+	return int(OVERHANG.get(base_of(id), 4))
+
+
+static func is_repair_tool(id: String) -> bool:
+	var low := id.to_lower()
+	return "hammer" in low or "repair" in low
 
 
 static func is_valid_shape(shape: String) -> bool:
@@ -320,7 +401,7 @@ static func _rot_normal(n: Vector3, rot: int) -> Vector3:
 
 
 static func append_block(st: SurfaceTool, id: String, shape: String, rot: int, cell: Vector3i,
-		is_full: Callable) -> void:
+		is_full: Callable, health := 1.0) -> void:
 	var at := _layer(id)
 	var uv2 := Vector2(float(at[0]), float(at[1])) if at.size() >= 2 else Vector2(-1, 1)
 	var col: Color = info(id).get("color", Color.GRAY)
@@ -342,9 +423,10 @@ static func append_block(st: SurfaceTool, id: String, shape: String, rot: int, c
 			if shape == "cube" and is_full.call(cell + Vector3i(roundi(rn.x), roundi(rn.y), roundi(rn.z))):
 				continue
 			var shade := 1.0 if rn.y > 0.5 else (0.7 if rn.y < -0.5 else 0.85)
+			var fade := 0.55 + 0.45 * clampf(health, 0.0, 1.0)
 			for p in [a, b, c]:
 				st.set_normal(rn)
-				st.set_color(Color(col.r * shade, col.g * shade, col.b * shade))
+				st.set_color(Color(col.r * shade * fade, col.g * shade * fade, col.b * shade * fade))
 				st.set_uv(Vector2(p.x + p.z, p.y))
 				st.set_uv2(uv2)
 				st.add_vertex(_rot_point(p, rot) + Vector3(cell))
@@ -355,11 +437,12 @@ static func append_block(st: SurfaceTool, id: String, shape: String, rot: int, c
 			continue
 		var pts: Array = f["p"]
 		var shade := 1.0 if n.y > 0.5 else (0.7 if n.y < -0.5 else 0.85)
+		var fade := 0.55 + 0.45 * clampf(health, 0.0, 1.0)
 		var order := [0, 2, 1, 0, 3, 2] if pts.size() == 4 else [0, 2, 1]
 		for k in order:
 			var p: Vector3 = _rot_point(pts[k], rot) + Vector3(cell)
 			st.set_normal(n)
-			st.set_color(Color(col.r * shade, col.g * shade, col.b * shade))
+			st.set_color(Color(col.r * shade * fade, col.g * shade * fade, col.b * shade * fade))
 			st.set_uv(Vector2(p.x + p.z, p.y))
 			st.set_uv2(uv2)
 			st.add_vertex(p)

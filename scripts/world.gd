@@ -372,6 +372,9 @@ func _build_full_props(e: Dictionary) -> Node3D:
 	holder.rotation.y = e.rot
 	for g in groups.values():
 		var pm := _prop_model(g.key)
+		if pm.is_empty() or not (pm.get("mesh") is Mesh) or (pm.mesh as Mesh).get_surface_count() == 0 \
+				or g.xfs.is_empty():
+			continue
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D
 		mm.mesh = pm.mesh
@@ -956,8 +959,9 @@ func _flush_voxels() -> void:
 			var v: Dictionary = voxels.get(c, {})
 			if v.is_empty() or Blocks.station_area(str(v.get("id", ""))) != "":
 				continue
+			var max_hp: float = float(Blocks.info(str(v.id)).get("hp", 100.0))
 			Blocks.append_block(st, str(v.id), str(v.get("shape", "cube")), int(v.get("rot", 0)), c,
-				Callable(self, "_is_full_voxel"))
+				Callable(self, "_is_full_voxel"), float(v.hp) / maxf(max_hp, 0.001))
 		var mesh := st.commit()
 		if ch.mi == null:
 			var mi := MeshInstance3D.new()
@@ -968,9 +972,98 @@ func _flush_voxels() -> void:
 	_vox_dirty.clear()
 
 
+## 把方块升级成另一种（保留形状和朝向）
+func upgrade_voxel(c: Vector3i, new_id: String) -> bool:
+	var v: Dictionary = voxels.get(c, {})
+	if v.is_empty():
+		return false
+	var shape := str(v.get("shape", "cube"))
+	var rot := int(v.get("rot", 0))
+	remove_voxel(c)
+	return add_voxel(c, new_id, -1.0, shape, rot)
+
+
+## 结构稳定：从接地方块算水平悬挑距离，超出的方块掉下来（不返还）
+func check_support(changed: Vector3i) -> int:
+	var dropped := 0
+	for _pass in 4:
+		var n := _support_drop_once(changed)
+		dropped += n
+		if n == 0:
+			break
+	return dropped
+
+
+func _support_drop_once(changed: Vector3i) -> int:
+	var comp := {}
+	var q: Array[Vector3i] = []
+	for d in [Vector3i.LEFT, Vector3i.RIGHT, Vector3i.DOWN, Vector3i.UP, Vector3i.FORWARD, Vector3i.BACK]:
+		var n: Vector3i = changed + d
+		if voxels.has(n) and not comp.has(n):
+			comp[n] = true
+			q.append(n)
+	var head := 0
+	while head < q.size() and comp.size() < 2000:
+		var c: Vector3i = q[head]
+		head += 1
+		for d in [Vector3i.LEFT, Vector3i.RIGHT, Vector3i.DOWN, Vector3i.UP, Vector3i.FORWARD, Vector3i.BACK]:
+			var n: Vector3i = c + d
+			if voxels.has(n) and not comp.has(n):
+				comp[n] = true
+				q.append(n)
+	if comp.is_empty():
+		return 0
+	if comp.size() >= 2000:
+		return 0
+	var dist := {}
+	var queue: Array[Vector3i] = []
+	for c in comp:
+		if c.y <= 0 or _cell(c.x, c.z):
+			dist[c] = 0
+			queue.append(c)
+	head = 0
+	while head < queue.size():
+		var c: Vector3i = queue[head]
+		head += 1
+		for d in [Vector3i.LEFT, Vector3i.RIGHT, Vector3i.DOWN, Vector3i.UP, Vector3i.FORWARD, Vector3i.BACK]:
+			var n: Vector3i = c + d
+			if not comp.has(n):
+				continue
+			var nd: int = int(dist[c]) + (0 if n.y != c.y else 1)
+			if not dist.has(n) or nd < int(dist[n]):
+				dist[n] = nd
+				queue.append(n)
+	var out: Array[Vector3i] = []
+	for c in comp:
+		var v: Dictionary = voxels[c]
+		if not dist.has(c) or int(dist[c]) > Blocks.overhang(str(v.id)):
+			out.append(c)
+	for c in out:
+		remove_voxel(c)
+		if is_inside_tree():
+			var gs := get_node_or_null("/root/GameState")
+			if gs:
+				gs.emit_signal("block_changed", c)
+	return out.size()
+
+
 ## 测试和 bench 用：现在有几个方块绘制组
 func voxel_draw_groups() -> int:
 	return _vox_chunks.size() + _station_nodes.size()
+
+## 方块血量变了，重建所在区块（损伤会变暗）
+func mark_voxel_dirty(c: Vector3i) -> void:
+	var key := _vox_key(c)
+	if _vox_chunks.has(key):
+		_vox_dirty[key] = true
+	for d in [Vector3i.LEFT, Vector3i.RIGHT, Vector3i.DOWN, Vector3i.UP, Vector3i.FORWARD, Vector3i.BACK]:
+		var nk := _vox_key(c + d)
+		if nk != key:
+			_vox_dirty[nk] = true
+	if not _vox_flush_queued:
+		_vox_flush_queued = true
+		_flush_voxels.call_deferred()
+
 
 func remove_voxel(c: Vector3i) -> String:
 	var v: Dictionary = voxels.get(c, {})
@@ -1005,6 +1098,7 @@ func damage_voxel(c: Vector3i, dmg: float) -> String:
 	v.hp -= dmg
 	if v.hp <= 0.0:
 		return remove_voxel(c)
+	mark_voxel_dirty(c)
 	return ""
 
 
