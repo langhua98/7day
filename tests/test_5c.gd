@@ -39,10 +39,10 @@ func _free_cell(w: World, near := Vector3.ZERO) -> Vector3i:
 
 
 func _run() -> void:
-	for id in ["oldWoodDoor", "woodHatch", "ladderWood", "trapSpikesWoodDmg0", "trapSpikesIronDmg0", "landClaimBlock"]:
+	for id in ["oldWoodDoor", "woodHatch", "ladderWood", "trapSpikesWoodDmg0", "trapSpikesIronDmg0", "keystoneBlock"]:
 		_check(Data.items.has(id), "物品表应有 %s" % id)
 	_check(not Data.get_table("recipes").get("oldWoodDoor", {}).is_empty(), "官方木门配方应在")
-	_check(not Data.get_table("recipes").get("landClaimBlock", {}).is_empty(), "领地石自制配方应在")
+	_check(not Data.get_table("recipes").get("keystoneBlock", {}).is_empty(), "官方土地征用块配方应在")
 
 	var main = MAIN.instantiate()
 	add_child(main)
@@ -114,9 +114,9 @@ func _run() -> void:
 	var cc := _free_cell(w)
 	var cc2 := _free_cell(w, Vector3(20, 0, 0))
 	if cc.x < 1 << 19:
-		_check(w.add_voxel(cc, "landClaimBlock") and w.has_claim() and w.claim_cell() == cc, "领地石生效")
+		_check(w.add_voxel(cc, "keystoneBlock") and w.has_claim() and w.claim_cell() == cc, "领地石生效")
 		if cc2.x < 1 << 19 and cc2 != cc:
-			_check(not w.add_voxel(cc2, "landClaimBlock"), "第二个领地石放不下")
+			_check(not w.add_voxel(cc2, "keystoneBlock"), "第二个领地石放不下")
 		var markers: Array = main._compass_markers()
 		var got := false
 		for m in markers:

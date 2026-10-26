@@ -1544,16 +1544,6 @@ def build_all(dest: Path, zip_path: Path, index_path: Path, only: str = "all") -
         blocks = parse_block_names(read_config_file(zip_path, "blocks.xml"))
         recipes, dropped = build_recipes(raw, items_table, blocks, load_localization(loc_csv),
                                          parse_ingredient_times(items_xml))
-        # 官方这个版本没有领地石，给一个自制配方（只影响本工程，不改官方表）
-        if "landClaimBlock" in items_table and "landClaimBlock" not in recipes:
-            recipes["landClaimBlock"] = {
-                "id": "landClaimBlock", "count": 1, "area": "", "time": 5.0, "tool": "",
-                "tags": [], "learnable": False, "cat": "build", "zh": "领地石", "block": True,
-                "ingredients": [
-                    {"id": "resourceWood", "count": 20, "zh": "木头"},
-                    {"id": "resourceForgedIron", "count": 10, "zh": "锻铁"},
-                ],
-            }
         path = dest / "data" / "recipes.json"
         path.write_text(json.dumps(recipes, ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"配方: 官方 {len(raw)} 条，保留 {len(recipes)} 条，丢弃 {sum(dropped.values())} 条 → {path}")

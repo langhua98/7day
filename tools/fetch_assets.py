@@ -168,15 +168,9 @@ def ensure_fallback_icons(out_dir):
                 d.polygon([(x - 6, 44), (x, 14), (x + 6, 44)], fill=spike, outline=(40, 35, 30, 255))
         save(name, paint)
 
-    def claim(d, _img):
-        d.rectangle((26, 40, 38, 60), fill=(90, 92, 88, 255), outline=(45, 48, 45, 255), width=2)
-        d.line((32, 10, 32, 44), fill=(70, 50, 30, 255), width=4)
-        d.polygon([(32, 10), (56, 18), (32, 28)], fill=(60, 170, 95, 255), outline=(30, 90, 50, 255))
-
     save("flagstoneShapes", stone)
     spikes((115, 78, 38, 255), (218, 190, 145, 255), "trapSpikesWoodDmg0")
     spikes((105, 108, 112, 255), (190, 198, 205, 255), "trapSpikesIronDmg0")
-    save("landClaimBlock", claim)
 
 
 def fetch_icons(dest, rows, all_icons):

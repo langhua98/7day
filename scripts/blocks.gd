@@ -33,7 +33,7 @@ const TYPES := [
 	["ladderSteel", "钢梯", "Steel Ladder", 160.0, Color(0.5, 0.53, 0.58)],
 	["trapSpikesWoodDmg0", "木钉陷阱", "Wood Spikes", 100.0, Color(0.55, 0.38, 0.2)],
 	["trapSpikesIronDmg0", "铁钉陷阱", "Iron Spikes", 180.0, Color(0.55, 0.56, 0.58)],
-	["landClaimBlock", "领地石", "Land Claim Block", 300.0, Color(0.35, 0.5, 0.42)],
+	["keystoneBlock", "土地征用块", "Land Claim Block", 300.0, Color(0.35, 0.5, 0.42)],
 ]
 
 const DOORS := ["oldWoodDoor", "woodHatch"]
@@ -42,7 +42,8 @@ const SPIKES := {
 	"trapSpikesWoodDmg0": {"dmg": 15.0, "slow": 1.0, "wear": 0.05},
 	"trapSpikesIronDmg0": {"dmg": 30.0, "slow": 1.0, "wear": 0.02},
 }
-const CLAIM_ID := "landClaimBlock"
+## 官方领地石叫 keystoneBlock（土地征用块）；旧的 landClaimBlock 作为存档兼容
+const CLAIM_ID := "keystoneBlock"
 ## 门/闸门的模型直接用楼里的预制体
 const SPECIAL_MODELS := {
 	"oldWoodDoor": "res://assets/poiprops/Doors_exteriorHouseDoorOldPrefab.res",
@@ -257,7 +258,7 @@ static func is_spike(id: String) -> bool:
 
 
 static func is_claim(id: String) -> bool:
-	return base_of(id) == CLAIM_ID
+	return base_of(id) == CLAIM_ID or base_of(id) == "landClaimBlock"
 
 
 static func is_special(id: String) -> bool:
@@ -324,7 +325,7 @@ static func _special_mesh(base: String) -> Mesh:
 				var x := 0.1 + i * 0.23
 				var z := 0.1 + j * 0.23
 				boxes.append([Vector3(x, 0.12, z), Vector3(x + 0.07, 0.62, z + 0.07)])
-	elif base == CLAIM_ID:
+	elif base == CLAIM_ID or base == "landClaimBlock":
 		boxes = [
 			[Vector3(0.2, 0, 0.2), Vector3(0.8, 0.4, 0.8)],
 			[Vector3(0.45, 0.4, 0.45), Vector3(0.55, 1.35, 0.55)],
