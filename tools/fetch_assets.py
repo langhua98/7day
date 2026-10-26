@@ -139,6 +139,46 @@ def fetch_index(dest):
     return rows
 
 
+def ensure_fallback_icons(out_dir):
+    """云盘物品图标只有 5188 个有物品图标的条目；领地石/两种尖刺/石板没有，补个可辨认的图标。"""
+    try:
+        from PIL import Image, ImageDraw
+    except ImportError:
+        print("图标: 没有 Pillow，跳过领地石/尖刺/石板兜底图标")
+        return
+
+    def save(name, painter):
+        path = os.path.join(out_dir, name + ".png")
+        if os.path.exists(path):
+            return
+        img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+        painter(ImageDraw.Draw(img), img)
+        img.save(path)
+
+    def stone(d, _img):
+        d.rounded_rectangle((2, 10, 62, 58), 3, fill=(125, 120, 112, 255), outline=(70, 66, 60, 255), width=2)
+        for x in (16, 32, 48):
+            d.line((x, 12, x, 56), fill=(88, 84, 78, 255), width=2)
+        d.line((4, 33, 60, 33), fill=(88, 84, 78, 255), width=2)
+
+    def spikes(board, spike, name):
+        def paint(d, _img):
+            d.rectangle((4, 44, 60, 58), fill=board, outline=(45, 30, 15, 255), width=2)
+            for x in (10, 22, 34, 46, 58):
+                d.polygon([(x - 6, 44), (x, 14), (x + 6, 44)], fill=spike, outline=(40, 35, 30, 255))
+        save(name, paint)
+
+    def claim(d, _img):
+        d.rectangle((26, 40, 38, 60), fill=(90, 92, 88, 255), outline=(45, 48, 45, 255), width=2)
+        d.line((32, 10, 32, 44), fill=(70, 50, 30, 255), width=4)
+        d.polygon([(32, 10), (56, 18), (32, 28)], fill=(60, 170, 95, 255), outline=(30, 90, 50, 255))
+
+    save("flagstoneShapes", stone)
+    spikes((115, 78, 38, 255), (218, 190, 145, 255), "trapSpikesWoodDmg0")
+    spikes((105, 108, 112, 255), (190, 198, 205, 255), "trapSpikesIronDmg0")
+    save("landClaimBlock", claim)
+
+
 def fetch_icons(dest, rows, all_icons):
     wanted = {r[0] for r in rows if r and r[0]}
     if not all_icons:
@@ -148,6 +188,7 @@ def fetch_icons(dest, rows, all_icons):
     have = {os.path.splitext(f)[0] for f in os.listdir(out_dir)}
     if wanted <= have:
         print(f"图标: 已有 {len(wanted)} 个，跳过")
+        ensure_fallback_icons(out_dir)
         return
     zips = [z for z in list_dir(f"{DRIVE_ROOT}/物品图标") if z["name"].endswith(".zip")]
     for z in zips:
@@ -165,6 +206,7 @@ def fetch_icons(dest, rows, all_icons):
                             shutil.copyfileobj(src, dst)
                         n += 1
             print(f"图标: 解出 {n} 个")
+    ensure_fallback_icons(out_dir)
 
 
 def fetch_zombies(dest, choice):

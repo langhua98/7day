@@ -52,7 +52,7 @@ jobs:
         run: |
           # Pillow 用来缩小贴图（省手机内存），numpy 用来拼天空全景图；装不上也能继续
           python3 -m pip install --quiet --user --break-system-packages pillow numpy || python3 -m pip install --quiet --user pillow numpy || true
-          python3 tools/fetch_assets.py \
+          python3 tools/fetch_assets.py --all-icons \
             --zombies "${{ github.event.inputs.zombies || 'soldier,nurse,cop,biker,lumberjack,joe,arlene,screamer' }}" \
             --music "${{ github.event.inputs.music || '6' }}"
           du -sh assets/*
@@ -164,6 +164,7 @@ jobs:
           run_test "$GODOT" --headless --path . res://tests/test_5c.tscn
           run_test "$GODOT" --headless --path . res://tests/test_trader.tscn
           run_test "$GODOT" --headless --path . res://tests/test_quests.tscn
+          run_test "$GODOT" --headless --path . res://tests/test_icons.tscn
           run_test "$GODOT" --headless --path . res://tests/test_workstations.tscn
 
       - name: 导出 Xcode 工程
