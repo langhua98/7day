@@ -65,6 +65,12 @@ DEFAULT_ZOMBIES = ["arlene", "bigmama", "biker", "boe", "burnt", "chuck", "cockt
 BLOCK_SHAPE_FILES = ("cube.glb", "cubeHalf.glb", "ramp.glb", "stairs.glb", "pole.glb", "plate.glb")
 # 游戏会用到的物品前缀（图标太多，只取这些，--all-icons 可以全取）
 GAME_PREFIXES = ("melee", "gun", "food", "drink", "medical", "resource", "ammo", "armor", "apparel", "thrown", "tool", "vehicle")
+## blocks.xml 的 CustomIcon：尖刺方块用 Master 的图标；图标包里有，但不在物品索引里
+BLOCK_ICON_ALIASES = {
+    "trapSpikesWoodMaster": "trapSpikesWoodDmg0",
+    "trapSpikesScrapIronMaster": "trapSpikesIronDmg0",
+}
+FLAGSTONE_TEXTURE_ID = 226
 
 
 def token():
@@ -140,7 +146,7 @@ def fetch_index(dest):
 
 
 def ensure_fallback_icons(out_dir):
-    """云盘物品图标只有 5188 个有物品图标的条目；领地石/两种尖刺/石板没有，补个可辨认的图标。"""
+    """云盘物品图标没有 flagstoneShapes；用官方方块贴图 c_226 生成图标；没有就画个石头。"""
     try:
         from PIL import Image, ImageDraw
     except ImportError:
@@ -155,22 +161,22 @@ def ensure_fallback_icons(out_dir):
         painter(ImageDraw.Draw(img), img)
         img.save(path)
 
+    flagstone = os.path.join(os.path.dirname(out_dir), "blocks", "c_%03d.png" % FLAGSTONE_TEXTURE_ID)
+    if os.path.exists(flagstone):
+        try:
+            img = Image.open(flagstone).convert("RGBA").resize((64, 64), Image.Resampling.LANCZOS)
+            d = ImageDraw.Draw(img)
+            d.rounded_rectangle((1, 1, 62, 62), 4, outline=(70, 66, 60, 255), width=3)
+            img.save(os.path.join(out_dir, "flagstoneShapes.png"))
+            return
+        except Exception:
+            pass
     def stone(d, _img):
         d.rounded_rectangle((2, 10, 62, 58), 3, fill=(125, 120, 112, 255), outline=(70, 66, 60, 255), width=2)
         for x in (16, 32, 48):
             d.line((x, 12, x, 56), fill=(88, 84, 78, 255), width=2)
         d.line((4, 33, 60, 33), fill=(88, 84, 78, 255), width=2)
-
-    def spikes(board, spike, name):
-        def paint(d, _img):
-            d.rectangle((4, 44, 60, 58), fill=board, outline=(45, 30, 15, 255), width=2)
-            for x in (10, 22, 34, 46, 58):
-                d.polygon([(x - 6, 44), (x, 14), (x + 6, 44)], fill=spike, outline=(40, 35, 30, 255))
-        save(name, paint)
-
     save("flagstoneShapes", stone)
-    spikes((115, 78, 38, 255), (218, 190, 145, 255), "trapSpikesWoodDmg0")
-    spikes((105, 108, 112, 255), (190, 198, 205, 255), "trapSpikesIronDmg0")
 
 
 def fetch_icons(dest, rows, all_icons):
@@ -180,7 +186,9 @@ def fetch_icons(dest, rows, all_icons):
     out_dir = os.path.join(dest, "icons")
     os.makedirs(out_dir, exist_ok=True)
     have = {os.path.splitext(f)[0] for f in os.listdir(out_dir)}
-    if wanted <= have:
+    alias_target = {src: dst for src, dst in BLOCK_ICON_ALIASES.items()}
+    alias_missing = {dst for dst in alias_target.values() if dst not in have}
+    if wanted <= have and not alias_missing:
         print(f"图标: 已有 {len(wanted)} 个，跳过")
         ensure_fallback_icons(out_dir)
         return
@@ -195,7 +203,14 @@ def fetch_icons(dest, rows, all_icons):
                 for info in zf.infolist():
                     base = os.path.basename(info.filename)
                     stem, ext = os.path.splitext(base)
-                    if ext.lower() == ".png" and stem in wanted:
+                    if ext.lower() != ".png":
+                        continue
+                    if stem in alias_target:
+                        target = alias_target[stem] + ".png"
+                        with zf.open(info) as src, open(os.path.join(out_dir, target), "wb") as dst:
+                            shutil.copyfileobj(src, dst)
+                        n += 1
+                    elif stem in wanted:
                         with zf.open(info) as src, open(os.path.join(out_dir, base), "wb") as dst:
                             shutil.copyfileobj(src, dst)
                         n += 1
@@ -1106,7 +1121,8 @@ def fetch_blocks(dest):
         have = set(old.get("ids", {}))
         need = {str(i) for i in json.load(open(extra))} if os.path.exists(extra) else set()
         need -= set(map(str, old.get("missing", [])))
-        if "blocks" in old and need <= have:
+        need.add(str(FLAGSTONE_TEXTURE_ID))
+        if "blocks" in old and need <= have and os.path.exists(os.path.join(out_dir, "c_%03d.png" % FLAGSTONE_TEXTURE_ID)):
             print("方块贴图: 已有，跳过（删掉 assets/blocks/atlas.json 可重新取）")
             return
         print("方块贴图: 有新的贴图要取，重新取")
@@ -1135,7 +1151,7 @@ def fetch_blocks(dest):
     except Exception as e:  # 查不到就用纯色，不影响楼
         print(f"建造方块贴图: 读 blocks.xml 失败（{e}），用纯色")
         build = {}
-    wanted = sorted(i for i in ((used or set(uv.keys())) | set(build.values())) if i in uv)
+    wanted = sorted(i for i in (((used or set(uv.keys())) | set(build.values())) | {FLAGSTONE_TEXTURE_ID}) if i in uv)
     names = {os.path.basename(i.filename): i for i in zf.infolist()}
     os.makedirs(out_dir, exist_ok=True)
     # 这些图只给 tools/build_poi.gd 打包成图集用，不让 Godot 单独导入
@@ -1156,6 +1172,7 @@ def fetch_blocks(dest):
         json.dump({"layers": layer, "size": BLOCK_TEX, "ids": ids, "missing": missing,
                    "blocks": {k: v for k, v in build.items() if str(v) in ids}}, f, indent=1)
     print(f"方块贴图: {len(ids)} 种，{layer} 层" + (f"（对照表里没有的编号 {missing}）" if missing else ""))
+    ensure_fallback_icons(os.path.join(dest, "icons"))
 
 
 def fetch_terrain(dest):
