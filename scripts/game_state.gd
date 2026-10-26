@@ -45,9 +45,8 @@ func reset() -> void:
 
 
 func gamestage() -> int:
-	# 还没有等级系统，先把等级当作天数；官方公式 (等级 + 存活天数) × 1.2
-	var level := maxi(1, day)
-	return maxi(1, floori((level + mini(days_alive(), level)) * 1.2))
+	# 官方公式 (玩家等级 + 存活天数) × 1.2；等级来自 Progression（7a）
+	return maxi(1, floori((maxi(1, Progression.level) + days_alive()) * 1.2))
 
 
 ## 存活天数：每死一次 −2（官方 daysAliveChangeWhenKilled），之后照常一天天涨
@@ -97,7 +96,7 @@ func is_night() -> bool:
 
 
 ## 发噪音：半径从 config 的 NOISE 表取，没有就用 fallback
-func make_noise(pos: Vector3, kind: String, fallback := 0.0) -> void:
-	var r: float = C.NOISE.get(kind, fallback)
+func make_noise(pos: Vector3, kind: String, fallback := 0.0, scale := 1.0) -> void:
+	var r: float = C.NOISE.get(kind, fallback) * scale
 	if r > 0.0:
 		noise.emit(pos, r, kind)

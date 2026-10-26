@@ -80,7 +80,7 @@ static func drops(material_name: String, tool: String, rng: RandomNumberGenerato
 				continue
 			var count: Array = row.get("count", [1, 1])
 			var n := rng.randi_range(int(count[0]), int(count[1]))
-			n = int(round(float(n) * mult * C.HARVEST_DROP_MULT))
+			n = int(round(float(n) * mult * C.HARVEST_DROP_MULT * Progression.harvest_mult()))
 			n = mini(n, C.HARVEST_MAX_DROPS)
 			if n <= 0:
 				continue
@@ -91,4 +91,6 @@ static func drops(material_name: String, tool: String, rng: RandomNumberGenerato
 	var list := []
 	for id in out:
 		list.append({"id": id, "count": int(out[id])})
+	if not list.is_empty():
+		Progression.add_xp(1.0, "harvest")
 	return list

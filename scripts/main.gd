@@ -96,6 +96,8 @@ func _ready() -> void:
 	add_child(crafting)
 	crafting.setup(inventory, looting, player_sys, hud)
 	hud.craft_panel.bind(crafting)
+	hud.skills_panel.bind(Progression)
+	Progression.leveled_up.connect(_on_leveled_up)
 
 	save_game = SaveGame.new()
 	save_game.setup(self, world, player_sys, inventory, combat, spawner, horde, atmosphere, hud, time_sys)
@@ -179,6 +181,11 @@ func _count_loot() -> int:
 
 # —— 开局 / 结束 ——
 
+func _on_leveled_up(lvl: int, pts: int) -> void:
+	hud.toast("升到 %d 级！技能点 %d" % [lvl, pts])
+	hud.skills_panel.refresh()
+
+
 func start(fresh := true) -> void:
 	hud.close_game_panels()
 	spawner.reset()
@@ -189,6 +196,7 @@ func start(fresh := true) -> void:
 	respawn.reset()
 	time_sys.reset()
 	player_sys.reset()
+	Progression.reset()
 	inventory.reset()
 	crafting.reset()
 	combat.reset()

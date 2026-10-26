@@ -129,6 +129,7 @@ func attack() -> void:
 	var dmg: float = row.get("power", C.FIST_DAMAGE) if kind == Assets.Kind.MELEE else C.FIST_DAMAGE
 	if kind == Assets.Kind.MELEE:
 		dmg *= Weapons.quality_mult(int(inventory.qualities.get(inventory.equipped, 1)))
+		dmg *= Progression.damage_mult(str(row.get("tags", "")))
 	# 伤害在武器挥到准星前面时才算（和手臂动作对上，见 fp_arms.gd 的关键帧）
 	var item := inventory.equipped
 	await tree.create_timer(C.MELEE_COOLDOWN * 0.42).timeout
@@ -407,6 +408,7 @@ func _fire(row: Dictionary) -> void:
 	var mods := Weapons.ammo_mods(ammo_id)
 	st.damage = float(st.damage) * float(mods.get("entity", 1.0))
 	st.damage *= Weapons.quality_mult(int(inventory.qualities.get(inventory.equipped, 1)))
+	st.damage *= Progression.damage_mult(str(row.get("tags", "")))
 	if player_sys.aiming:
 		st.spread = float(st.spread) * 0.5
 	attack_cd = st.rate

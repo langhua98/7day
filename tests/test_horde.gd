@@ -7,6 +7,7 @@ func _ready() -> void:
 	t.seconds_per_day = 1.0
 	t.reset()
 	t.set_time(6 * 24.0 + 22.0)  # 第 7 天 22:00
+	Progression.level = 7  # 7a：游戏阶段改用真实等级
 	if GameState.gamestage() != 16:
 		failures.append("第 7 天 GS 应为 16，实际 %d" % GameState.gamestage())
 	var h := Horde.new()

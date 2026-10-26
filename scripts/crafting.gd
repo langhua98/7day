@@ -139,7 +139,7 @@ static func cost(official: int) -> int:
 
 ## 一批要几秒
 func time_of(key: String) -> float:
-	return maxf(0.2, float(recipe(key).get("time", 1.0)) * C.CRAFT_TIME_MULT)
+	return maxf(0.2, float(recipe(key).get("time", 1.0)) * C.CRAFT_TIME_MULT * Progression.craft_time_mult())
 
 
 ## 材料清单：[{id, need, have}]，need 是 n 批的总数

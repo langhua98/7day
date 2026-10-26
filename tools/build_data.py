@@ -5,6 +5,7 @@
   items.json    {id: {id, stack, value, durability, tags, zh}}
   blocks.json   {id: {hp, mass, glue, overhang, category, texture, repair, upgrade}}
   recipes.json  {key: {id, count, area, time, tool, tags, cat, zh, learnable, ingredients:[{id,count,zh}]}}
+  progression.json  等级曲线、5 项属性、技能每级 passive_effect（7a）
 只保留 assets/index/icon_to_model.json 里的物品，再加上 scripts/blocks.gd 的方块。
 方块血量、升级、修理、悬挑来自官方 blocks.xml + materials.xml。
 Data_Config.zip 从云盘 /7day/小橘素材库/ 下载；令牌只读环境变量 XIAOJU_TOKEN。
@@ -1071,6 +1072,114 @@ def read_buffs_xml(path: Path) -> str:
     return read_config_file(path, "buffs.xml")
 
 
+PROGRESSION_PERKS = [
+    "perkDeadEye", "perkLuckyLooter", "perkSalvageOperations", "perkBoomstick",
+    "perkPummelPete", "perkMotherLode", "perkPackMule", "perkBrawler",
+    "perkMachineGunner", "perkHealingFactor", "perkRuleOneCardio", "perkArchery",
+    "perkGunslinger", "perkDeepCuts", "perkParkour", "perkFromTheShadows",
+    "perkBetterBarter", "perkPhysician", "perkAdvancedEngineering",
+]
+PROGRESSION_ATTRS = ["attPerception", "attStrength", "attFortitude", "attAgility", "attIntellect"]
+
+
+def _expand_effect_levels(level_text: str, value_text: str) -> list:
+    """passive_effect 的 level/value：两个数是等级区间 + 线性插值，多个数是逐级数值。"""
+    levels = [float(x) for x in level_text.split(",") if x.strip()]
+    values = [float(x) for x in value_text.split(",") if x.strip()]
+    if not levels or not values:
+        return []
+    if len(levels) == 2 and len(values) == 2:
+        lo, hi = int(levels[0]), int(levels[1])
+        if lo == hi:
+            return [[lo, values[0]]]
+        n = abs(hi - lo)
+        step = 1 if hi > lo else -1
+        return [[lo + step * i, round(values[0] + (values[1] - values[0]) * i / n, 4)]
+                for i in range(n + 1)]
+    if len(values) == 1:
+        return [[int(l), values[0]] for l in levels]
+    return [[int(levels[i]), values[i]] for i in range(min(len(levels), len(values)))]
+
+
+def parse_progression(prog_xml: str, loc: dict) -> dict:
+    """progression.xml → 等级、属性、技能（只保留任务 7a 要的 19 个技能）。"""
+    root = ET.fromstring(prog_xml)
+    out = {"level": {}, "attributes": {}, "skills": {}}
+    lv = root.find("level")
+    for key in ("max_level", "exp_to_level", "experience_multiplier",
+                "skill_points_per_level", "clamp_exp_cost_at_level"):
+        raw = lv.get(key, "0") if lv is not None else "0"
+        out["level"][key] = float(raw) if "." in raw else int(raw)
+    skills = {s.get("name"): s for s in root.iter("skill")}
+    perks = {p.get("name"): p for p in root.iter("perk")}
+    attrs = root.find("attributes")
+    if attrs is not None:
+        for a in attrs.findall("attribute"):
+            name = a.get("name")
+            if name not in PROGRESSION_ATTRS:
+                continue
+            out["attributes"][name] = {
+                "name": loc.get(a.get("name_key", ""), a.get("name_key", name)),
+                "desc": loc.get(a.get("desc_key", ""), ""),
+                "min": int(a.get("min_level", 1)),
+                "max": int(a.get("max_level", 10)),
+                "cost": int(a.get("base_skill_point_cost", 1) or 1),
+                "cost_mult": float(a.get("cost_multiplier_per_level", 1.14)),
+                "skills": [],
+            }
+    for perk_name in PROGRESSION_PERKS:
+        p = perks.get(perk_name)
+        if p is None:
+            print(f"  进度表里没有 {perk_name}，跳过")
+            continue
+        sk = skills.get(p.get("parent", ""))
+        attr = sk.get("parent") if sk is not None else p.get("parent", "")
+        # 通用技能（幸运搜刮）放进感知列，面板保持 5 列
+        if attr not in out["attributes"]:
+            attr = "attPerception"
+        costs = [int(x) for x in (p.get("override_cost") or "1,1,1,1,1").split(",")]
+        effects = []
+        for pe in p.iter("passive_effect"):
+            pname = pe.get("name")
+            if not pname:
+                continue
+            vals = _expand_effect_levels(pe.get("level", ""), pe.get("value", ""))
+            if not vals:
+                continue
+            effects.append({"name": pname, "op": pe.get("operation", ""),
+                            "tags": pe.get("tags", ""), "vals": vals,
+                            "req": pe.find("requirement") is not None})
+        ranks = {}
+        for ed in p.iter("effect_description"):
+            level = int(ed.get("level", 0))
+            key = ed.get("long_desc_key") or ed.get("desc_key") or ""
+            text = loc.get(key, "") or loc.get(ed.get("desc_key", ""), "")
+            if level > 0 and text:
+                ranks[str(level)] = text
+        out["skills"][perk_name] = {
+            "name": loc.get(p.get("name_key", ""), p.get("name_key", perk_name)),
+            "desc": loc.get(p.get("desc_key", ""), ""),
+            "attr": attr,
+            "max": len(costs),
+            "costs": costs,
+            "effects": effects,
+            "ranks": ranks,
+        }
+        out["attributes"][attr]["skills"].append(perk_name)
+    return out
+
+
+def build_progression(prog_xml: str, loc: dict, dest: Path) -> dict:
+    out = parse_progression(prog_xml, loc)
+    out_dir = dest / "data"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / "progression.json"
+    path.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
+    n_eff = sum(len(s["effects"]) for s in out["skills"].values())
+    print(f"等级/技能: {len(out['skills'])} 个技能、{n_eff} 条 passive_effect → {path}")
+    return out
+
+
 def build_all(dest: Path, zip_path: Path, index_path: Path, only: str = "all") -> dict:
     items_xml, loc_csv, gs_xml, eg_xml = read_config_zip(zip_path)
     gd_text = (ROOT / "scripts" / "blocks.gd").read_text(encoding="utf-8")
@@ -1169,6 +1278,11 @@ def build_all(dest: Path, zip_path: Path, index_path: Path, only: str = "all") -
         feral = sum(1 for v in table.values() if v["feral"])
         rad = sum(1 for v in table.values() if v["radiated"])
         print(f"僵尸种类: {len(table)} 个（野性 {feral}，辐射 {rad}）→ {path}")
+    if only in ("progression", "all"):
+        prog_xml = read_config_file(zip_path, "progression.xml")
+        if not prog_xml:
+            sys.exit(f"{zip_path} 里没有 Config/progression.xml")
+        build_progression(prog_xml, load_localization(loc_csv), dest)
     if only in ("harvest", "all"):
         items_path = dest / "data" / "items.json"
         if not items_path.exists():
@@ -1206,7 +1320,7 @@ def main() -> int:
     ap.add_argument("--dest", default=str(DEFAULT_DEST), help="assets 目录")
     ap.add_argument("--zip", default="", help="本地 Data_Config.zip（不传就从云盘下载）")
     ap.add_argument("--index", default="", help="icon_to_model.json（默认 assets/index/）")
-    ap.add_argument("--only", default="all", choices=["all", "items", "buffs", "gamestages", "entitygroups", "entities", "recipes", "loot", "harvest", "blocks"], help="只生成某张表")
+    ap.add_argument("--only", default="all", choices=["all", "items", "buffs", "gamestages", "entitygroups", "entities", "recipes", "loot", "harvest", "blocks", "progression"], help="只生成某张表")
     args = ap.parse_args()
     dest = Path(args.dest)
     zip_path = Path(args.zip) if args.zip else dest / "cache" / ZIP_NAME

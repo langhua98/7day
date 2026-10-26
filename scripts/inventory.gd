@@ -37,6 +37,8 @@ func setup(parent: Node3D, hud_ref: Hud, arms_ref: FpArms, player_ref: PlayerSys
 	arms = arms_ref
 	player_sys = player_ref
 	rng = rng_ref
+	if not Progression.changed.is_connected(_on_progression_changed):
+		Progression.changed.connect(_on_progression_changed)
 
 
 func reset() -> void:
@@ -67,13 +69,24 @@ static func stack_of(id: String) -> int:
 	return maxi(1, int(info.get("stack", 1)))
 
 
-## 背包总格数（含超重格）
+## 背包总格数（含 PackMule 和超重格）
 func limit() -> int:
-	return _cap + (0 if C.TEST_ALL_ITEMS else C.BAG_OVERLOAD_SLOTS)
+	return _cap + Progression.carry_bonus() + (0 if C.TEST_ALL_ITEMS else C.BAG_OVERLOAD_SLOTS)
 
 
 func base_slots() -> int:
-	return _cap
+	return _cap + Progression.carry_bonus()
+
+
+## 买 PackMule 后把格子补齐
+func _on_progression_changed() -> void:
+	var n := limit()
+	if _slots.size() < n:
+		_slots.resize(n)
+		for i in range(n):
+			if _slots[i] == null:
+				_slots[i] = {}
+	changed.emit()
 
 
 func slots() -> Array:
@@ -90,7 +103,7 @@ func used_slots() -> int:
 
 ## 超重：占用格数超过 45 后每格 −10% 移速，最多 −50%
 func overload() -> float:
-	return clampf((used_slots() - _cap) * C.OVERLOAD_PER_SLOT, 0.0, C.OVERLOAD_MAX)
+	return clampf((used_slots() - base_slots()) * C.OVERLOAD_PER_SLOT, 0.0, C.OVERLOAD_MAX)
 
 
 func count(id: String) -> int:

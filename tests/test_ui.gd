@@ -153,6 +153,14 @@ func _ready() -> void:
 	hud._touch_up(12)
 	check(used == ["b"], "点快捷栏第 2 格应使用 b")
 
+	# 技能按钮能打开面板；和合成不重叠
+	var skills: Rect2 = hud._skills_btn.get_global_rect()
+	check(not skills.intersects(hud._craft_btn.get_global_rect()), "技能和合成不能重叠")
+	hud._touch_down(13, skills.get_center())
+	hud._touch_up(13)
+	check(hud.skills_panel.visible, "点技能应打开面板")
+	hud.skills_panel.visible = false
+
 	# 背包能打开；格子点击/滑动由 test_bag 覆盖
 	hud.open_bag()
 	await get_tree().process_frame

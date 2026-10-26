@@ -61,6 +61,7 @@ func _run() -> void:
 	var before_total := inv.count("testAmmo")
 	GameState.day = 5
 	main.time_sys.set_time(4 * 24.0 + 10.0)
+	Progression.level = 5  # 7a：游戏阶段改用真实等级
 	var stage_before := GameState.gamestage()
 	var alive_before := GameState.days_alive()
 
@@ -118,6 +119,7 @@ func _run() -> void:
 	check_eq(lt.corpse_bags.size(), 2, "读档后两个尸体背包都在")
 	check(Status.has("near_death_trauma"), "读档后濒死创伤还在")
 	check_eq(GameState.days_alive_lost, lost, "读档后存活天数扣减保留")
+	check_eq(Progression.level, 5, "7a 读档后等级保留")
 
 	# 回到第一个背包：全部拿回
 	inv.reset()

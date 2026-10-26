@@ -457,3 +457,63 @@ class SleepersDataTest(unittest.TestCase):
         self.assertEqual(first["max"], 2)
         self.assertEqual(vols[1]["group"], "GroupAllFeral")
         self.assertEqual(vols[1]["max"], 3)
+
+
+PROGRESSION_XML = """<progression>
+  <level max_level="300" exp_to_level="10000" experience_multiplier="1.05"
+         skill_points_per_level="1" clamp_exp_cost_at_level="60"/>
+  <attributes min_level="1" max_level="10" base_skill_point_cost="1" cost_multiplier_per_level="1.14">
+    <attribute name="attPerception" name_key="attPerceptionName" desc_key="attPerceptionDesc"/>
+    <attribute name="attStrength" name_key="attStrengthName" desc_key="attStrengthDesc"/>
+  </attributes>
+  <skills>
+    <skill name="skillPerceptionCombat" parent="attPerception"/>
+    <skill name="skillGeneralPerks" parent="attGeneralPerks"/>
+  </skills>
+  <perks>
+    <perk name="perkDeadEye" parent="skillPerceptionCombat" name_key="perkDeadEyeName"
+          desc_key="perkDeadEyeDesc" override_cost="1,2,2,2,3">
+      <passive_effect name="EntityDamage" operation="perc_add" level="1,5" value=".1,.5" tags="perkDeadEye"/>
+      <passive_effect name="ReloadSpeedMultiplier" operation="perc_add" level="1,2,3,4,5"
+                      value=".1,.2,.3,.4,.5" tags="perkDeadEye"/>
+      <effect_description level="1" desc_key="perkDeadEyeRank1Desc" long_desc_key="perkDeadEyeRank1LongDesc"/>
+    </perk>
+    <perk name="perkLuckyLooter" parent="skillGeneralPerks" name_key="perkLuckyLooterName"
+          desc_key="perkLuckyLooterDesc" override_cost="1,2,2,2,3">
+      <passive_effect name="ScavengingTime" operation="perc_subtract" level="1,5" value=".1,.79"/>
+    </perk>
+  </perks>
+</progression>"""
+
+
+class ProgressionDataTest(unittest.TestCase):
+    def test_parse_progression(self):
+        loc = {
+            "attPerceptionName": "感知", "attPerceptionDesc": "感知说明",
+            "attStrengthName": "力量", "attStrengthDesc": "力量说明",
+            "perkDeadEyeName": "死神之眼", "perkDeadEyeDesc": "步枪专精",
+            "perkDeadEyeRank1Desc": "短说明", "perkDeadEyeRank1LongDesc": "长说明",
+            "perkLuckyLooterName": "幸运搜刮", "perkLuckyLooterDesc": "搜刮更快",
+        }
+        out = build_data.parse_progression(PROGRESSION_XML, loc)
+        self.assertEqual(out["level"]["max_level"], 300)
+        self.assertEqual(out["level"]["exp_to_level"], 10000)
+        self.assertEqual(out["level"]["clamp_exp_cost_at_level"], 60)
+        self.assertEqual(out["attributes"]["attPerception"]["name"], "感知")
+        de = out["skills"]["perkDeadEye"]
+        self.assertEqual(de["name"], "死神之眼")
+        self.assertEqual(de["attr"], "attPerception")
+        self.assertEqual(de["costs"], [1, 2, 2, 2, 3])
+        self.assertIn("perkDeadEye", out["attributes"]["attPerception"]["skills"])
+        self.assertEqual(de["ranks"]["1"], "长说明")
+        dmg = next(e for e in de["effects"] if e["name"] == "EntityDamage")
+        self.assertEqual(dmg["vals"][0], [1, 0.1])
+        self.assertEqual(dmg["vals"][-1], [5, 0.5])
+        reload = next(e for e in de["effects"] if e["name"] == "ReloadSpeedMultiplier")
+        self.assertEqual([v for _, v in reload["vals"]], [0.1, 0.2, 0.3, 0.4, 0.5])
+        # 通用技能放进感知列，面板保持 5 列
+        self.assertEqual(out["skills"]["perkLuckyLooter"]["attr"], "attPerception")
+
+    def test_level_range_interpolation(self):
+        self.assertEqual(build_data._expand_effect_levels("1,5", ".1,.5"),
+                         [[1, 0.1], [2, 0.2], [3, 0.3], [4, 0.4], [5, 0.5]])

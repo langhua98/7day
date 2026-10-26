@@ -122,6 +122,7 @@ func save(background := false) -> void:
 	}
 	d.merge(time_sys.save_data())
 	d.merge(player_sys.save_data())
+	d.merge(Progression.save_data())
 	d.merge(Status.save_data())
 	d.merge(horde.save_data())
 	d.merge(inventory.save_data())
@@ -219,6 +220,7 @@ func continue_game() -> void:
 	main.respawn.load_data(d)
 	player_sys.load_data(d)
 	Status.load_data(d, time_sys.seconds_per_hour())
+	Progression.load_data(d)
 	inventory.load_data(d)
 	main.crafting.load_data(d)
 	main.vehicles.load_data(d)

@@ -162,7 +162,8 @@ func update(delta: float) -> void:
 	if sprint:
 		stamina = max(0.0, stamina - C.SPRINT_DRAIN * delta)
 	else:
-		stamina = stamina + C.STAMINA_REGEN * Status.modifier("stamina_regen") * delta * (0.5 if mv.length() > 0.1 else 1.0)
+		stamina = stamina + C.STAMINA_REGEN * Status.modifier("stamina_regen") \
+			* Progression.stamina_regen_mult() * delta * (0.5 if mv.length() > 0.1 else 1.0)
 	stamina = minf(stamina, st_max)
 	hud.set_stamina(stamina)
 	# 跳（hud 的跳键调 jump()）：简单的竖直速度和重力
@@ -219,7 +220,9 @@ func update(delta: float) -> void:
 			_step_d = 0.0
 			Sfx.play("step", Vector3.INF, -16.0 if crouching else (-10.0 if not sprint else -6.0), 0.12)
 			# 脚步噪音：冲刺 8、走路 4、蹲走 1.5 米
-			GameState.make_noise(player.global_position, "crouch" if crouching else ("sprint" if sprint else "walk"))
+			var step_kind := "crouch" if crouching else ("sprint" if sprint else "walk")
+			GameState.make_noise(player.global_position, step_kind, 0.0,
+				Progression.noise_mult() if crouching else 1.0)
 	arms.set_meta("walking", mv.length() * (1.6 if sprint else 1.0))
 
 
@@ -245,7 +248,7 @@ func _near_zombie_head() -> bool:
 
 ## 体力上限：100 加上状态修正（口渴 −25），最少 10
 func stamina_max() -> float:
-	return maxf(10.0, 100.0 + Status.offset("stamina_max"))
+	return maxf(10.0, 100.0 + Status.offset("stamina_max") + Progression.stamina_max_bonus())
 
 
 ## 生存数值：delta 真实秒，dh 这一帧走过的游戏小时
@@ -265,6 +268,9 @@ func update_survival(delta: float, dh: float) -> void:
 	water = clampf(water + float(d.water), 0.0, C.MAX_WATER)
 	if food > C.REGEN_FOOD_ABOVE and water > C.REGEN_WATER_ABOVE and not Status.losing_hp():
 		hp = minf(C.MAX_HP, hp + C.HP_REGEN_PER_HOUR * dh)
+	var heal := Progression.heal_ot()
+	if heal > 0.0 and food > 0.0 and water > 0.0:
+		hp = minf(C.MAX_HP, hp + heal * delta)
 	# 感染到 100% 就死
 	if infection() >= C.INFECTION_MAX:
 		hp = 0.0
@@ -385,7 +391,7 @@ func toggle_crouch() -> void:
 
 func jump() -> void:
 	if _grounded and stamina > 8.0 and not Status.blocked("no_jump"):
-		_vy = C.JUMP_SPEED
+		_vy = C.JUMP_SPEED * Progression.jump_mult()
 		stamina -= 8.0
 		Sfx.play("jump", Vector3.INF, -6.0)
 

@@ -80,7 +80,9 @@ var _bag_btn := Button.new()
 var _bag_panel := BagPanel.new()
 var container_panel := ContainerPanel.new()
 var _craft_btn := Button.new()
+var _skills_btn := Button.new()
 var craft_panel := CraftPanel.new()
+var skills_panel := SkillsPanel.new()
 var _start_panel := PanelContainer.new()
 var _start_info := Label.new()
 var _end_panel := PanelContainer.new()
@@ -437,6 +439,15 @@ func _ready() -> void:
 	_craft_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_craft_btn)
 	_root.add_child(craft_panel)
+
+	# 技能按钮在合成下面，面板在 scripts/ui/skills_panel.gd
+	_skills_btn.text = "技能"
+	_skills_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_skills_btn.position = Vector2(-220, 224)
+	_skills_btn.size = Vector2(130, 64)
+	_skills_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_skills_btn)
+	_root.add_child(skills_panel)
 
 	# 摇杆：平时停在左下角，手指按在左半屏哪里就移到哪里
 	for p in [_joy_base, _joy_knob]:
@@ -964,7 +975,7 @@ func _init_button_layout() -> void:
 	_layout_buttons = {
 		"attack": _attack_btn, "jump": _jump_btn, "crouch": _crouch_btn,
 		"aim": _aim_btn, "scope": _scope_btn, "rotate": _rotate_btn,
-		"action": _action_btn, "bag": _bag_btn, "craft": _craft_btn,
+		"action": _action_btn, "bag": _bag_btn, "craft": _craft_btn, "skills": _skills_btn,
 		"pause": _pause_btn, "fire_left": _fire_left,
 	}
 	_layout_defaults.clear()
@@ -1156,6 +1167,7 @@ func show_end(text: String) -> void:
 func close_game_panels() -> void:
 	_bag_panel.visible = false
 	craft_panel.visible = false
+	skills_panel.visible = false
 	container_panel.close_panel()
 
 
@@ -1275,6 +1287,7 @@ func set_driving(on: bool) -> void:
 	_crouch_btn.visible = not on
 	_bag_btn.visible = not on
 	_craft_btn.visible = not on
+	_skills_btn.visible = not on
 	_hotbar_panel.visible = not on
 	_hotbar_name.visible = not on
 	_action_btn.visible = (not on) and _action_text != ""
@@ -1601,8 +1614,9 @@ func consume_look() -> Vector2:
 
 
 func _panel_open() -> bool:
-	return _bag_panel.visible or container_panel.visible or craft_panel.visible or _start_panel.visible \
-		or _end_panel.visible or _pause_panel.visible or _settings_panel.visible or _blackout.visible
+	return _bag_panel.visible or container_panel.visible or craft_panel.visible or skills_panel.visible \
+		or _start_panel.visible or _end_panel.visible or _pause_panel.visible or _settings_panel.visible \
+		or _blackout.visible
 
 
 func _press_attack(pressed: bool) -> void:
@@ -1748,6 +1762,11 @@ func _touch_down(index: int, pos: Vector2) -> void:
 		craft_panel.open()
 		_release_touches()
 		_flash(_craft_btn)
+		return
+	if _skills_btn.get_global_rect().grow(10).has_point(pos):
+		skills_panel.open()
+		_release_touches()
+		_flash(_skills_btn)
 		return
 	for slot in _hotbar.get_children():
 		if (slot as Control).get_global_rect().grow(4).has_point(pos):

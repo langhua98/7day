@@ -300,6 +300,7 @@ func _finish_search(c: Dictionary) -> void:
 	hud.set_progress(-1.0)
 	c.searched = true
 	c["loot_day"] = GameState.day
+	Progression.add_xp(10.0, "loot")
 	var got := roll_container(c)
 	var items: Array = []
 	items.resize(maxi(C.CONTAINER_SLOTS, got.size()))
@@ -318,7 +319,8 @@ func roll_container(c: Dictionary) -> Array:
 	if ResourceLoader.exists(LOOT_SCRIPT):
 		var loot_cls = load(LOOT_SCRIPT)
 		if loot_cls and loot_cls.has_method("roll"):
-			for e in loot_cls.roll(_loot_name(c), GameState.gamestage(), rng):
+			var gs := int(round(GameState.gamestage() * Progression.loot_stage_mult()))
+			for e in loot_cls.roll(_loot_name(c), gs, rng):
 				if Assets.items_by_id.has(str(e.get("id", ""))):
 					out.append({"id": str(e.id), "count": maxi(1, int(e.get("count", 1))),
 						"quality": int(e.get("quality", 0)), "durability": 0.0})
@@ -332,7 +334,7 @@ func roll_container(c: Dictionary) -> Array:
 			continue
 		var quality := 0
 		if Assets.items_by_id[id].kind in [Assets.Kind.GUN, Assets.Kind.MELEE]:
-			quality = Weapons.roll_quality(GameState.gamestage(), rng)
+			quality = Weapons.roll_quality(int(round(GameState.gamestage() * Progression.loot_stage_mult())), rng)
 		var n: int = Weapons.pickup_count(id, rng) if Weapons.is_ammo(id) else 1
 		out.append({"id": id, "count": n, "quality": quality, "durability": 0.0})
 	return out
@@ -356,11 +358,12 @@ func is_safe(c: Dictionary) -> bool:
 
 
 func _search_need(c: Dictionary) -> float:
+	var need := C.SEARCH_TIME
 	if is_safe(c):
-		return C.SEARCH_TIME_SAFE
-	if c.get("kind", "") == "car":
-		return C.SEARCH_TIME_CAR
-	return C.SEARCH_TIME
+		need = C.SEARCH_TIME_SAFE
+	elif c.get("kind", "") == "car":
+		need = C.SEARCH_TIME_CAR
+	return maxf(0.3, need * Progression.loot_time_mult())
 
 
 ## 用武器把保险箱砸开：直接翻出东西
@@ -370,6 +373,7 @@ func break_container(c: Dictionary) -> void:
 	c["hp"] = 0.0
 	c.searched = true
 	c["loot_day"] = GameState.day
+	Progression.add_xp(10.0, "loot")
 	var got := roll_container(c)
 	var items: Array = []
 	items.resize(maxi(C.CONTAINER_SLOTS, got.size()))
