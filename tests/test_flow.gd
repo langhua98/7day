@@ -41,4 +41,34 @@ func _initialize() -> void:
 		w.flow_step(1 << 30)
 	check_eq(w._flow_center, Vector2i(-21, 2), "排队的新中心最后生效")
 	w.free()
+
+	# 6b：玩家方块成本。木墙（500 血缩到 100）比钢墙（2000）便宜；1 格高可踩
+	var w2 := World.new()
+	var wood := {"id": "woodShapes", "hp": 100.0, "shape": "cube", "rot": 0}
+	var steel := {"id": "steelShapes", "hp": 2000.0, "shape": "cube", "rot": 0}
+	w2.voxels[Vector3i(2, 0, 0)] = wood.duplicate()
+	w2.voxels[Vector3i(2, 1, 0)] = wood.duplicate()
+	w2._low[Vector2i(2, 0)] = 2
+	w2.voxels[Vector3i(0, 0, 2)] = steel.duplicate()
+	w2.voxels[Vector3i(0, 1, 2)] = steel.duplicate()
+	w2._low[Vector2i(0, 2)] = 2
+	w2.voxels[Vector3i(2, 0, 2)] = wood.duplicate()
+	w2._low[Vector2i(2, 2)] = 1
+	check(w2.path_block_cost(2, 0) > 0, "2 格高木墙要拆")
+	check(w2.path_block_cost(2, 0) < w2.path_block_cost(0, 2), "木墙路线成本应低于钢墙")
+	check_eq(w2.path_block_cost(2, 2), 0, "1 格高方块能踩上去")
+	var sz := World.FLOW_SIZE
+	w2.update_flow(Vector3(0.5, 0, 0.5))
+	var wood_cost: int = w2._flow[(World.FLOW_R) * sz + 2 + World.FLOW_R]
+	var steel_cost: int = w2._flow[(2 + World.FLOW_R) * sz + World.FLOW_R]
+	check(wood_cost > 1 and wood_cost < steel_cost, "流场里木墙比钢墙便宜（%d < %d）" % [wood_cost, steel_cost])
+	check_eq(w2._flow[(2 + World.FLOW_R) * sz + 2 + World.FLOW_R], 2, "1 格高不增加寻路成本")
+	var wood_full := w2._flow.duplicate()
+	w2._flow = PackedInt32Array()
+	w2.request_flow(Vector3(0.5, 0, 0.5))
+	while w2._fj_active:
+		w2.flow_step(200)
+	check(w2._flow == wood_full, "带拆墙成本的流场分片结果一致")
+	w2.free()
+
 	finish("test_flow")

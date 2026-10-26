@@ -106,8 +106,66 @@ func _test_scene() -> void:
 		zs._process(0.1)
 		check(zs._jump_vy > 0.0, "蜘蛛会跳")
 	# 大块头：拆弹僵尸应判定为大块头
-	var zb = Zombies.stats("demolition", "normal")
+	var zb := Zombies.stats("demolition", "normal")
 	check(bool(zb.get("big", false)), "拆弹僵尸应是大块头")
+
+	# 6b：两格高的木墙要砸；一格高的踩上去
+	var base := Vector3.ZERO
+	var cell := Vector3i.ZERO
+	var found := false
+	for i in 12:
+		base = main.world.free_point(Vector3.ZERO, 4.0, 22.0)
+		cell = Vector3i(floori(base.x), 0, floori(base.z) + 1)
+		if main.world.can_place(cell) and main.world.can_place(cell + Vector3i.UP):
+			found = true
+			break
+	if found:
+		var w: World = main.world
+		w.add_voxel(cell, "woodShapes")
+		w.add_voxel(cell + Vector3i.UP, "woodShapes")
+		main.player_sys.player.position = base + Vector3(0, 0, 4)
+		var z2 = sp.spawn_zombie_at("zombieJoe", "normal", 1, false, false, base)
+		if z2:
+			z2._dir = Vector3(0, 0, 1)
+			z2._path_t = 10.0
+			z2.brain.chase()
+			var hp0 := float(w.voxels[cell].hp)
+			for i in 10:
+				z2._process(0.1)
+			check(z2.brain.state == ZombieBrain.State.ATTACK_BLOCK, "两格高墙应进入砸墙状态")
+			check(float(w.voxels.get(cell, {}).get("hp", 0.0)) < hp0, "两格高木墙应该掉血")
+			z2.queue_free()
+		# 一格高：不砸，踩上去
+		w.remove_voxel(cell)
+		w.remove_voxel(cell + Vector3i.UP)
+		var base2 := Vector3.ZERO
+		var cell2 := Vector3i.ZERO
+		var found2 := false
+		for i in 12:
+			base2 = main.world.free_point(Vector3.ZERO, 4.0, 22.0)
+			cell2 = Vector3i(floori(base2.x), 0, floori(base2.z) + 1)
+			if main.world.can_place(cell2):
+				found2 = true
+				break
+		if found2:
+			w.add_voxel(cell2, "woodShapes")
+			main.player_sys.player.position = base2 + Vector3(0, 0, 4)
+			var z3 = sp.spawn_zombie_at("zombieJoe", "normal", 1, false, false, base2)
+			if z3:
+				z3._dir = Vector3(0, 0, 1)
+				z3._path_t = 10.0
+				z3.brain.chase()
+				var hp1 := float(w.voxels[cell2].hp)
+				for i in 8:
+					z3._process(0.1)
+				check(z3.position.y >= 0.9, "一格高方块应踩上去")
+				check(z3.brain.state != ZombieBrain.State.ATTACK_BLOCK, "一格高方块不应砸")
+				check(float(w.voxels.get(cell2, {}).get("hp", 0.0)) == hp1, "踩上去不应掉血")
+				z3.queue_free()
+		else:
+			print("SKIP 一格高测试（附近没有能放方块的地方）")
+	else:
+		print("SKIP 两格高测试（附近没有能放方块的地方）")
 
 
 func check(condition: bool, message: String) -> void:

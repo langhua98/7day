@@ -37,7 +37,7 @@ func tick(delta: float, body: Node3D, target: Node3D, horde: bool) -> Vector3:
 		_lost_t = 0.0
 		return target.global_position
 	match state:
-		State.CHASE:
+		State.CHASE, State.ATTACK_BLOCK:
 			if target == null:
 				state = State.WANDER
 				return Vector3.INF
@@ -46,7 +46,7 @@ func tick(delta: float, body: Node3D, target: Node3D, horde: bool) -> Vector3:
 				last_pos = target.global_position
 			else:
 				_lost_t += delta
-				if _lost_t >= C.ZOMBIE_LOSE_TARGET:
+				if _lost_t >= C.ZOMBIE_LOSE_TARGET and state == State.CHASE:
 					investigate(last_pos)
 			# 追击时一直往玩家走（看不见时靠流场绕路）
 			return target.global_position
@@ -168,7 +168,15 @@ func die() -> void:
 
 
 func chasing() -> bool:
-	return state == State.CHASE
+	return state == State.CHASE or state == State.ATTACK_BLOCK
+
+
+## 6b：下一格是要砸的方块，停下来砸；拆掉后 body 会调 chase()
+func attack_block() -> void:
+	if state == State.DEAD or state == State.SLEEP:
+		return
+	state = State.ATTACK_BLOCK
+	_lost_t = 0.0
 
 
 ## 当前状态的移速倍率

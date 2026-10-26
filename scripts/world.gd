@@ -598,15 +598,15 @@ const FLOW_SIZE := FLOW_R * 2 + 1
 var _flow := PackedInt32Array()
 var _flow_center := Vector2i(1 << 20, 0)
 ## 正在后台分几帧算的新距离场（算完才换掉 _flow，僵尸这期间用旧的）
-## 以前一次算完要 20 多毫秒，每 0.5 秒卡一帧，跑动时画面一顿一顿的
 var _fj_active := false
 var _fj_center := Vector2i.ZERO
 var _fj_dist := PackedInt32Array()
-var _fj_wall := PackedByteArray()   # 窗口里每格挡不挡路（开算时一行一行填）
-var _fj_queue := PackedInt32Array()
+var _fj_wall := PackedByteArray()   # 窗口里每格是不是楼/墙
+var _fj_extra := PackedInt32Array() # 走这格要多拆几刀（0 = 空格或 1 格高能踩）
+var _fj_done := PackedByteArray()
+var _fj_heap_i := PackedInt32Array()
+var _fj_heap_c := PackedInt32Array()
 var _fj_row := 0                    # 墙填到第几行
-var _fj_head := 0
-var _fj_tail := 0
 var _fj_next := Vector2i.ZERO       # 算的过程中又要了新中心，算完接着算
 var _fj_has_next := false
 
@@ -633,16 +633,30 @@ func _start_flow(c: Vector2i) -> void:
 	if _fj_dist.size() != n:
 		_fj_dist.resize(n)
 		_fj_wall.resize(n)
-		_fj_queue.resize(n)
+		_fj_extra.resize(n)
+		_fj_done.resize(n)
 	_fj_dist.fill(-1)
+	_fj_done.fill(0)
+	_fj_heap_i.clear()
+	_fj_heap_c.clear()
 	_fj_center = c
 	_fj_row = 0
-	_fj_head = 0
-	_fj_tail = 0
 	_fj_active = true
 
 
-## 每帧调：最多花 budget_usec 微秒往下算（BFS，8 方向，不能斜着穿墙角）
+## 这一列玩家方块让僵尸多花多少路程（0 = 空格或 1 格高能踩上去）
+func path_block_cost(gx: int, gz: int) -> int:
+	var v0: Dictionary = voxels.get(Vector3i(gx, 0, gz), {})
+	var v1: Dictionary = voxels.get(Vector3i(gx, 1, gz), {})
+	if v0.is_empty() and v1.is_empty():
+		return 0
+	if not v0.is_empty() and v1.is_empty():
+		return 0
+	var vv: Dictionary = v0 if not v0.is_empty() else v1
+	return maxi(1, int(ceil(float(vv.get("hp", 100.0)) / GameConfig.ZOMBIE_FLOW_DPS * GameConfig.BLOCK_PATH_WEIGHT)))
+
+
+## 每帧调：最多花 budget_usec 微秒往下算（Dijkstra，8 方向，不能斜着穿墙角）
 func flow_step(budget_usec: int) -> void:
 	if not _fj_active:
 		return
@@ -650,13 +664,11 @@ func flow_step(budget_usec: int) -> void:
 	var size := FLOW_SIZE
 	var ox := _fj_center.x - FLOW_R
 	var oz := _fj_center.y - FLOW_R
-	# 第一步：把窗口里的墙填进字节表，后面 BFS 只查表
-	# 直接读 _cells / _iwall 两张表（不走 _wall()，GDScript 每格调函数太慢）
+	# 第一步：把窗口里的墙和拆墙成本填进表，后面 Dijkstra 只查表
 	var cells := _cells
 	var iwall := _iwall
 	var has_low := not _low.is_empty()
 	var map2 := MAP * 2
-	var wall_out := _fj_wall
 	while _fj_row < size:
 		var base := _fj_row * size
 		var wz := oz + _fj_row
@@ -671,85 +683,52 @@ func flow_step(budget_usec: int) -> void:
 				if (not cells.is_empty() and cells[rbase + gx] == 1) \
 						or (not iwall.is_empty() and iwall[rbase + gx] == 1):
 					w = 1
-			if w == 0 and has_low and _low.has(Vector2i(gx, wz)):
-				w = 1
-			wall_out[base + x] = w
+			_fj_wall[base + x] = w
+			_fj_extra[base + x] = path_block_cost(gx, wz) if w == 0 and has_low \
+				and _low.has(Vector2i(gx, wz)) else 0
+			if w == 1:
+				_fj_dist[base + x] = -2
 		_fj_row += 1
 		if _fj_row == size:
 			var start := FLOW_R * size + FLOW_R
 			_fj_dist[start] = 0
-			_fj_queue[0] = start
-			_fj_tail = 1
+			_flow_push(start, 0)
 		if Time.get_ticks_usec() - t0 > budget_usec:
 			return
-	# 第二步：BFS。每 256 格看一次表
-	var dist := _fj_dist
-	var wall := _fj_wall
-	var queue := _fj_queue
-	var head := _fj_head
-	var tail := _fj_tail
+	# 第二步：按成本从小到大出队；走过的邻居成本更低就更新
 	var count := 0
-	while head < tail:
-		var i := queue[head]
-		head += 1
+	while not _fj_heap_i.is_empty():
+		var i := _flow_pop()
+		if _fj_done[i] == 1:
+			continue
+		_fj_done[i] = 1
+		var d := _fj_dist[i]
 		var x := i % size
 		var z := i / size
-		var d1 := dist[i] + 1
-		var w_l := x == 0 or wall[i - 1] == 1
-		var w_r := x == size - 1 or wall[i + 1] == 1
-		var w_u := z == 0 or wall[i - size] == 1
-		var w_d := z == size - 1 or wall[i + size] == 1
-		# 上下左右、再斜着（斜着要两边都不是墙）。没写成函数：每格 8 次函数调用比 BFS 本身还贵
-		# 没走过的格子：是墙标 -2，不是墙记距离并排进队列
-		var ni := 0
+		var w_l := x == 0 or _fj_wall[i - 1] == 1
+		var w_r := x == size - 1 or _fj_wall[i + 1] == 1
+		var w_u := z == 0 or _fj_wall[i - size] == 1
+		var w_d := z == size - 1 or _fj_wall[i + size] == 1
 		if x > 0:
-			ni = i - 1
-			if dist[ni] == -1:
-				if w_l: dist[ni] = -2
-				else: dist[ni] = d1; queue[tail] = ni; tail += 1
+			_flow_relax(i - 1, d)
 		if x < size - 1:
-			ni = i + 1
-			if dist[ni] == -1:
-				if w_r: dist[ni] = -2
-				else: dist[ni] = d1; queue[tail] = ni; tail += 1
+			_flow_relax(i + 1, d)
 		if z > 0:
-			ni = i - size
-			if dist[ni] == -1:
-				if w_u: dist[ni] = -2
-				else: dist[ni] = d1; queue[tail] = ni; tail += 1
+			_flow_relax(i - size, d)
 		if z < size - 1:
-			ni = i + size
-			if dist[ni] == -1:
-				if w_d: dist[ni] = -2
-				else: dist[ni] = d1; queue[tail] = ni; tail += 1
+			_flow_relax(i + size, d)
 		if not w_r and not w_d:
-			ni = i + size + 1
-			if dist[ni] == -1:
-				if wall[ni] == 1: dist[ni] = -2
-				else: dist[ni] = d1; queue[tail] = ni; tail += 1
+			_flow_relax(i + size + 1, d)
 		if not w_r and not w_u:
-			ni = i - size + 1
-			if dist[ni] == -1:
-				if wall[ni] == 1: dist[ni] = -2
-				else: dist[ni] = d1; queue[tail] = ni; tail += 1
+			_flow_relax(i - size + 1, d)
 		if not w_l and not w_d:
-			ni = i + size - 1
-			if dist[ni] == -1:
-				if wall[ni] == 1: dist[ni] = -2
-				else: dist[ni] = d1; queue[tail] = ni; tail += 1
+			_flow_relax(i + size - 1, d)
 		if not w_l and not w_u:
-			ni = i - size - 1
-			if dist[ni] == -1:
-				if wall[ni] == 1: dist[ni] = -2
-				else: dist[ni] = d1; queue[tail] = ni; tail += 1
+			_flow_relax(i - size - 1, d)
 		count += 1
-		if count & 255 == 0 and Time.get_ticks_usec() - t0 > budget_usec:
-			_fj_head = head
-			_fj_tail = tail
+		if count & 127 == 0 and Time.get_ticks_usec() - t0 > budget_usec:
 			return
 	# 算完：换上新的，有排队的中心就接着算
-	_fj_head = head
-	_fj_tail = tail
 	var tmp := _flow
 	_flow = _fj_dist
 	_fj_dist = tmp
@@ -760,8 +739,61 @@ func flow_step(budget_usec: int) -> void:
 		_start_flow(_fj_next)
 
 
-## 从 p 出发往目标走的方向（不在距离场里返回 ZERO，调用方直接朝目标走）
-func flow_dir(p: Vector3) -> Vector3:
+func _flow_relax(ni: int, d: int) -> void:
+	if _fj_wall[ni] == 1 or _fj_done[ni] == 1:
+		return
+	var nd := d + 1 + _fj_extra[ni]
+	if _fj_dist[ni] == -1 or nd < _fj_dist[ni]:
+		_fj_dist[ni] = nd
+		_flow_push(ni, nd)
+
+
+func _flow_push(i: int, c: int) -> void:
+	_fj_heap_i.append(i)
+	_fj_heap_c.append(c)
+	var k := _fj_heap_i.size() - 1
+	while k > 0:
+		var p := (k - 1) / 2
+		if _fj_heap_c[p] <= c:
+			break
+		_fj_heap_i[k] = _fj_heap_i[p]
+		_fj_heap_c[k] = _fj_heap_c[p]
+		k = p
+	_fj_heap_i[k] = i
+	_fj_heap_c[k] = c
+
+
+func _flow_pop() -> int:
+	var root := _fj_heap_i[0]
+	var last := _fj_heap_i.size() - 1
+	if last == 0:
+		_fj_heap_i.clear()
+		_fj_heap_c.clear()
+		return root
+	var i := _fj_heap_i[last]
+	var c := _fj_heap_c[last]
+	_fj_heap_i.remove_at(last)
+	_fj_heap_c.remove_at(last)
+	var n := _fj_heap_i.size()
+	var k := 0
+	while k * 2 + 1 < n:
+		var child := k * 2 + 1
+		if child + 1 < n and _fj_heap_c[child + 1] < _fj_heap_c[child]:
+			child += 1
+		if _fj_heap_c[child] >= c:
+			break
+		_fj_heap_i[k] = _fj_heap_i[child]
+		_fj_heap_c[k] = _fj_heap_c[child]
+		k = child
+	if n > 0:
+		_fj_heap_i[k] = i
+		_fj_heap_c[k] = c
+	return root
+
+
+## 从 p 出发往目标走的方向（不在距离场里返回 ZERO，调用方直接朝目标走）。
+## salt 用来让挤在一起的僵尸在同样成本的相邻格之间错开。
+func flow_dir(p: Vector3, salt := 0) -> Vector3:
 	var size := FLOW_R * 2 + 1
 	var x := floori(p.x) - _flow_center.x + FLOW_R
 	var z := floori(p.z) - _flow_center.y + FLOW_R
@@ -769,17 +801,24 @@ func flow_dir(p: Vector3) -> Vector3:
 		return Vector3.ZERO
 	var here := _flow[z * size + x]
 	var best := here if here >= 0 else 1 << 30
-	var best_v := Vector2i.ZERO
+	var candidates: Array[Vector2i] = []
 	for dz in range(-1, 2):
 		for dx in range(-1, 2):
 			if dx == 0 and dz == 0:
 				continue
 			var v := _flow[(z + dz) * size + x + dx]
-			if v >= 0 and v < best:
+			if v < 0 or v > best:
+				continue
+			if v < best:
 				best = v
-				best_v = Vector2i(dx, dz)
-	if best_v == Vector2i.ZERO:
+				candidates.clear()
+			candidates.append(Vector2i(dx, dz))
+	if candidates.is_empty():
 		return Vector3.ZERO
+	var best_v := candidates[0]
+	if candidates.size() > 1:
+		var pick := posmod(hash(Vector2i(floori(p.x), floori(p.z))) + salt, candidates.size())
+		best_v = candidates[pick]
 	# 朝相邻格子的中心走，避免贴着墙角卡住
 	var c := Vector3(floori(p.x) + best_v.x + 0.5, p.y, floori(p.z) + best_v.y + 0.5)
 	var d := c - p
@@ -843,6 +882,13 @@ static func cell_of(p: Vector3) -> Vector3i:
 
 func has_voxel(c: Vector3i) -> bool:
 	return voxels.has(c)
+
+
+## 这一列玩家方块堆到多高（僵尸踩上去的高度）
+func low_top(gx: int, gz: int) -> float:
+	if voxels.has(Vector3i(gx, 1, gz)):
+		return 2.0
+	return 1.0 if voxels.has(Vector3i(gx, 0, gz)) else 0.0
 
 
 ## 这一列在 [脚底, 头顶] 这段高度里有没有迈不上去的方块

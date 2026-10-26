@@ -80,6 +80,7 @@ var _eye_node: MeshInstance3D
 var _spit_cd := 0.0
 var _jump_cd := 0.0
 var _jump_vy := 0.0
+var _step_t := 0.0
 var _leap_t := 0.0
 var _exploded := false
 ## 变体发光材质共享，避免每只僵尸都复制一份
@@ -312,6 +313,8 @@ func _process(delta: float) -> void:
 			_jump_cd = 4.0
 	if _leap_t > 0.0:
 		_leap_t -= delta
+	if _step_t > 0.0:
+		_step_t -= delta
 	if _jump_vy != 0.0 or position.y > 0.0:
 		position.y += _jump_vy * delta
 		_jump_vy -= GameConfig.GRAVITY * delta
@@ -361,27 +364,38 @@ func _process(delta: float) -> void:
 		_path_t = 0.3
 		_dir = to_goal / gdist if gdist > 0.05 else Vector3.ZERO
 		if chasing and world and dist > 2.0 and world.line_blocked(global_position + Vector3.UP, target.global_position + Vector3.UP):
-			var f := world.flow_dir(global_position)
+			var f := world.flow_dir(global_position, int(get_instance_id()))
 			if f != Vector3.ZERO:
 				_dir = f
 	_moving = 0.0
 	var blocked := false
-	# 前面有玩家方块就砸：木墙、门、台阶都算
-	if chasing and not GameConfig.TEST_ZOMBIES_NO_ATTACK and _windup < 0.0 and _dir != Vector3.ZERO and world:
+	var stepping := false
+	var step_top := 0.0
+	# 前面是玩家方块：1 格高踩上去，2 格高停下砸（6b）
+	if chasing and _windup < 0.0 and _dir != Vector3.ZERO and world:
 		var ahead := global_position + _dir * 0.8
-		for dy in [0, 1]:
-			var c := Vector3i(floori(ahead.x), floori(global_position.y) + dy, floori(ahead.z))
-			if not world.voxels.has(c):
-				continue
-			blocked = true
-			if _block_cd <= 0.0:
-				var got := world.damage_voxel(c, damage * GameConfig.ZOMBIE_BLOCK_DAMAGE_MULT)
-				GameState.block_changed.emit(c)
-				_block_cd = 0.7
-				Sfx.play("bullet_wall", global_position + Vector3.UP, -4.0)
-				if got != "":
-					world.check_support(c)
-			break
+		var feet := floori(global_position.y)
+		var c0 := Vector3i(floori(ahead.x), feet, floori(ahead.z))
+		var v0: Dictionary = world.voxels.get(c0, {})
+		var v1: Dictionary = world.voxels.get(c0 + Vector3i.UP, {})
+		var v2: Dictionary = world.voxels.get(c0 + Vector3i.UP * 2, {})
+		if not v0.is_empty() or not v1.is_empty():
+			if not v0.is_empty() and v1.is_empty() and v2.is_empty():
+				stepping = true
+				step_top = feet + 1.0
+			else:
+				blocked = true
+				brain.attack_block()
+				var hit := c0 if not v0.is_empty() else c0 + Vector3i.UP
+				if _block_cd <= 0.0:
+					var got := world.damage_voxel(hit, damage * GameConfig.ZOMBIE_BLOCK_DAMAGE_MULT)
+					GameState.block_changed.emit(hit)
+					_block_cd = 0.7
+					Sfx.play("bullet_wall", global_position + Vector3.UP, -4.0)
+					if got != "":
+						world.check_support(hit)
+	if not blocked and brain.state == ZombieBrain.State.ATTACK_BLOCK:
+		brain.chase()
 	if gdist > 0.05:
 		var face := to_goal / gdist if gdist < 3.0 else _dir
 		rotation.y = lerp_angle(rotation.y, atan2(face.x, face.z), min(1.0, delta * 6.0))
@@ -389,10 +403,17 @@ func _process(delta: float) -> void:
 		if not blocked and gdist > stop and _windup < 0.0 and _scream_t <= 0.0 and _dir != Vector3.ZERO:
 			var spd := speed * brain.speed_mult() * (3.0 if _leap_t > 0.0 else 1.0)
 			position += _dir * spd * delta
-			if world:
+			if stepping:
+				position.y = maxf(position.y, step_top)
+				_step_t = 0.7
+			elif world:
 				position = world.push_out(position, 0.35)
 			_phase += delta * (2.0 + spd * 2.2)
 			_moving = spd
+	# 站在 1/2 格高的玩家方块上，或者走下来（蜘蛛跳的时候交给跳跃逻辑）
+	if _jump_vy == 0.0 and _leap_t <= 0.0 and _step_t <= 0.0 and world:
+		var top := world.low_top(floori(position.x), floori(position.z))
+		position.y = move_toward(position.y, top, delta * 8.0)
 	if do_anim:
 		_animate(anim_delta)
 
@@ -407,7 +428,9 @@ func distance_to_target() -> float:
 
 ## 返回这一帧造成的伤害（0 表示没打中）。够得着就开始抬手，过一会儿才真正打中
 func try_attack() -> float:
-	if dead or GameConfig.TEST_ZOMBIES_NO_ATTACK or not brain.chasing():
+	if dead or GameConfig.TEST_ZOMBIES_NO_ATTACK or brain.state == ZombieBrain.State.ATTACK_BLOCK:
+		return 0.0
+	if not brain.chasing():
 		return 0.0
 	if _pending_damage > 0.0:
 		var d := _pending_damage

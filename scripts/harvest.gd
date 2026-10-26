@@ -57,6 +57,14 @@ static func tool_kind(id: String) -> String:
 	return ""
 
 
+## 不直接写 Progression：tools 的 -s 测试没有自动加载，静态工具要能在没有它时跑
+static func _progression():
+	var loop := Engine.get_main_loop()
+	if loop is SceneTree:
+		return loop.root.get_node_or_null("Progression")
+	return null
+
+
 ## 拆一个物件掉什么：官方 Harvest + Destroy 两份表都滚一遍。
 ## 对口工具 ×2，空手 ×1/3，其它工具 ×1；再乘手机版倍率，单个物品最多 15。
 static func drops(material_name: String, tool: String, rng: RandomNumberGenerator) -> Array:
@@ -73,6 +81,8 @@ static func drops(material_name: String, tool: String, rng: RandomNumberGenerato
 	elif tool == material_name:
 		mult = 2.0
 	var out := {}
+	var prog = _progression()
+	var gather := float(prog.harvest_mult()) if prog != null else 1.0
 	for key in ["harvest", "destroy"]:
 		for row in mat.get(key, []):
 			var prob := float(row.get("prob", 1.0))
@@ -80,7 +90,7 @@ static func drops(material_name: String, tool: String, rng: RandomNumberGenerato
 				continue
 			var count: Array = row.get("count", [1, 1])
 			var n := rng.randi_range(int(count[0]), int(count[1]))
-			n = int(round(float(n) * mult * C.HARVEST_DROP_MULT * Progression.harvest_mult()))
+			n = int(round(float(n) * mult * C.HARVEST_DROP_MULT * gather))
 			n = mini(n, C.HARVEST_MAX_DROPS)
 			if n <= 0:
 				continue
@@ -91,6 +101,6 @@ static func drops(material_name: String, tool: String, rng: RandomNumberGenerato
 	var list := []
 	for id in out:
 		list.append({"id": id, "count": int(out[id])})
-	if not list.is_empty():
-		Progression.add_xp(1.0, "harvest")
+	if prog != null and not list.is_empty():
+		prog.add_xp(1.0, "harvest")
 	return list

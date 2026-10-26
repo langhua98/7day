@@ -29,6 +29,9 @@ const NIGHT_AMBIENT_ENERGY := 0.75
 const ZOMBIE_DESPAWN := 110.0
 ## 僵尸砸玩家方块的伤害倍率
 const ZOMBIE_BLOCK_DAMAGE_MULT := 3.0
+## 6b 寻路：估算僵尸每秒能打掉多少方块血；拆墙路线的成本权重
+const ZOMBIE_FLOW_DPS := 10.0
+const BLOCK_PATH_WEIGHT := 0.5
 ## 官方方块血量在手机上按这个倍率缩放（官方 MaxDamage 100~10000，原样太耐打）
 const BLOCK_HP_SCALE := 0.2
 

@@ -95,6 +95,14 @@ func _ready() -> void:
 		n.position = Vector3(randf_range(-30, 30), 0, randf_range(-30, 30))
 		bodies.append(n)
 		brains.append(ZombieBrain.new())
+	# 6b：砸方块状态
+	var b_block := ZombieBrain.new()
+	b_block.attack_block()
+	check(b_block.state == ZombieBrain.State.ATTACK_BLOCK, "能进入砸方块状态")
+	check(b_block.chasing(), "砸方块时算追击")
+	b_block.chase()
+	check(b_block.state == ZombieBrain.State.CHASE, "砸完能回到追击")
+
 	var t0 := Time.get_ticks_usec()
 	var frames := 600
 	var idx := 0
