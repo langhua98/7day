@@ -356,7 +356,8 @@ func _build_full_props(e: Dictionary) -> Node3D:
 		if mi_ < 0 or mi_ >= names.size() or _prop_model(names[mi_]).is_empty():
 			continue
 		# 方块数据是游戏的左手坐标，楼网格翻了 x，这里也翻；y 是方块底面，模型原点在方块中心
-		var pos := Vector3(-float(item[1]), float(item[2]) + 0.5, float(item[3]))
+		# y 是方块底面；模型轴心有的在底面、有的在中心，渲染时按包围盒再对齐
+		var pos := Vector3(-float(item[1]), float(item[2]), float(item[3]))
 		# 同一栋楼里同一种家具合成一个 MultiMesh（按模型合并，减少绘制次数）
 		var gk := "%d" % mi_
 		if not groups.has(gk):
@@ -390,7 +391,8 @@ func _build_full_props(e: Dictionary) -> Node3D:
 		var view := PROP_SMALL_RANGE if size < 0.7 else (PROP_MED_RANGE if size < 1.6 else PROP_BIG_RANGE)
 		var mmi := MultiMeshInstance3D.new()
 		mmi.multimesh = mm
-		mmi.position = center
+		# 模型原点不一定在底面：把整组抬 aabb.position.y，让模型底部贴方块底面
+		mmi.position = center - Vector3(0.0, aabb.position.y, 0.0)
 		mmi.visibility_range_end = view
 		mmi.visibility_range_end_margin = 5.0
 		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
