@@ -433,3 +433,27 @@ class EntityClassDataTest(unittest.TestCase):
         feral = out["zombieJoeFeral"]
         self.assertEqual(feral["hp"], 500)
         self.assertTrue(feral["feral"])
+
+
+SLEEPERS_XML = """<prefab>
+  <property name="SleeperVolumeStart" value="10, 2, 20#0, 0, 0" />
+  <property name="SleeperVolumeSize" value="4, 3, 6#2, 2, 2" />
+  <property name="SleeperVolumeGroup" value="GroupGenericZombie,1,2,GroupAllFeral,0,3" />
+</prefab>"""
+
+
+class SleepersDataTest(unittest.TestCase):
+    def test_parse_sleepers(self):
+        import build_sleepers
+        vols = build_sleepers.parse_sleepers_xml(SLEEPERS_XML)
+        self.assertEqual(len(vols), 2)
+        first = vols[0]
+        self.assertEqual(first["x"], 12.0)
+        self.assertEqual(first["y"], 3.5)
+        self.assertEqual(first["z"], 23.0)
+        self.assertEqual(first["sx"], 4.0)
+        self.assertEqual(first["group"], "GroupGenericZombie")
+        self.assertEqual(first["min"], 1)
+        self.assertEqual(first["max"], 2)
+        self.assertEqual(vols[1]["group"], "GroupAllFeral")
+        self.assertEqual(vols[1]["max"], 3)

@@ -19,6 +19,8 @@ signal player_respawned(pos: Vector3)
 signal bedroll_placed(pos: Vector3, yaw: float)
 ## 合成完成一批（成品 id、数量）
 signal item_crafted(id: String, count: int)
+## 6d：一栋楼的睡眠区清空（给第 7 步的任务用）
+signal poi_cleared(poi_name: String)
 ## 合成队列变了（加入、完成、取消）
 signal craft_queue_changed
 

@@ -14,6 +14,7 @@ var spawner: SpawnerSystem
 var horde: Horde
 var looting: LootingSystem
 var vehicles: Vehicles
+var sleepers: Sleepers
 var respawn: RespawnSystem
 var crafting: Crafting
 var save_game: SaveGame
@@ -75,6 +76,10 @@ func _ready() -> void:
 
 	horde = Horde.new()
 	horde.setup(self, spawner, world, player_sys, time_sys, rng)
+
+	sleepers = Sleepers.new()
+	sleepers.setup(self, world, spawner, player_sys, rng)
+	sleepers.build()
 
 	combat = CombatSystem.new()
 	combat.setup(self, get_tree(), player_sys, inventory, world, hud, player_sys.arms, spawner.zombie_root, rng)
@@ -178,6 +183,7 @@ func start(fresh := true) -> void:
 	hud.close_game_panels()
 	spawner.reset()
 	horde.reset()
+	sleepers.reset()
 	looting.reset()
 	vehicles.reset()
 	respawn.reset()
@@ -307,6 +313,7 @@ func _process(delta: float) -> void:
 		looting.update_action(delta)
 	spawner.update(delta, day, night, blood_moon)
 	horde.update(delta, blood_moon, day)
+	sleepers.update(delta)
 	respawn.update(delta)
 	player_sys.update_survival(delta, time_sys.hours - hours_before)
 	if graphics.sky_due(delta):

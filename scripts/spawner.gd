@@ -210,7 +210,10 @@ func _on_noise(pos: Vector3, radius: float, _kind: String) -> void:
 		var d: Vector3 = z.global_position - pos
 		d.y = 0.0
 		if d.length_squared() <= r2:
-			z.brain.hear(pos, _kind)
+			if z.brain.state == ZombieBrain.State.SLEEP:
+				z.wake()
+			else:
+				z.brain.hear(pos, _kind)
 
 
 ## 热量满了：在那一格附近刷一只尖叫者，走过来查看

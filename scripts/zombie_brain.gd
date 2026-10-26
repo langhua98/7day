@@ -83,8 +83,23 @@ func tick(delta: float, body: Node3D, target: Node3D, horde: bool) -> Vector3:
 
 ## 视觉（轮询调用）：前方扇形、白天/夜里视距、蹲下减半、被楼和方块挡住看不见
 func sense(body: Node3D, target: Node3D, world: World) -> void:
-	if state == State.DEAD or state == State.SLEEP or target == null:
+	if state == State.DEAD or target == null:
 		can_see = false
+		return
+	# 睡眠中：5 米内看到玩家才醒，蹲下减半
+	if state == State.SLEEP:
+		can_see = false
+		var to := target.global_position - body.global_position
+		to.y = 0.0
+		var how_far := to.length()
+		var sight := C.SLEEP_SIGHT * (C.SLEEP_SIGHT_CROUCH_MULT if GameState.player_crouching else 1.0)
+		if how_far > sight:
+			return
+		if world and world.line_blocked(body.global_position + Vector3.UP * 1.6,
+				target.global_position + Vector3.UP * 1.0):
+			return
+		if body.has_method("wake"):
+			body.wake()
 		return
 	can_see = sees(body, target, world)
 	if can_see:

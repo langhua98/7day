@@ -873,6 +873,8 @@ def fetch_full_buildings(dest):
     import build_poi_full
     print("完整的楼:")
     build_poi_full.run(dest)
+    import build_sleepers
+    build_sleepers.run(dest)
 
 
 # —— 楼里的家具、灯、柜子、门（方块表里 Shape="ModelEntity" 的实体模型）——

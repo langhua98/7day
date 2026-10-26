@@ -391,3 +391,10 @@ const VEHICLE_PLACE_DIST := 4.0
 const VEHICLE_CAM_HEIGHT := 3.6
 const VEHICLE_CAM_BACK := 7.0
 const VEHICLE_CAM_PITCH := 0.18
+
+# —— 6d 睡眠僵尸 ——
+## 睡眠时能发现玩家的距离（蹲下乘这个）；被吵醒的半径；清空后几天再刷
+const SLEEP_SIGHT := 5.0
+const SLEEP_SIGHT_CROUCH_MULT := 0.5
+const SLEEP_WAKE_RADIUS := 10.0
+const SLEEPER_RESPAWN_DAYS := 3

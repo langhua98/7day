@@ -6,6 +6,8 @@ extends Node3D
 signal died(zombie: Zombie)
 ## 尖叫者看见玩家时叫一声，会把附近的僵尸引过来
 signal screamed(zombie: Zombie)
+## 6d：睡眠僵尸醒了
+signal woke(zombie: Zombie)
 
 var hp := 60.0
 var max_hp := 60.0
@@ -275,6 +277,11 @@ func _process(delta: float) -> void:
 	# 辐射变体每秒回 2% 血
 	if radiated and hp < max_hp:
 		hp = minf(max_hp, hp + max_hp * GameConfig.ZOMBIE_RADIATED_REGEN * delta)
+	# 6d：睡着时站着不动、不出声
+	if brain.state == ZombieBrain.State.SLEEP:
+		if do_anim:
+			_animate(anim_delta)
+		return
 	_attack_cd = max(0.0, _attack_cd - delta)
 	_block_cd = max(0.0, _block_cd - delta)
 	_lunge = max(0.0, _lunge - delta * 3.0)
@@ -414,6 +421,15 @@ func try_attack() -> float:
 	return 0.0
 
 
+## 6d：从睡眠中醒来（被打、听到声音、看到玩家、附近同伴醒了）
+func wake() -> void:
+	if dead or brain.state != ZombieBrain.State.SLEEP:
+		return
+	brain.chase()
+	woke.emit(self)
+	Sfx.play(_voice + "alert", global_position + Vector3.UP * 1.6)
+
+
 ## 被打中的位置（世界坐标）：用来判断爆头、喷血
 func head_height() -> float:
 	return global_position.y + _height * 0.86
@@ -437,7 +453,10 @@ func take_hit(amount: float, from: Vector3, headshot := false) -> void:
 			_explode()
 			hp = 0.0
 	hp -= amount
-	brain.on_hit()
+	if brain.state == ZombieBrain.State.SLEEP:
+		wake()
+	else:
+		brain.on_hit()
 	_hit_flash = 0.15
 	if hp > 0.0 and _rng.randf() < 0.5:
 		Sfx.play(_voice + "pain", global_position + Vector3.UP * 1.6)

@@ -1761,6 +1761,11 @@ func _poi_containers(name: String, c: Vector2, rot: float, base_y: float) -> voi
 			"searched": false, "r": 0.5, "kind": "block", "indoor": true, "poi": name})
 
 
+## 有完整版的楼（睡眠区、任务等系统读）
+func poi_instances() -> Array:
+	return _full_pois
+
+
 ## 能进的楼：读碰撞格子，盖街面那层的占地图，摆门板和没模型的容器箱子。没有 .col 返回 false
 func _add_interior(name: String, at: Vector3, rot: float) -> bool:
 	var entry = poi_containers.get(name)

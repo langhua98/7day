@@ -158,6 +158,7 @@ jobs:
           run_test "$GODOT" --headless --path . res://tests/test_loot_respawn.tscn
           run_test "$GODOT" --headless --path . res://tests/test_harvest.tscn
           run_test "$GODOT" --headless --path . res://tests/test_zombies.tscn
+          run_test "$GODOT" --headless --path . res://tests/test_sleepers.tscn
           run_test "$GODOT" --headless --path . res://tests/test_workstations.tscn
 
       - name: 导出 Xcode 工程
