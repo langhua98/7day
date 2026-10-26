@@ -99,6 +99,23 @@ func spawn_zombie(day: int, night: bool, horde: bool, near := Vector3.INF) -> Zo
 	if near != Vector3.INF:
 		return spawn_zombie_at(cls, variant, day, night, horde, world.free_point(near, 4.0, 10.0))
 	var at := world.free_point(player_sys.player.position, 18.0, 32.0) if not horde else world.free_point(player_sys.player.position, 14.0, 24.0)
+	var tr = main.get("trader") if main else null
+	if tr != null and tr.is_near(at, TraderSystem.SAFE_RADIUS):
+		for i in 8:
+			at = world.free_point(player_sys.player.position, TraderSystem.SAFE_RADIUS + 2.0,
+				TraderSystem.SAFE_RADIUS + 12.0)
+			if not tr.is_near(at, TraderSystem.SAFE_RADIUS):
+				break
+		if tr.is_near(at, TraderSystem.SAFE_RADIUS):
+			return null
+	if not horde and world.has_claim():
+		var cp := world.claim_pos()
+		for i in 8:
+			if Vector2(at.x - cp.x, at.z - cp.z).length() >= C.CLAIM_RADIUS:
+				break
+			at = world.free_point(player_sys.player.position, C.CLAIM_RADIUS + 2.0, C.CLAIM_RADIUS + 12.0)
+		if Vector2(at.x - cp.x, at.z - cp.z).length() < C.CLAIM_RADIUS:
+			return null
 	return spawn_zombie_at(cls, variant, day, night, horde, at)
 
 

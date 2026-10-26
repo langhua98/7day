@@ -194,6 +194,19 @@ func update_action(delta: float) -> void:
 	if not station.is_empty():
 		hud.set_action("使用\n%s" % station.name)
 		return
+	if main.quests:
+		var qlabel: String = main.quests.interact_label(player_sys.player.position)
+		if qlabel != "":
+			hud.set_action(qlabel)
+			return
+	if main.trader and main.trader.is_near(player_sys.player.position, TraderSystem.TALK_RADIUS):
+		hud.set_action("交易\n%s" % ("商人" if main.trader.open else "商人（休息）"))
+		return
+	var vdoor := world.nearest_voxel_door(player_sys.player.position,
+		-player_sys.player.global_basis.z, C.DOOR_REACH)
+	if not vdoor.is_empty():
+		hud.set_action("%s\n%s" % ["关上" if vdoor.open else "打开", vdoor.zh])
+		return
 	var c := world.nearest_container(player_sys.player.position)
 	var door := _door_target(c)
 	if not door.is_empty():
@@ -239,6 +252,20 @@ func action() -> void:
 		hud.release_touches()
 		hud.craft_panel.open(station.area, station.get("cell"))
 		main.crafting.station_open(station.area, station.pos)
+		return
+	if main.quests and main.quests.interact(player_sys.player.position):
+		return
+	if main.trader and main.trader.is_near(player_sys.player.position, TraderSystem.TALK_RADIUS):
+		main.trader.open_panel()
+		return
+	var vdoor := world.nearest_voxel_door(player_sys.player.position,
+		-player_sys.player.global_basis.z, C.DOOR_REACH)
+	if not vdoor.is_empty():
+		var open := world.toggle_voxel_door(vdoor.cell)
+		if Sfx.has("door"):
+			Sfx.play("door", Vector3(vdoor.cell) + Vector3.UP * 0.8)
+		GameState.make_noise(Vector3(vdoor.cell), "door")
+		hud.toast("门已%s" % ("打开" if open else "关上"))
 		return
 	var c := world.nearest_container(player_sys.player.position)
 	var door := _door_target(c)

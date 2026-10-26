@@ -31,6 +31,8 @@ const ZOMBIE_DESPAWN := 110.0
 const ZOMBIE_BLOCK_DAMAGE_MULT := 3.0
 ## 7b 书柜/书桌/邮箱额外掉杂志的概率
 const BOOK_LOOT_CHANCE := 0.35
+## 5c 领地石半径（米）：范围内不自然刷僵尸，血月照来
+const CLAIM_RADIUS := 20.0
 ## 6b 寻路：估算僵尸每秒能打掉多少方块血；拆墙路线的成本权重
 const ZOMBIE_FLOW_DPS := 10.0
 const BLOCK_PATH_WEIGHT := 0.5

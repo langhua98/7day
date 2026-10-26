@@ -1,3 +1,4 @@
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -549,3 +550,34 @@ class BookDataTest(unittest.TestCase):
         r2 = {"tags": ["learnable", "cookingPotFood"], "cat": "food", "id": "foodX"}
         self.assertEqual(build_data._recipe_category(r2), "craftingFood")
         self.assertEqual(build_data._recipe_level(r2, {}), 1)
+
+
+TRADERS_XML = """<traders buy_markup="3" sell_markdown="0.2" currency_item="casinoCoin">
+  <trader_info id="1" reset_interval="3" open_time="4:05" close_time="21:50">
+    <trader_items count="all"><item name="resourceWood" count="10"/></trader_items>
+  </trader_info>
+</traders>"""
+
+
+class TraderQuestDataTest(unittest.TestCase):
+    def test_traders(self):
+        items = {"resourceWood": {"value": 25}, "adminTool": {"value": 100},
+                 "zero": {"value": 0}}
+        out = build_data.parse_traders_xml(TRADERS_XML, items)
+        self.assertAlmostEqual(out["open"], 4 + 5 / 60, places=3)
+        self.assertAlmostEqual(out["close"], 21 + 50 / 60, places=3)
+        self.assertEqual(out["reset_days"], 3)
+        self.assertEqual(out["currency"], "casinoCoin")
+        self.assertIn("resourceWood", out["items"])
+        self.assertNotIn("adminTool", out["items"])
+        self.assertNotIn("zero", out["items"])
+
+    def test_generated_quests(self):
+        path = Path(__file__).resolve().parents[1] / "assets" / "data" / "quests.json"
+        if not path.exists():
+            self.skipTest("quests.json 还没生成")
+        d = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(len(d["tier1"]), 3)
+        self.assertEqual(len(d["tier2"]), 3)
+        self.assertGreater(d["tier1"]["fetch"]["xp"], 0)
+        self.assertGreater(d["tier1"]["clear"]["coins"], 0)

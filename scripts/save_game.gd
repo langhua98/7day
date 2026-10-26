@@ -133,6 +133,8 @@ func save(background := false) -> void:
 	d.merge(main.crafting.save_data())
 	d.merge(main.vehicles.save_data())
 	d.merge(main.sleepers.save_data())
+	d.merge(main.trader.save_data())
+	d.merge(main.quests.save_data())
 	d.merge(spawner.save_data())
 	wait_pending()
 	if background:
@@ -227,6 +229,8 @@ func continue_game() -> void:
 	main.crafting.load_data(d)
 	main.vehicles.load_data(d)
 	main.sleepers.load_data(d)
+	main.trader.load_data(d)
+	main.quests.load_data(d)
 	spawner.load_data(d)
 	horde.load_data(d)
 	atmosphere.set_night_announced(time_sys.day, fmod(time_sys.hours, 24.0))

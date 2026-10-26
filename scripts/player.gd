@@ -21,6 +21,8 @@ var hp := C.MAX_HP
 var food := C.MAX_FOOD
 var water := C.MAX_WATER
 var stamina := 100.0
+## 5c 尖刺减速
+var slow_t := 0.0
 var _sprinting := false
 var _hud_t := 0.0
 
@@ -152,6 +154,8 @@ func update(delta: float) -> void:
 	# 冲刺：设置开着时摇杆推到外圈 90% 往前；耗体力
 	var sprint: bool = hud.settings.auto_sprint > 0.5 and mv.length() > 0.9 and mv.y > 0.3
 	sprint = sprint and stamina > 1.0 and mv.y > 0.3 and not Status.blocked("no_sprint") and not crouching
+	if slow_t > 0.0:
+		slow_t -= delta
 	# 背包超重：变慢，不能冲刺
 	var heavy: float = inventory.overload() if inventory else 0.0
 	if heavy > 0.0:
@@ -211,7 +215,8 @@ func update(delta: float) -> void:
 	var fwd := -player.global_basis.z
 	var right := player.global_basis.x
 	var vel := (fwd * mv.y + right * mv.x) * C.PLAYER_SPEED * (C.SPRINT_MULT if sprint else 1.0) \
-		* Status.modifier("move_speed") * (1.0 - heavy) * (C.CROUCH_SPEED_MULT if crouching else 1.0)
+		* Status.modifier("move_speed") * (1.0 - heavy) * (C.CROUCH_SPEED_MULT if crouching else 1.0) \
+		* (0.5 if slow_t > 0.0 else 1.0)
 	var before := player.position
 	player.position = world.push_out(player.position + vel * delta, 0.35)
 	if _grounded:

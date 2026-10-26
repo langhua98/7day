@@ -51,7 +51,7 @@ func _test_save() -> void:
 	var w := World.new()
 	w.add_voxel(Vector3i(0, 0, 0), "woodShapes", -1.0, "half", 2)
 	var saved := w.voxel_save()
-	check_eq(saved[0].size(), 7, "存档应保存形状和朝向")
+	check_eq(saved[0].size(), 8, "存档应保存形状、朝向和开关状态")
 	var w2 := World.new()
 	w2.voxel_load(saved)
 	var v: Dictionary = w2.voxels[Vector3i(0, 0, 0)]

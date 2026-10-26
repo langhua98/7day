@@ -81,6 +81,8 @@ var _spit_cd := 0.0
 var _jump_cd := 0.0
 var _jump_vy := 0.0
 var _step_t := 0.0
+## 5c 尖刺减速
+var slow_t := 0.0
 var _leap_t := 0.0
 var _exploded := false
 ## 变体发光材质共享，避免每只僵尸都复制一份
@@ -315,6 +317,8 @@ func _process(delta: float) -> void:
 		_leap_t -= delta
 	if _step_t > 0.0:
 		_step_t -= delta
+	if slow_t > 0.0:
+		slow_t -= delta
 	if _jump_vy != 0.0 or position.y > 0.0:
 		position.y += _jump_vy * delta
 		_jump_vy -= GameConfig.GRAVITY * delta
@@ -380,9 +384,9 @@ func _process(delta: float) -> void:
 		var v1: Dictionary = world.voxels.get(c0 + Vector3i.UP, {})
 		var v2: Dictionary = world.voxels.get(c0 + Vector3i.UP * 2, {})
 		if not v0.is_empty() or not v1.is_empty():
-			if not v0.is_empty() and v1.is_empty() and v2.is_empty():
+			if not v0.is_empty() and v1.is_empty() and v2.is_empty() and not world.is_tall_cell(c0):
 				stepping = true
-				step_top = feet + 1.0
+				step_top = world.low_top(floori(ahead.x), floori(ahead.z))
 			else:
 				blocked = true
 				brain.attack_block()
@@ -401,7 +405,8 @@ func _process(delta: float) -> void:
 		rotation.y = lerp_angle(rotation.y, atan2(face.x, face.z), min(1.0, delta * 6.0))
 		var stop := GameConfig.ZOMBIE_REACH * 0.8 if chasing else 0.3
 		if not blocked and gdist > stop and _windup < 0.0 and _scream_t <= 0.0 and _dir != Vector3.ZERO:
-			var spd := speed * brain.speed_mult() * (3.0 if _leap_t > 0.0 else 1.0)
+			var spd := speed * brain.speed_mult() * (0.5 if slow_t > 0.0 else 1.0) \
+				* (3.0 if _leap_t > 0.0 else 1.0)
 			position += _dir * spd * delta
 			if stepping:
 				position.y = maxf(position.y, step_top)

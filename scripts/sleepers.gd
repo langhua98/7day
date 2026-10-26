@@ -62,6 +62,16 @@ func update(_delta: float) -> void:
 		_spawn_volume(v)
 
 
+## 7d：接清剿任务时把整栋楼重置成没清空
+func reset_poi(poi_name: String) -> void:
+	for v in volumes:
+		if str(v.poi) != poi_name:
+			continue
+		cleared_areas.erase(str(v.key))
+		v.cleared = false
+		_clear_runtime(v)
+
+
 ## 这栋楼的所有睡眠区都清空了吗（给第 7 步任务用）
 func cleared(poi_name: String) -> bool:
 	var any := false

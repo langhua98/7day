@@ -7,6 +7,8 @@
   recipes.json  {key: {id, count, area, time, tool, tags, cat, zh, learnable, ingredients:[{id,count,zh}]}}
   progression.json  等级曲线、5 项属性、技能每级 passive_effect（7a）
   books.json    杂志类别/解锁配方、技能书效果（7b）
+  traders.json  商人营业时间、货币、重置天数、可售物品价值（7c）
+  quests.json   tier1/tier2 三类商人任务的经验和公爵币奖励（7d）
 只保留 assets/index/icon_to_model.json 里的物品，再加上 scripts/blocks.gd 的方块。
 方块血量、升级、修理、悬挑来自官方 blocks.xml + materials.xml。
 Data_Config.zip 从云盘 /7day/小橘素材库/ 下载；令牌只读环境变量 XIAOJU_TOKEN。
@@ -1327,6 +1329,93 @@ def build_books(zip_path: Path, dest: Path) -> dict:
     return out
 
 
+def parse_traders_xml(traders_xml: str, items_table: dict) -> dict:
+    root = ET.fromstring(traders_xml)
+    info = root.find("trader_info")
+    open_t = str(info.get("open_time", "4:05")) if info is not None else "4:05"
+    close_t = str(info.get("close_time", "21:50")) if info is not None else "21:50"
+
+    def to_hours(text: str) -> float:
+        p = text.split(":")
+        return int(p[0]) + (int(p[1]) if len(p) > 1 else 0) / 60.0
+
+    pool = {}
+    for name, row in items_table.items():
+        low = name.lower()
+        if any(w in low for w in ("admin", "test", "master", "dev", "poi", "schematic", "quest")):
+            continue
+        value = int(row.get("value", 0))
+        if value > 0:
+            pool[name] = value
+    reset = int(info.get("reset_interval", 3)) if info is not None else 3
+    return {
+        "open": round(to_hours(open_t), 4), "close": round(to_hours(close_t), 4),
+        "reset_days": max(1, reset),
+        "currency": root.get("currency_item", "casinoCoin"),
+        "sell_markdown": float(root.get("sell_markdown", "0.2") or 0.2),
+        "items": pool,
+    }
+
+
+def build_traders(zip_path: Path, dest: Path) -> dict:
+    items_path = dest / "data" / "items.json"
+    if not items_path.exists():
+        sys.exit("找不到 items.json，先生成物品")
+    items_table = json.loads(items_path.read_text(encoding="utf-8"))
+    traders_xml = read_config_file(zip_path, "traders.xml")
+    if not traders_xml:
+        sys.exit(f"{zip_path} 里没有 Config/traders.xml")
+    out = parse_traders_xml(traders_xml, items_table)
+    path = dest / "data" / "traders.json"
+    path.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"商人: {out['open']:.2f}-{out['close']:.2f} 点，{out['reset_days']} 天重置，"
+          f"{len(out['items'])} 种可售物品，货币 {out['currency']} → {path}")
+    return out
+
+
+QUEST_IDS = {
+    (1, "fetch"): "tier1_fetch", (1, "clear"): "tier1_clear",
+    (1, "buried"): "tier1_buried_supplies",
+    (2, "fetch"): "tier2_fetch", (2, "clear"): "tier2_clear",
+    (2, "buried"): "tier2_buried_supplies",
+}
+
+
+def build_quests(zip_path: Path, dest: Path) -> dict:
+    quests_xml = read_config_file(zip_path, "quests.xml")
+    if not quests_xml:
+        sys.exit(f"{zip_path} 里没有 Config/quests.xml")
+    loc = load_localization(read_config_file(zip_path, "Localization.csv"))
+    root = ET.fromstring(quests_xml)
+    out = {"tier1": {}, "tier2": {}, "choices": 3}
+    for (tier, kind), qid in QUEST_IDS.items():
+        el = root.find(f".//quest[@id='{qid}']")
+        if el is None:
+            continue
+        xp, coins = 0, 0
+        for r in el.findall("reward"):
+            if r.get("type") == "Exp":
+                xp = int(float(r.get("value", 0) or 0))
+            elif r.get("type") == "Item" and r.get("id") == "casinoCoin":
+                coins = int(float(r.get("value", 0) or 0))
+        name_key = f"quest_tier{tier}_{kind}" if tier == 2 else f"quest_tier1_{kind}"
+        desc_key = {"fetch": "quest_fetch_description", "clear": "quest_clear_description",
+                    "buried": "quest_buried_supplies_description"}[kind]
+        fallback = {"fetch": "取货", "clear": "清剿", "buried": "埋藏补给"}[kind]
+        name = loc.get(name_key) or loc.get(f"quest_tier1_{kind}") or fallback
+        if tier == 2:
+            name = "T2 " + name
+        out[f"tier{tier}"][kind] = {
+            "name": name,
+            "desc": loc.get(desc_key, ""),
+            "xp": xp, "coins": coins,
+        }
+    path = dest / "data" / "quests.json"
+    path.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"商人任务: tier1 {len(out['tier1'])} 种、tier2 {len(out['tier2'])} 种 → {path}")
+    return out
+
+
 def build_all(dest: Path, zip_path: Path, index_path: Path, only: str = "all") -> dict:
     items_xml, loc_csv, gs_xml, eg_xml = read_config_zip(zip_path)
     gd_text = (ROOT / "scripts" / "blocks.gd").read_text(encoding="utf-8")
@@ -1455,6 +1544,16 @@ def build_all(dest: Path, zip_path: Path, index_path: Path, only: str = "all") -
         blocks = parse_block_names(read_config_file(zip_path, "blocks.xml"))
         recipes, dropped = build_recipes(raw, items_table, blocks, load_localization(loc_csv),
                                          parse_ingredient_times(items_xml))
+        # 官方这个版本没有领地石，给一个自制配方（只影响本工程，不改官方表）
+        if "landClaimBlock" in items_table and "landClaimBlock" not in recipes:
+            recipes["landClaimBlock"] = {
+                "id": "landClaimBlock", "count": 1, "area": "", "time": 5.0, "tool": "",
+                "tags": [], "learnable": False, "cat": "build", "zh": "领地石", "block": True,
+                "ingredients": [
+                    {"id": "resourceWood", "count": 20, "zh": "木头"},
+                    {"id": "resourceForgedIron", "count": 10, "zh": "锻铁"},
+                ],
+            }
         path = dest / "data" / "recipes.json"
         path.write_text(json.dumps(recipes, ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"配方: 官方 {len(raw)} 条，保留 {len(recipes)} 条，丢弃 {sum(dropped.values())} 条 → {path}")
@@ -1462,6 +1561,10 @@ def build_all(dest: Path, zip_path: Path, index_path: Path, only: str = "all") -
             print(f"  丢弃 {n} 条：{reason}")
     if only in ("books", "all"):
         build_books(zip_path, dest)
+    if only in ("traders", "all"):
+        build_traders(zip_path, dest)
+    if only in ("quests", "all"):
+        build_quests(zip_path, dest)
     return out
 
 
@@ -1470,7 +1573,7 @@ def main() -> int:
     ap.add_argument("--dest", default=str(DEFAULT_DEST), help="assets 目录")
     ap.add_argument("--zip", default="", help="本地 Data_Config.zip（不传就从云盘下载）")
     ap.add_argument("--index", default="", help="icon_to_model.json（默认 assets/index/）")
-    ap.add_argument("--only", default="all", choices=["all", "items", "buffs", "gamestages", "entitygroups", "entities", "recipes", "loot", "harvest", "blocks", "progression", "books"], help="只生成某张表")
+    ap.add_argument("--only", default="all", choices=["all", "items", "buffs", "gamestages", "entitygroups", "entities", "recipes", "loot", "harvest", "blocks", "progression", "books", "traders", "quests"], help="只生成某张表")
     args = ap.parse_args()
     dest = Path(args.dest)
     zip_path = Path(args.zip) if args.zip else dest / "cache" / ZIP_NAME

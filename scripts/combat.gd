@@ -79,6 +79,8 @@ func _placement_base() -> String:
 
 func _placement_shape() -> String:
 	var base := _placement_base()
+	if Blocks.is_spike(base) or base == "woodHatch":
+		return "plate"
 	if not Blocks.BUILD_BASES.has(base):
 		return "cube"
 	return Blocks.shape_of(inventory.equipped)
@@ -87,7 +89,8 @@ func _placement_shape() -> String:
 func _refresh_block_hud() -> void:
 	var row: Dictionary = Assets.items_by_id.get(inventory.equipped, {})
 	var base := _placement_base()
-	var on: bool = row.get("kind", -1) == Assets.Kind.BLOCK and Blocks.BUILD_BASES.has(base)
+	var on: bool = row.get("kind", -1) == Assets.Kind.BLOCK \
+		and (Blocks.BUILD_BASES.has(base) or Blocks.is_door(base))
 	hud.set_block_controls(block_rot, on)
 
 
@@ -235,6 +238,12 @@ func _place_block() -> void:
 		return
 	var c = _place_target()
 	if c == null:
+		return
+	if main.trader and main.trader.is_near(player_sys.player.position, TraderSystem.SAFE_RADIUS):
+		hud.toast("商人附近不能放方块")
+		return
+	if Blocks.is_claim(_placement_base()) and world.has_claim():
+		hud.toast("只能放一个领地石")
 		return
 	# 睡袋不进方块格子，交给 respawn.gd 摆（同时只能有一个）
 	if inventory.equipped == C.BEDROLL_ID:
@@ -498,6 +507,8 @@ func _explode(at: Vector3, st: Dictionary) -> void:
 
 
 func _hit_zombie(z: Zombie, dmg: float, head: bool, at: Vector3, dir: Vector3) -> void:
+	if main.trader and main.trader.is_near(player_sys.player.position, TraderSystem.SAFE_RADIUS):
+		return
 	z.take_hit(dmg, player_sys.player.global_position, head)
 	hud.damage_number(dmg, head, at)
 	Fx.blood(main, at, dir.normalized() + Vector3.UP * 0.2, head)

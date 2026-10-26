@@ -25,7 +25,31 @@ const TYPES := [
 	["forge", "锻造炉", "Forge", 260.0, Color(0.38, 0.35, 0.33)],
 	["chemistryStation", "化学台", "Chemistry Station", 220.0, Color(0.3, 0.45, 0.42)],
 	["cementMixer", "水泥搅拌机", "Cement Mixer", 240.0, Color(0.5, 0.48, 0.4)],
+	# 5c：玩家可摆的门、闸门、梯子、陷阱、领地石
+	["oldWoodDoor", "木门", "Wood Door", 100.0, Color(0.5, 0.34, 0.2)],
+	["woodHatch", "木闸门", "Wood Hatch", 100.0, Color(0.5, 0.34, 0.2)],
+	["ladderWood", "木梯", "Wood Ladder", 60.0, Color(0.62, 0.45, 0.25)],
+	["ladderMetal", "铁梯", "Metal Ladder", 100.0, Color(0.55, 0.56, 0.58)],
+	["ladderSteel", "钢梯", "Steel Ladder", 160.0, Color(0.5, 0.53, 0.58)],
+	["trapSpikesWoodDmg0", "木钉陷阱", "Wood Spikes", 100.0, Color(0.55, 0.38, 0.2)],
+	["trapSpikesIronDmg0", "铁钉陷阱", "Iron Spikes", 180.0, Color(0.55, 0.56, 0.58)],
+	["landClaimBlock", "领地石", "Land Claim Block", 300.0, Color(0.35, 0.5, 0.42)],
 ]
+
+const DOORS := ["oldWoodDoor", "woodHatch"]
+const LADDERS := ["ladderWood", "ladderMetal", "ladderSteel"]
+const SPIKES := {
+	"trapSpikesWoodDmg0": {"dmg": 15.0, "slow": 1.0, "wear": 0.05},
+	"trapSpikesIronDmg0": {"dmg": 30.0, "slow": 1.0, "wear": 0.02},
+}
+const CLAIM_ID := "landClaimBlock"
+## 门/闸门的模型直接用楼里的预制体
+const SPECIAL_MODELS := {
+	"oldWoodDoor": "res://assets/poiprops/Doors_exteriorHouseDoorOldPrefab.res",
+	"woodHatch": "res://assets/poiprops/Doors_woodHatchPrefab.res",
+}
+static var _special_meshes := {}
+static var _special_mats := {}
 
 ## 工作站方块名 → 配方 area
 const STATION_AREAS := {
@@ -217,6 +241,123 @@ static func is_repair_tool(id: String) -> bool:
 
 static func is_valid_shape(shape: String) -> bool:
 	return SHAPES.has(shape)
+
+
+## 5c：门、闸门、梯子、尖刺、领地石
+static func is_door(id: String) -> bool:
+	return DOORS.has(base_of(id))
+
+
+static func is_ladder(id: String) -> bool:
+	return LADDERS.has(base_of(id))
+
+
+static func is_spike(id: String) -> bool:
+	return SPIKES.has(base_of(id))
+
+
+static func is_claim(id: String) -> bool:
+	return base_of(id) == CLAIM_ID
+
+
+static func is_special(id: String) -> bool:
+	return is_door(id) or is_ladder(id) or is_spike(id) or is_claim(id)
+
+
+static func trap_info(id: String) -> Dictionary:
+	return SPIKES.get(base_of(id), {})
+
+
+## 木门关着时是 2 米高的障碍；闸门是地上的盖板，矮
+static func is_tall(id: String) -> bool:
+	return base_of(id) == "oldWoodDoor"
+
+
+## 特殊方块的可视节点；原点在格子角上，模型按格子尺寸摆好
+static func make_special_node(id: String) -> Node3D:
+	var base := base_of(id)
+	var holder := Node3D.new()
+	var mi := MeshInstance3D.new()
+	var mesh: Mesh = null
+	if SPECIAL_MODELS.has(base):
+		var path: String = SPECIAL_MODELS[base]
+		if ResourceLoader.exists(path):
+			var res = load(path)
+			if res is Mesh:
+				mesh = res
+	if mesh != null:
+		mi.mesh = mesh
+		var aabb := mesh.get_aabb()
+		var scale := Vector3.ONE
+		if base == "woodHatch":
+			scale = Vector3(1.0 / maxf(aabb.size.x, 0.01), 1.0, 1.0 / maxf(aabb.size.z, 0.01))
+		mi.scale = scale
+		var center := aabb.get_center()
+		mi.position = Vector3(0.5, -aabb.position.y, 0.5) - Vector3(center.x * scale.x, 0.0, center.z * scale.z)
+	else:
+		mi.mesh = _special_mesh(base)
+		mi.material_override = _special_material(base)
+	holder.add_child(mi)
+	holder.set_meta("special_mesh", mi)
+	return holder
+
+
+static func _special_mesh(base: String) -> Mesh:
+	if _special_meshes.has(base):
+		return _special_meshes[base]
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var boxes := []
+	if base == "ladderWood" or base == "ladderMetal" or base == "ladderSteel":
+		boxes = [
+			[Vector3(0.1, 0, 0.43), Vector3(0.18, 1.95, 0.57)],
+			[Vector3(0.82, 0, 0.43), Vector3(0.9, 1.95, 0.57)],
+		]
+		var y := 0.2
+		while y < 1.9:
+			boxes.append([Vector3(0.1, y, 0.43), Vector3(0.9, y + 0.07, 0.57)])
+			y += 0.3
+	elif SPIKES.has(base):
+		boxes = [[Vector3(0, 0, 0), Vector3(1, 0.12, 1)]]
+		for i in 4:
+			for j in 4:
+				var x := 0.1 + i * 0.23
+				var z := 0.1 + j * 0.23
+				boxes.append([Vector3(x, 0.12, z), Vector3(x + 0.07, 0.62, z + 0.07)])
+	elif base == CLAIM_ID:
+		boxes = [
+			[Vector3(0.2, 0, 0.2), Vector3(0.8, 0.4, 0.8)],
+			[Vector3(0.45, 0.4, 0.45), Vector3(0.55, 1.35, 0.55)],
+			[Vector3(0.55, 0.95, 0.47), Vector3(0.92, 1.15, 0.53)],
+		]
+	else:
+		boxes = [[Vector3.ZERO, Vector3.ONE]]
+	for b in boxes:
+		_add_box(st, b[0], b[1])
+	var mesh := st.commit()
+	_special_meshes[base] = mesh
+	return mesh
+
+
+static func _add_box(st: SurfaceTool, lo: Vector3, hi: Vector3) -> void:
+	for f in _box_faces(lo, hi):
+		var pts: Array = f["p"]
+		var order := [0, 1, 2, 0, 2, 3] if pts.size() == 4 else [0, 1, 2]
+		for i in order:
+			st.set_normal(f["n"])
+			st.set_uv(Vector2.ZERO)
+			st.add_vertex(pts[i])
+
+
+static func _special_material(base: String) -> StandardMaterial3D:
+	if _special_mats.has(base):
+		return _special_mats[base]
+	var m := StandardMaterial3D.new()
+	m.albedo_color = info(base).get("color", Color(0.55, 0.4, 0.25))
+	m.roughness = 0.9
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_special_mats[base] = m
+	return m
 
 
 ## 世界坐标 → 方块本地 0..1 坐标（反向旋转，斜坡/楼梯用）

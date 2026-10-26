@@ -15,6 +15,8 @@ var horde: Horde
 var looting: LootingSystem
 var vehicles: Vehicles
 var sleepers: Sleepers
+var trader: TraderSystem
+var quests: QuestSystem
 var respawn: RespawnSystem
 var crafting: Crafting
 var save_game: SaveGame
@@ -80,6 +82,17 @@ func _ready() -> void:
 	sleepers = Sleepers.new()
 	sleepers.setup(self, world, spawner, player_sys, rng)
 	sleepers.build()
+
+	trader = TraderSystem.new()
+	trader.setup(self, world, player_sys, inventory, hud, rng)
+	add_child(trader)
+	trader.build()
+	hud.trader_panel.bind(trader)
+	quests = QuestSystem.new()
+	quests.setup(self, world, trader, sleepers, player_sys, inventory, hud, rng)
+	quests.build()
+	hud.quest_panel.bind(quests)
+	hud.trader_panel.quests = quests
 
 	combat = CombatSystem.new()
 	combat.setup(self, get_tree(), player_sys, inventory, world, hud, player_sys.arms, spawner.zombie_root, rng)
@@ -191,6 +204,8 @@ func start(fresh := true) -> void:
 	spawner.reset()
 	horde.reset()
 	sleepers.reset()
+	trader.reset()
+	quests.reset()
 	looting.reset()
 	vehicles.reset()
 	respawn.reset()
@@ -247,6 +262,19 @@ func _compass_markers() -> Array:
 		out.append(_compass_marker(respawn.respawn_point(), Color(0.45, 0.75, 1.0)))
 	for b in looting.corpse_bags:
 		out.append(_compass_marker(b.pos, Color(1.0, 0.4, 0.3)))
+	if world.has_claim():
+		out.append(_compass_marker(world.claim_pos(), Color(0.4, 1.0, 0.65)))
+	if trader:
+		out.append(_compass_marker(trader.site, Color(1.0, 0.85, 0.35)))
+	if quests and not quests.active.is_empty():
+		var st := str(quests.active.get("state", "go"))
+		var qpos: Vector3 = trader.site if st in ["return", "reward"] else quests.active.get("target", trader.site)
+		var qc := Color(0.4, 0.9, 1.0)
+		if str(quests.active.get("kind", "")) == "clear":
+			qc = Color(1.0, 0.45, 0.35)
+		elif str(quests.active.get("kind", "")) == "buried":
+			qc = Color(0.55, 1.0, 0.45)
+		out.append(_compass_marker(qpos, qc))
 	return out
 
 
@@ -269,6 +297,44 @@ func _die() -> void:
 	hud.close_game_panels()
 	respawn.die()
 	save_game.save()
+
+
+## 5c 尖刺陷阱：踩上去的玩家和僵尸都掉血、减速，陷阱自己磨损
+func _update_traps(delta: float) -> void:
+	for c in world.trap_cells():
+		var v: Dictionary = world.voxels.get(c, {})
+		if v.is_empty():
+			continue
+		var info := Blocks.trap_info(str(v.id))
+		if info.is_empty():
+			continue
+		var cd := float(v.get("trap_cd", 0.0)) - delta
+		if cd > 0.0:
+			v["trap_cd"] = cd
+			continue
+		var hit := false
+		var pp: Vector3 = player_sys.player.position
+		if Vector2(pp.x - c.x - 0.5, pp.z - c.z - 0.5).length() < 0.55 \
+				and pp.y >= float(c.y) - 0.2 and pp.y <= float(c.y) + 1.3:
+			player_sys.take_damage(float(info.dmg), "trap")
+			player_sys.slow_t = 1.0
+			hit = true
+		for z in spawner.zombie_root.get_children():
+			if not (z is Zombie) or z.dead:
+				continue
+			var zp: Vector3 = z.global_position
+			if Vector2(zp.x - c.x - 0.5, zp.z - c.z - 0.5).length() < 0.55 \
+					and zp.y >= float(c.y) - 0.2 and zp.y <= float(c.y) + 1.3:
+				z.take_hit(float(info.dmg), zp + Vector3.UP)
+				z.slow_t = 1.0
+				hit = true
+		if hit:
+			v["trap_cd"] = 0.8
+			var max_hp := float(Blocks.info(str(v.id)).get("hp", 100.0))
+			v.hp = float(v.hp) - max_hp * float(info.wear)
+			if float(v.hp) <= 0.0:
+				world.remove_voxel(c)
+			GameState.block_changed.emit(c)
 
 
 func _on_respawned(_pos: Vector3) -> void:
@@ -323,6 +389,9 @@ func _process(delta: float) -> void:
 	spawner.update(delta, day, night, blood_moon)
 	horde.update(delta, blood_moon, day)
 	sleepers.update(delta)
+	trader.update(delta)
+	quests.update(delta)
+	_update_traps(delta)
 	respawn.update(delta)
 	player_sys.update_survival(delta, time_sys.hours - hours_before)
 	if graphics.sky_due(delta):

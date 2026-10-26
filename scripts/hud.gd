@@ -83,6 +83,9 @@ var _craft_btn := Button.new()
 var _skills_btn := Button.new()
 var craft_panel := CraftPanel.new()
 var skills_panel := SkillsPanel.new()
+var trader_panel := TraderPanel.new()
+var quest_panel := QuestPanel.new()
+var _quest_line := Label.new()
 var _start_panel := PanelContainer.new()
 var _start_info := Label.new()
 var _end_panel := PanelContainer.new()
@@ -448,6 +451,14 @@ func _ready() -> void:
 	_skills_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_skills_btn)
 	_root.add_child(skills_panel)
+	_root.add_child(trader_panel)
+	_root.add_child(quest_panel)
+	_quest_line.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	_quest_line.position = Vector2(28, 208)
+	_quest_line.add_theme_font_size_override("font_size", 18)
+	_quest_line.modulate = Color(1.0, 0.9, 0.55)
+	_quest_line.visible = false
+	_safe.add_child(_quest_line)
 
 	# 摇杆：平时停在左下角，手指按在左半屏哪里就移到哪里
 	for p in [_joy_base, _joy_knob]:
@@ -1168,10 +1179,17 @@ func close_game_panels() -> void:
 	_bag_panel.visible = false
 	craft_panel.visible = false
 	skills_panel.visible = false
+	trader_panel.visible = false
+	quest_panel.visible = false
 	container_panel.close_panel()
 
 
 ## 蹲着时按钮高亮
+func set_quest_line(text: String) -> void:
+	_quest_line.text = text
+	_quest_line.visible = text != ""
+
+
 func set_crouch(on: bool) -> void:
 	_crouch_btn.text = "站" if on else "蹲"
 	_crouch_btn.self_modulate = Color(1.0, 0.85, 0.4) if on else Color.WHITE
@@ -1615,8 +1633,8 @@ func consume_look() -> Vector2:
 
 func _panel_open() -> bool:
 	return _bag_panel.visible or container_panel.visible or craft_panel.visible or skills_panel.visible \
-		or _start_panel.visible or _end_panel.visible or _pause_panel.visible or _settings_panel.visible \
-		or _blackout.visible
+		or trader_panel.visible or quest_panel.visible or _start_panel.visible \
+		or _end_panel.visible or _pause_panel.visible or _settings_panel.visible or _blackout.visible
 
 
 func _press_attack(pressed: bool) -> void:

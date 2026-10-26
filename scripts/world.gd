@@ -107,6 +107,9 @@ var _vox_chunks := {}   # Vector3i -> {mi, cells: {格子: true}}
 var _vox_dirty := {}
 var _vox_flush_queued := false
 var _station_nodes := {}  # 工作站格子 -> MeshInstance3D（用模型，不进区块网格）
+var _special_nodes := {}  # 5c 门/梯子/陷阱/领地石的模型节点
+var _claim_cell := Vector3i(-1, -1, -1)
+var _trap_cells := {}     # 5c 尖刺格子 -> true
 
 ## 画质档位（0 省电 / 1 均衡 / 2 高清）
 var quality := 1
@@ -527,21 +530,22 @@ func line_blocked(a: Vector3, b: Vector3) -> bool:
 func _point_blocked(p: Vector3) -> bool:
 	for it in interiors:
 		if it.contains(p):
-			return it.solid_point(p) or (not _low.is_empty() and _low.has(Vector2i(floori(p.x), floori(p.z))) and p.y < 2.0)
+			return it.solid_point(p) or (p.y < 2.0 and low_blocked(floori(p.x), floori(p.z)))
 	var gx := floori(p.x)
 	var gz := floori(p.z)
-	return _cell(gx, gz) or _iwall_at(gx, gz) or \
-		(not _low.is_empty() and _low.has(Vector2i(gx, gz)) and p.y < 2.0)
+	return _cell(gx, gz) or _iwall_at(gx, gz) or (p.y < 2.0 and low_blocked(gx, gz))
 
 
 ## 子弹飞到这一点打中墙、楼板没有（地面、楼、自己摆的方块）
 func solid_at(p: Vector3) -> bool:
 	if p.y < 0.0:
 		return true
+	var cv: Dictionary = voxels.get(cell_of(p), {})
+	var solid_voxel := not cv.is_empty() and not bool(cv.get("open", false)) and not Blocks.is_ladder(str(cv.id))
 	for it in interiors:
 		if it.contains(p):
-			return it.solid_point(p) or voxels.has(cell_of(p))
-	return (p.y < 30.0 and _cell(floori(p.x), floori(p.z))) or voxels.has(cell_of(p))
+			return it.solid_point(p) or solid_voxel
+	return (p.y < 30.0 and _cell(floori(p.x), floori(p.z))) or solid_voxel
 
 
 ## 离玩家最近、够得着的容器（楼里的容器还要在同一层）
@@ -648,8 +652,12 @@ func _start_flow(c: Vector2i) -> void:
 func path_block_cost(gx: int, gz: int) -> int:
 	var v0: Dictionary = voxels.get(Vector3i(gx, 0, gz), {})
 	var v1: Dictionary = voxels.get(Vector3i(gx, 1, gz), {})
+	if not v0.is_empty() and (bool(v0.get("open", false)) or Blocks.is_ladder(str(v0.id))):
+		return 0
 	if v0.is_empty() and v1.is_empty():
 		return 0
+	if not v0.is_empty() and Blocks.is_tall(str(v0.id)):
+		return maxi(1, int(ceil(float(v0.get("hp", 100.0)) / GameConfig.ZOMBIE_FLOW_DPS * GameConfig.BLOCK_PATH_WEIGHT)))
 	if not v0.is_empty() and v1.is_empty():
 		return 0
 	var vv: Dictionary = v0 if not v0.is_empty() else v1
@@ -838,7 +846,7 @@ func _cell(gx: int, gz: int) -> bool:
 
 ## 楼，或者贴地两格里有自己摆的方块（僵尸过不去、绕着走）
 func _wall(gx: int, gz: int) -> bool:
-	return _cell(gx, gz) or _iwall_at(gx, gz) or (not _low.is_empty() and _low.has(Vector2i(gx, gz)))
+	return _cell(gx, gz) or _iwall_at(gx, gz) or low_blocked(gx, gz)
 
 
 func _iwall_at(gx: int, gz: int) -> bool:
@@ -884,11 +892,105 @@ func has_voxel(c: Vector3i) -> bool:
 	return voxels.has(c)
 
 
-## 这一列玩家方块堆到多高（僵尸踩上去的高度）
+## 这一列玩家方块堆到多高（僵尸踩上去的高度）；开着的门/梯子不算
 func low_top(gx: int, gz: int) -> float:
-	if voxels.has(Vector3i(gx, 1, gz)):
-		return 2.0
-	return 1.0 if voxels.has(Vector3i(gx, 0, gz)) else 0.0
+	var top := 0.0
+	for y in 2:
+		var v: Dictionary = voxels.get(Vector3i(gx, y, gz), {})
+		if v.is_empty() or bool(v.get("open", false)) or Blocks.is_ladder(str(v.id)):
+			continue
+		var h := Blocks.top_height(str(v.get("shape", "cube")), int(v.get("rot", 0)),
+			Vector3(0.5, 0.0, 0.5))
+		top = maxf(top, float(y) + h)
+	return top
+
+
+## 这一列有没有挡路/挡视线的玩家方块（开着的门、梯子不挡）
+func low_blocked(gx: int, gz: int) -> bool:
+	if _low.is_empty():
+		return false
+	for y in 2:
+		var v: Dictionary = voxels.get(Vector3i(gx, y, gz), {})
+		if v.is_empty() or bool(v.get("open", false)) or Blocks.is_ladder(str(v.id)):
+			continue
+		return true
+	return false
+
+
+## 5c：这一格是不是关着的、要砸的高门
+func is_tall_cell(c: Vector3i) -> bool:
+	var v: Dictionary = voxels.get(c, {})
+	return not v.is_empty() and Blocks.is_tall(str(v.id)) and not bool(v.get("open", false))
+
+
+func has_claim() -> bool:
+	return _claim_cell.y >= 0
+
+
+func claim_cell() -> Vector3i:
+	return _claim_cell
+
+
+func claim_pos() -> Vector3:
+	return Vector3(_claim_cell) + Vector3(0.5, 0.0, 0.5)
+
+
+func trap_cells() -> Array:
+	return _trap_cells.keys()
+
+
+## 玩家面前能开关的门/闸门：{cell, open, zh}
+func nearest_voxel_door(p: Vector3, facing: Vector3, reach := 2.2) -> Dictionary:
+	var best := {}
+	var best_d := INF
+	for c in voxels:
+		var v: Dictionary = voxels[c]
+		if not Blocks.is_door(str(v.id)):
+			continue
+		var center := Vector3(c) + Vector3(0.5, 0.5, 0.5)
+		var flat := Vector2(center.x - p.x, center.z - p.z)
+		var d := flat.length()
+		if d > reach + 0.8 or absf(center.y - p.y) > 2.6:
+			continue
+		if d > 0.15 and facing.dot(Vector3(flat.x, 0, flat.y).normalized()) < 0.05:
+			continue
+		if d < best_d:
+			best_d = d
+			best = {"cell": c, "open": bool(v.get("open", false)),
+				"zh": Blocks.info(str(v.id)).get("zh", "门")}
+	return best
+
+
+func toggle_voxel_door(c: Vector3i) -> bool:
+	var v: Dictionary = voxels.get(c, {})
+	if v.is_empty() or not Blocks.is_door(str(v.id)):
+		return false
+	v["open"] = not bool(v.get("open", false))
+	_update_special_node(c)
+	var gs := _game_state()
+	if gs:
+		gs.emit_signal("block_changed", c)
+	return bool(v.open)
+
+
+func set_voxel_open(c: Vector3i, open: bool) -> void:
+	var v: Dictionary = voxels.get(c, {})
+	if v.is_empty() or not Blocks.is_door(str(v.id)):
+		return
+	v["open"] = open
+	_update_special_node(c)
+
+
+func _update_special_node(c: Vector3i) -> void:
+	var node: Node3D = _special_nodes.get(c)
+	var v: Dictionary = voxels.get(c, {})
+	if node == null or v.is_empty():
+		return
+	var open := bool(v.get("open", false))
+	if str(v.id) == "woodHatch":
+		node.rotation.x = -PI * 0.5 if open else 0.0
+	else:
+		node.rotation.y = float(v.get("rot", 0)) * PI * 0.5 + (PI * 0.5 if open else 0.0)
 
 
 ## 这一列在 [脚底, 头顶] 这段高度里有没有迈不上去的方块
@@ -896,7 +998,7 @@ func _solid_column(gx: int, gz: int, p: Vector3) -> bool:
 	for y in range(maxi(0, floori(p.y + 0.05)), floori(p.y + 1.7) + 1):
 		var cell := Vector3i(gx, y, gz)
 		var v: Dictionary = voxels.get(cell, {})
-		if v.is_empty():
+		if v.is_empty() or bool(v.get("open", false)) or Blocks.is_ladder(str(v.id)):
 			continue
 		var local := Blocks.local_point(p, cell, int(v.get("rot", 0)))
 		var th := float(y) + Blocks.top_height(str(v.get("shape", "cube")), int(v.get("rot", 0)), local)
@@ -923,11 +1025,19 @@ func can_place(c: Vector3i) -> bool:
 func add_voxel(c: Vector3i, id: String, hp := -1.0, shape := "cube", rot := 0) -> bool:
 	if voxels.has(c) or voxels.size() >= GameConfig.BLOCK_LIMIT:
 		return false
+	if Blocks.is_claim(id) and has_claim():
+		return false
 	if not Blocks.is_valid_shape(shape):
 		shape = "cube"
 	rot = posmod(rot, 4)
 	voxels[c] = {"id": id, "hp": hp if hp > 0.0 else float(Blocks.info(id).get("hp", 100.0)),
 		"shape": shape, "rot": rot}
+	if Blocks.is_door(id):
+		voxels[c]["open"] = false
+	if Blocks.is_spike(id):
+		_trap_cells[c] = true
+	if Blocks.is_claim(id):
+		_claim_cell = c
 	var area := Blocks.station_area(id)
 	if area != "":
 		if not stations.has(area):
@@ -939,6 +1049,14 @@ func add_voxel(c: Vector3i, id: String, hp := -1.0, shape := "cube", rot := 0) -
 		node.position = Vector3(c) + Blocks.mesh_offset(id)
 		_voxel_root.add_child(node)
 		_station_nodes[c] = node
+	elif Blocks.is_special(id):
+		_ensure_voxel_root()
+		var holder := Blocks.make_special_node(id)
+		holder.position = Vector3(c)
+		holder.rotation.y = float(rot) * PI * 0.5
+		_voxel_root.add_child(holder)
+		_special_nodes[c] = holder
+		_update_special_node(c)
 	else:
 		_vox_mark(c, true)
 	if c.y <= 1:
@@ -1128,8 +1246,16 @@ func remove_voxel(c: Vector3i) -> String:
 		_station_nodes.erase(c)
 		if is_instance_valid(node):
 			node.queue_free()
+	elif _special_nodes.has(c):
+		var sn: Node = _special_nodes[c]
+		_special_nodes.erase(c)
+		if is_instance_valid(sn):
+			sn.queue_free()
 	else:
 		_vox_mark(c, false)
+	_trap_cells.erase(c)
+	if _claim_cell == c:
+		_claim_cell = Vector3i(-1, -1, -1)
 	if c.y <= 1:
 		var k := Vector2i(c.x, c.z)
 		_low[k] = _low.get(k, 1) - 1
@@ -1169,6 +1295,12 @@ func clear_voxels() -> void:
 		if is_instance_valid(node):
 			node.queue_free()
 	_station_nodes.clear()
+	for node in _special_nodes.values():
+		if is_instance_valid(node):
+			(node as Node).queue_free()
+	_special_nodes.clear()
+	_trap_cells.clear()
+	_claim_cell = Vector3i(-1, -1, -1)
 	for ch in _vox_chunks.values():
 		if ch.get("mi") and is_instance_valid(ch.mi):
 			(ch.mi as Node).queue_free()
@@ -1181,7 +1313,8 @@ func voxel_save() -> Array:
 	var out := []
 	for c in voxels:
 		var v: Dictionary = voxels[c]
-		out.append([c.x, c.y, c.z, v.id, v.hp, v.get("shape", "cube"), int(v.get("rot", 0))])
+		out.append([c.x, c.y, c.z, v.id, v.hp, v.get("shape", "cube"), int(v.get("rot", 0)),
+			1 if bool(v.get("open", false)) else 0])
 	return out
 
 
@@ -1189,10 +1322,13 @@ func voxel_load(list: Array) -> void:
 	clear_voxels()
 	for e in list:
 		if e is Array and e.size() >= 4 and Blocks.is_block(str(e[3])):
-			add_voxel(Vector3i(int(e[0]), int(e[1]), int(e[2])), str(e[3]),
+			var c := Vector3i(int(e[0]), int(e[1]), int(e[2]))
+			add_voxel(c, str(e[3]),
 				float(e[4]) if e.size() > 4 else -1.0,
 				str(e[5]) if e.size() > 5 else "cube",
 				int(e[6]) if e.size() > 6 else 0)
+			if e.size() > 7 and bool(e[7]):
+				set_voxel_open(c, true)
 
 
 ## 这一格是什么工作站；不是返回空串
@@ -1243,7 +1379,7 @@ func floor_under(p: Vector3, radius: float) -> float:
 		for gx in range(floori(p.x - radius), floori(p.x + radius) + 1):
 			for y in range(top, -1, -1):
 				var v: Dictionary = voxels.get(Vector3i(gx, y, gz), {})
-				if v.is_empty():
+				if v.is_empty() or bool(v.get("open", false)) or Blocks.is_ladder(str(v.id)):
 					continue
 				var local := Blocks.local_point(p, Vector3i(gx, y, gz), int(v.get("rot", 0)))
 				var th := float(y) + Blocks.top_height(str(v.get("shape", "cube")), int(v.get("rot", 0)), local)
@@ -1958,6 +2094,15 @@ func ladder_at(p: Vector3) -> bool:
 	for it in interiors:
 		if it.contains(p) and it.ladder_at(p):
 			return true
+	if voxels.is_empty():
+		return false
+	var y0 := floori(p.y)
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			for yy in [y0, y0 - 1]:
+				var v: Dictionary = voxels.get(Vector3i(floori(p.x) + dx, yy, floori(p.z) + dz), {})
+				if not v.is_empty() and Blocks.is_ladder(str(v.id)):
+					return true
 	return false
 
 
