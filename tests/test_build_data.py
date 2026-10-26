@@ -517,3 +517,35 @@ class ProgressionDataTest(unittest.TestCase):
     def test_level_range_interpolation(self):
         self.assertEqual(build_data._expand_effect_levels("1,5", ".1,.5"),
                          [[1, 0.1], [2, 0.2], [3, 0.3], [4, 0.4], [5, 0.5]])
+
+
+MAGAZINE_XML = """<items>
+  <item name="handgunsSkillMagazine">
+    <property name="Tags" value="handgunsCSM,csm"/>
+    <property name="CustomIcon" value="bookHandgunMagazine"/>
+    <property name="Unlocks" value="craftingHandguns"/>
+    <property name="DescriptionKey" value="handgunsSkillMagazineDesc"/>
+  </item>
+  <item name="masterSkillMagazine"><property name="Unlocks" value="craftingRifles"/></item>
+  <item name="questRewardT1SkillMagazineBundle"><property name="Unlocks" value="craftingBows"/></item>
+</items>"""
+
+
+class BookDataTest(unittest.TestCase):
+    def test_magazine_items(self):
+        items = build_data.build_magazine_items(MAGAZINE_XML, {"handgunsSkillMagazine": "手枪弹匣"})
+        self.assertIn("handgunsSkillMagazine", items)
+        self.assertEqual(items["handgunsSkillMagazine"]["zh"], "手枪弹匣")
+        self.assertIn("books", items["handgunsSkillMagazine"]["tags"])
+        self.assertNotIn("masterSkillMagazine", items)
+        self.assertNotIn("questRewardT1SkillMagazineBundle", items)
+
+    def test_recipe_category_and_tier(self):
+        r = {"tags": ["learnable", "perkGunslinger", "workbenchCrafting"], "cat": "weapon",
+             "id": "gunHandgunT1Pistol"}
+        self.assertEqual(build_data._recipe_category(r), "craftingHandguns")
+        items = {"gunHandgunT1Pistol": {"tags": "T1,weapon,ranged,perkGunslinger"}}
+        self.assertEqual(build_data._recipe_level(r, items), 2)
+        r2 = {"tags": ["learnable", "cookingPotFood"], "cat": "food", "id": "foodX"}
+        self.assertEqual(build_data._recipe_category(r2), "craftingFood")
+        self.assertEqual(build_data._recipe_level(r2, {}), 1)

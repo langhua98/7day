@@ -32,6 +32,8 @@ var station_queues := {}
 var station_states := {}
 ## 读书学会的配方（第 7 步用）
 var unlocked := {}
+## 测试模式/正式模式：true 时所有配方都能做（C.RECIPES_ALL_UNLOCKED；测试里可临时关掉）
+var recipes_all_unlocked := C.RECIPES_ALL_UNLOCKED
 ## 篝火光：格子 -> OmniLight3D
 var _lights := {}
 
@@ -65,6 +67,7 @@ func reset() -> void:
 	station_queues.clear()
 	station_states.clear()
 	unlocked.clear()
+	recipes_all_unlocked = C.RECIPES_ALL_UNLOCKED
 	GameState.craft_queue_changed.emit()
 
 
@@ -118,8 +121,6 @@ func list(cat := "", area = null) -> Array:
 			continue
 		if area != null and str(r.get("area", "")) != str(area):
 			continue
-		if not is_unlocked(key):
-			continue
 		out.append(key)
 	out.sort_custom(func(a, b): return str(recipes[a].zh) < str(recipes[b].zh))
 	return out
@@ -129,7 +130,12 @@ func is_unlocked(key: String) -> bool:
 	var r := recipe(key)
 	if r.is_empty():
 		return false
-	return C.RECIPES_ALL_UNLOCKED or not r.get("learnable", false) or unlocked.has(key)
+	if recipes_all_unlocked or not r.get("learnable", false) or unlocked.has(key):
+		return true
+	var req := Books.recipe_requirement(key)
+	if req.is_empty():
+		return false
+	return Books.category_level(str(req.category)) >= int(req.level)
 
 
 ## 一批要多少个某材料：官方 × RECIPE_COST_MULT，向上取整，至少 1
@@ -168,7 +174,7 @@ func why_not(key: String, n := 1, station = null) -> String:
 	if r.is_empty():
 		return "没有这个配方"
 	if not is_unlocked(key):
-		return "还没学会"
+		return Books.requirement_text(key)
 	var area := str(r.get("area", ""))
 	if area != "":
 		if station == null:

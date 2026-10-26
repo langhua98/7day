@@ -6,6 +6,7 @@
   blocks.json   {id: {hp, mass, glue, overhang, category, texture, repair, upgrade}}
   recipes.json  {key: {id, count, area, time, tool, tags, cat, zh, learnable, ingredients:[{id,count,zh}]}}
   progression.json  等级曲线、5 项属性、技能每级 passive_effect（7a）
+  books.json    杂志类别/解锁配方、技能书效果（7b）
 只保留 assets/index/icon_to_model.json 里的物品，再加上 scripts/blocks.gd 的方块。
 方块血量、升级、修理、悬挑来自官方 blocks.xml + materials.xml。
 Data_Config.zip 从云盘 /7day/小橘素材库/ 下载；令牌只读环境变量 XIAOJU_TOKEN。
@@ -1180,6 +1181,152 @@ def build_progression(prog_xml: str, loc: dict, dest: Path) -> dict:
     return out
 
 
+MAGAZINE_SKIP = re.compile(r"master|admin|questReward|modGun", re.I)
+TAG_TO_CRAFT = {
+    "perkGunslinger": "craftingHandguns", "handgunSkill": "craftingHandguns",
+    "perkDeadEye": "craftingRifles", "rifleSkill": "craftingRifles",
+    "perkBoomstick": "craftingShotguns", "shotgunSkill": "craftingShotguns",
+    "perkMachineGunner": "craftingMachineGuns", "machinegunSkill": "craftingMachineGuns",
+    "perkArchery": "craftingBows", "bowSkill": "craftingBows",
+    "perkJavelinMaster": "craftingSpears", "spearSkill": "craftingSpears",
+    "perkPummelPete": "craftingClubs", "clubSkill": "craftingClubs",
+    "perkDeepCuts": "craftingBlades", "bladeSkill": "craftingBlades",
+    "perkSkullCrusher": "craftingSledgehammers", "sledgeSkill": "craftingSledgehammers",
+    "perkBrawler": "craftingKnuckles", "knuckleSkill": "craftingKnuckles",
+    "perkMiner69r": "craftingHarvestingTools", "harvestingSkill": "craftingHarvestingTools",
+    "perkSalvageOperations": "craftingSalvageTools", "salvagingSkill": "craftingSalvageTools",
+    "repairingSkill": "craftingRepairTools",
+    "perkMasterChef": "craftingFood", "cookingPotFood": "craftingFood", "grill": "craftingFood",
+    "medicalSkill": "craftingMedical",
+    "perkMediumArmor": "craftingArmor", "perkHeavyArmor": "craftingArmor",
+    "armorLightSkill": "craftingArmor", "armorMediumSkill": "craftingArmor",
+    "armorHeavySkill": "craftingArmor",
+    "electricianSkill": "craftingElectrician", "trapsSkill": "craftingTraps",
+    "workstationSkill": "craftingWorkstations", "vehiclesSkill": "craftingVehicles",
+    "perkAdvancedEngineering": "craftingWorkstations",
+}
+CRAFT_FALLBACK = {"weapon": "craftingRifles", "tool": "craftingHarvestingTools",
+                  "medical": "craftingMedical", "food": "craftingFood",
+                  "build": "craftingWorkstations", "ammo": "craftingRifles",
+                  "other": "craftingWorkstations"}
+BOOK_EFFECTS = {
+    "bookShotgunMessiahDamage": ("damage", "perkBoomstick", 0.02),
+    "bookSniperDamage": ("damage", "perkDeadEye", 0.02),
+    "bookAutoWeaponsDamage": ("damage", "perkMachineGunner", 0.02),
+    "bookEnforcerDamage": ("damage", "perkGunslinger", 0.02),
+    "bookPistolPeteTakeAim": ("damage", "perkGunslinger", 0.02),
+    "bookBarBrawling1BasicMoves": ("damage", "perkBrawler", 0.02),
+    "bookBatterUpBigHits": ("damage", "perkPummelPete", 0.02),
+    "bookSledgeSagaKnockdown": ("damage", "perkSkullCrusher", 0.02),
+    "bookSpearHunter1Damage": ("damage", "perkJavelinMaster", 0.02),
+    "bookRangersArrowRecovery": ("damage", "perkArchery", 0.02),
+    "bookNightStalkerStealthDamage": ("stealth", "", 0.02),
+    "bookArtOfMiningLuckyStrike": ("harvest", "", 0.02),
+    "bookTechJunkie1Damage": ("harvest", "", 0.01),
+    "bookUrbanCombatLanding": ("stamina", "", 2.0),
+    "bookLuckyLooterDukes": ("loot", "", 0.02),
+    "bookHuntingJournalBears": ("loot", "", 0.01),
+    "bookWasteTreasuresHoney": ("loot", "", 0.02),
+    "bookFiremansAlmanacHeat": ("stamina", "", 2.0),
+}
+
+
+def build_magazine_items(items_xml: str, loc: dict) -> dict:
+    """官方 crafting 杂志（handgunsSkillMagazine 等）补进物品表，README 的图标没导也能读。"""
+    out = {}
+    root = ET.fromstring(items_xml)
+    for it in root.iter("item"):
+        name = it.get("name", "")
+        if not name.endswith("SkillMagazine") or MAGAZINE_SKIP.search(name):
+            continue
+        props = {p.get("name"): p.get("value", "") for p in it.findall("property")}
+        if "Unlocks" not in props:
+            continue
+        out[name] = {
+            "id": name, "stack": 20, "value": int(props.get("EconomicValue", 100) or 100),
+            "durability": 0.0, "tags": (props.get("Tags", "") + ",books,magazine").strip(","),
+            "zh": loc.get(name) or loc.get(props.get("DescriptionKey", "")) or name,
+            "magazine": 0, "rpm": 0.0, "ammo": "", "reload": 0.0, "damage": 0.0,
+        }
+    return out
+
+
+def _recipe_category(r: dict) -> str:
+    for tag in r.get("tags", []):
+        if tag in TAG_TO_CRAFT:
+            return TAG_TO_CRAFT[tag]
+    return CRAFT_FALLBACK.get(str(r.get("cat", "other")), "craftingWorkstations")
+
+
+def _recipe_level(r: dict, items_table: dict) -> int:
+    tags = set(r.get("tags", []))
+    item = items_table.get(str(r.get("id", "")), {})
+    tags.update(str(item.get("tags", "")).split(","))
+    for n in range(5):
+        if "T%d" % n in tags:
+            return n + 1
+    return 1
+
+
+def build_books(zip_path: Path, dest: Path) -> dict:
+    items_path = dest / "data" / "items.json"
+    recipes_path = dest / "data" / "recipes.json"
+    if not items_path.exists() or not recipes_path.exists():
+        sys.exit("找不到 items.json / recipes.json，先生成物品和配方")
+    items_table = json.loads(items_path.read_text(encoding="utf-8"))
+    recipes = json.loads(recipes_path.read_text(encoding="utf-8"))
+    items_xml = read_config_file(zip_path, "items.xml")
+    prog_xml = read_config_file(zip_path, "progression.xml")
+    loc = load_localization(read_config_file(zip_path, "Localization.csv"))
+    if not items_xml or not prog_xml:
+        sys.exit(f"{zip_path} 里没有 items.xml 或 progression.xml")
+    prog = ET.fromstring(prog_xml)
+    categories = {}
+    for cs in prog.iter("crafting_skill"):
+        name = cs.get("name", "")
+        categories[name] = {
+            "name": loc.get(cs.get("name_key", ""), cs.get("name_key", name)),
+            "desc": loc.get(cs.get("desc_key", ""), ""),
+            "max_level": 5,
+            "magazines": [],
+            "unlocks": {},
+        }
+    magazines = {}
+    root = ET.fromstring(items_xml)
+    for it in root.iter("item"):
+        name = it.get("name", "")
+        if not name.endswith("SkillMagazine") or MAGAZINE_SKIP.search(name):
+            continue
+        props = {p.get("name"): p.get("value", "") for p in it.findall("property")}
+        cat = props.get("Unlocks", "")
+        if cat in categories:
+            magazines[name] = {"zh": loc.get(name, name), "category": cat,
+                               "icon": props.get("CustomIcon", "")}
+            categories[cat]["magazines"].append(name)
+    for key, r in recipes.items():
+        if not r.get("learnable"):
+            continue
+        cat = _recipe_category(r)
+        if cat not in categories:
+            continue
+        level = _recipe_level(r, items_table)
+        categories[cat]["unlocks"][key] = level
+    books = {}
+    for name, row in items_table.items():
+        if name in magazines or not str(row.get("tags", "")).find("books") >= 0:
+            continue
+        kind, key, value = BOOK_EFFECTS.get(name, ("loot", "", 0.01))
+        books[name] = {"zh": row.get("zh", name), "effect": {"type": kind, "key": key, "value": value}}
+    out = {"categories": categories, "magazines": magazines, "books": books}
+    out_dir = dest / "data"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / "books.json"
+    path.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
+    n_unlocks = sum(len(c["unlocks"]) for c in categories.values())
+    print(f"书/杂志: {len(magazines)} 本杂志、{len(books)} 本书、{n_unlocks} 条配方解锁 → {path}")
+    return out
+
+
 def build_all(dest: Path, zip_path: Path, index_path: Path, only: str = "all") -> dict:
     items_xml, loc_csv, gs_xml, eg_xml = read_config_zip(zip_path)
     gd_text = (ROOT / "scripts" / "blocks.gd").read_text(encoding="utf-8")
@@ -1210,6 +1357,7 @@ def build_all(dest: Path, zip_path: Path, index_path: Path, only: str = "all") -
             if b["id"] in official:
                 b["hp"] = official[b["id"]]["hp"]
         out = build_items(items, loc, index_rows, blocks)
+        out.update(build_magazine_items(items_xml, loc))
         out_dir = dest / "data"
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / "items.json"
@@ -1312,6 +1460,8 @@ def build_all(dest: Path, zip_path: Path, index_path: Path, only: str = "all") -
         print(f"配方: 官方 {len(raw)} 条，保留 {len(recipes)} 条，丢弃 {sum(dropped.values())} 条 → {path}")
         for reason, n in sorted(dropped.items(), key=lambda kv: -kv[1]):
             print(f"  丢弃 {n} 条：{reason}")
+    if only in ("books", "all"):
+        build_books(zip_path, dest)
     return out
 
 
@@ -1320,7 +1470,7 @@ def main() -> int:
     ap.add_argument("--dest", default=str(DEFAULT_DEST), help="assets 目录")
     ap.add_argument("--zip", default="", help="本地 Data_Config.zip（不传就从云盘下载）")
     ap.add_argument("--index", default="", help="icon_to_model.json（默认 assets/index/）")
-    ap.add_argument("--only", default="all", choices=["all", "items", "buffs", "gamestages", "entitygroups", "entities", "recipes", "loot", "harvest", "blocks", "progression"], help="只生成某张表")
+    ap.add_argument("--only", default="all", choices=["all", "items", "buffs", "gamestages", "entitygroups", "entities", "recipes", "loot", "harvest", "blocks", "progression", "books"], help="只生成某张表")
     args = ap.parse_args()
     dest = Path(args.dest)
     zip_path = Path(args.zip) if args.zip else dest / "cache" / ZIP_NAME

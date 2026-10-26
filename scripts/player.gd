@@ -222,7 +222,7 @@ func update(delta: float) -> void:
 			# 脚步噪音：冲刺 8、走路 4、蹲走 1.5 米
 			var step_kind := "crouch" if crouching else ("sprint" if sprint else "walk")
 			GameState.make_noise(player.global_position, step_kind, 0.0,
-				Progression.noise_mult() if crouching else 1.0)
+				Progression.noise_mult() * (Books.stealth_mult() if crouching else 1.0))
 	arms.set_meta("walking", mv.length() * (1.6 if sprint else 1.0))
 
 
@@ -248,7 +248,7 @@ func _near_zombie_head() -> bool:
 
 ## 体力上限：100 加上状态修正（口渴 −25），最少 10
 func stamina_max() -> float:
-	return maxf(10.0, 100.0 + Status.offset("stamina_max") + Progression.stamina_max_bonus())
+	return maxf(10.0, 100.0 + Status.offset("stamina_max") + Progression.stamina_max_bonus() + Books.stamina_bonus())
 
 
 ## 生存数值：delta 真实秒，dh 这一帧走过的游戏小时

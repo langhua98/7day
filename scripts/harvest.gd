@@ -58,6 +58,13 @@ static func tool_kind(id: String) -> String:
 
 
 ## 不直接写 Progression：tools 的 -s 测试没有自动加载，静态工具要能在没有它时跑
+static func _books():
+	var loop := Engine.get_main_loop()
+	if loop is SceneTree:
+		return loop.root.get_node_or_null("Books")
+	return null
+
+
 static func _progression():
 	var loop := Engine.get_main_loop()
 	if loop is SceneTree:
@@ -82,7 +89,10 @@ static func drops(material_name: String, tool: String, rng: RandomNumberGenerato
 		mult = 2.0
 	var out := {}
 	var prog = _progression()
+	var books = _books()
 	var gather := float(prog.harvest_mult()) if prog != null else 1.0
+	if books != null:
+		gather *= float(books.harvest_mult())
 	for key in ["harvest", "destroy"]:
 		for row in mat.get(key, []):
 			var prob := float(row.get("prob", 1.0))

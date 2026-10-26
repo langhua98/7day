@@ -220,7 +220,9 @@ func _open_menu(i: int) -> void:
 	var kind: int = row.get("kind", -1)
 	_menu_label.text = Assets.display_name(s.id) + (" ×%d" % s.count if s.count > 1 else "") + \
 		("  Q%d" % s.quality if int(s.quality) > 0 else "")
-	if kind in [Assets.Kind.GUN, Assets.Kind.MELEE, Assets.Kind.BLOCK, Assets.Kind.VEHICLE]:
+	if Books.is_readable(s.id):
+		_use_btn.text = "阅读"
+	elif kind in [Assets.Kind.GUN, Assets.Kind.MELEE, Assets.Kind.BLOCK, Assets.Kind.VEHICLE]:
 		_use_btn.text = "卸下" if s.id == _equipped else "装备"
 	elif kind == Assets.Kind.RESOURCE and s.id == GameConfig.REPAIR_KIT_ID:
 		_use_btn.text = "修理工具"

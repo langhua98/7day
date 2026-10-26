@@ -319,12 +319,13 @@ func roll_container(c: Dictionary) -> Array:
 	if ResourceLoader.exists(LOOT_SCRIPT):
 		var loot_cls = load(LOOT_SCRIPT)
 		if loot_cls and loot_cls.has_method("roll"):
-			var gs := int(round(GameState.gamestage() * Progression.loot_stage_mult()))
+			var gs := int(round(GameState.gamestage() * Progression.loot_stage_mult() * Books.loot_mult()))
 			for e in loot_cls.roll(_loot_name(c), gs, rng):
 				if Assets.items_by_id.has(str(e.get("id", ""))):
 					out.append({"id": str(e.id), "count": maxi(1, int(e.get("count", 1))),
 						"quality": int(e.get("quality", 0)), "durability": 0.0})
 			if not out.is_empty():
+				_add_magazine(c, out)
 				return out
 	if rng.randf() < C.SEARCH_EMPTY_CHANCE:
 		return out
@@ -334,9 +335,10 @@ func roll_container(c: Dictionary) -> Array:
 			continue
 		var quality := 0
 		if Assets.items_by_id[id].kind in [Assets.Kind.GUN, Assets.Kind.MELEE]:
-			quality = Weapons.roll_quality(int(round(GameState.gamestage() * Progression.loot_stage_mult())), rng)
+			quality = Weapons.roll_quality(int(round(GameState.gamestage() * Progression.loot_stage_mult() * Books.loot_mult())), rng)
 		var n: int = Weapons.pickup_count(id, rng) if Weapons.is_ammo(id) else 1
 		out.append({"id": id, "count": n, "quality": quality, "durability": 0.0})
+	_add_magazine(c, out)
 	return out
 
 
@@ -347,6 +349,20 @@ func _loot_name(c: Dictionary) -> String:
 		return name
 	var tag := str(c.get("loot", "any"))
 	return str(LEGACY_LOOT.get(tag, tag))
+
+
+## 书柜/书桌/邮箱额外掉一本技能杂志（官方掉落组里没有这些杂志）
+func _add_magazine(c: Dictionary, out: Array) -> void:
+	var n := _loot_name(c).to_lower()
+	if not (n.contains("bookcase") or n.contains("desk") or n.contains("mailbox")):
+		return
+	if rng.randf() >= C.BOOK_LOOT_CHANCE:
+		return
+	var id := Books.random_magazine(rng)
+	if id == "":
+		return
+	Assets.ensure_item(id, Books.item_name(id))
+	out.append({"id": id, "count": 1, "quality": 0, "durability": 0.0})
 
 
 ## 保险箱（要撬锁或用武器砸）：看方块名、掉落名和中文名

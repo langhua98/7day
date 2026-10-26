@@ -94,7 +94,7 @@ func sense(body: Node3D, target: Node3D, world: World) -> void:
 		var how_far := to.length()
 		var sight := C.SLEEP_SIGHT * (C.SLEEP_SIGHT_CROUCH_MULT if GameState.player_crouching else 1.0)
 		if GameState.player_crouching:
-			sight *= Progression.sight_mult()
+			sight *= Progression.sight_mult() * Books.stealth_mult()
 		if how_far > sight:
 			return
 		if world and world.line_blocked(body.global_position + Vector3.UP * 1.6,
@@ -118,7 +118,7 @@ func sees(body: Node3D, target: Node3D, world: World) -> bool:
 	if not touch:
 		var range_m := C.ZOMBIE_SIGHT_NIGHT if GameState.is_night() else C.ZOMBIE_SIGHT_DAY
 		if GameState.player_crouching:
-			range_m *= C.ZOMBIE_SIGHT_CROUCH_MULT * Progression.sight_mult()
+			range_m *= C.ZOMBIE_SIGHT_CROUCH_MULT * Progression.sight_mult() * Books.stealth_mult()
 		if dist > range_m:
 			return false
 		# 身体的正面是 +Z（body.rotation.y = atan2(dir.x, dir.z)）

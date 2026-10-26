@@ -19,6 +19,7 @@ Sfx="*res://scripts/sfx.gd"
 Data="*res://scripts/data.gd"
 Status="*res://scripts/status_effects.gd"
 Progression="*res://scripts/progression.gd"
+Books="*res://scripts/books.gd"
 
 [display]
 

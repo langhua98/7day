@@ -175,6 +175,9 @@ func bind(c: Crafting) -> void:
 	crafting.inventory.changed.connect(func():
 		if visible:
 			_refresh.call_deferred())
+	Books.changed.connect(func():
+		if visible:
+			_refresh())
 
 
 ## 打开面板。area = null 看全部；传工作站名只看那个工作站的配方。
@@ -243,6 +246,15 @@ func _refresh() -> void:
 		b.tooltip_text = str(r.zh)
 		b.modulate = Color.WHITE if crafting.can_craft(key, 1, _station) else Color(0.45, 0.45, 0.45)
 		b.set_meta("recipe", key)
+		if not crafting.is_unlocked(key):
+			b.tooltip_text = crafting.why_not(key, 1, _station)
+			var lock := Label.new()
+			lock.text = "锁"
+			lock.add_theme_color_override("font_color", Color(1.0, 0.62, 0.3))
+			lock.add_theme_font_size_override("font_size", 18)
+			lock.position = Vector2(4, 2)
+			lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			b.add_child(lock)
 		if b.icon == null:
 			# 没图标的物品显示名字
 			b.text = Assets.display_name(r.id)

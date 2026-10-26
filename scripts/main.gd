@@ -197,6 +197,7 @@ func start(fresh := true) -> void:
 	time_sys.reset()
 	player_sys.reset()
 	Progression.reset()
+	Books.reset()
 	inventory.reset()
 	crafting.reset()
 	combat.reset()

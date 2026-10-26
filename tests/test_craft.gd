@@ -60,7 +60,8 @@ func _run() -> void:
 	check_eq(Crafting.cost(25), 13, "材料向上取整")
 	check_eq(Crafting.cost(1), 1, "材料至少 1")
 	check_eq(cr.time_of("tAxe"), 4.0 * C.CRAFT_TIME_MULT, "时间 ×0.5")
-	check(cr.list("tool").has("tSecret") == C.RECIPES_ALL_UNLOCKED, "learnable 配方按开关显示")
+	check(cr.list("tool").has("tSecret"), "learnable 配方也显示（锁着）")
+	check(cr.is_unlocked("tSecret") == C.RECIPES_ALL_UNLOCKED, "learnable 配方按开关解锁")
 
 	# 材料不够不能做
 	inv.add("tRock", 3)

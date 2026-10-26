@@ -481,6 +481,14 @@ func install_scope(scope_id: String) -> bool:
 func use_item(id: String) -> void:
 	if not inventory.has(id):
 		return
+	if Books.is_readable(id):
+		var res := Books.read(id)
+		hud.toast(str(res.get("text", "")))
+		if bool(res.get("ok", false)):
+			remove(id, 1)
+			GameState.item_used.emit(id)
+			refresh()
+		return
 	var row: Dictionary = Assets.items_by_id[id]
 	if Weapons.is_ammo(id):
 		use_ammo(id)
